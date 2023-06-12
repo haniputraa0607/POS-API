@@ -1,0 +1,11 @@
+{
+    "name": "PatientGrievance",
+    "alias": "patientgrievance",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\PatientGrievance\\Providers\\PatientGrievanceServiceProvider"
+    ],
+    "files": []
+}

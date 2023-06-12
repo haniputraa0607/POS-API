@@ -1,0 +1,11 @@
+{
+    "name": "Queue",
+    "alias": "queue",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Queue\\Providers\\QueueServiceProvider"
+    ],
+    "files": []
+}

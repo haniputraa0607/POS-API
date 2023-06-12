@@ -1,0 +1,11 @@
+{
+    "name": "Diagnostic",
+    "alias": "diagnostic",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Diagnostic\\Providers\\DiagnosticServiceProvider"
+    ],
+    "files": []
+}

@@ -1,0 +1,11 @@
+{
+    "name": "Grievnace",
+    "alias": "grievnace",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Grievnace\\Providers\\GrievnaceServiceProvider"
+    ],
+    "files": []
+}

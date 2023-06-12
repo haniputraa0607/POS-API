@@ -1,0 +1,11 @@
+{
+    "name": "EmployeeSchedule",
+    "alias": "employeeschedule",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\EmployeeSchedule\\Providers\\EmployeeScheduleServiceProvider"
+    ],
+    "files": []
+}

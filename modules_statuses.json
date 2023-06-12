@@ -1,0 +1,18 @@
+{
+    "User": true,
+    "EmployeeSchedule": true,
+    "Outlet": true,
+    "Customer": true,
+    "Queue": true,
+    "Order": true,
+    "OrderConsultation": true,
+    "Consultation": true,
+    "Grievnace": true,
+    "Diagnostic": true,
+    "PatientGrievance": true,
+    "PatientDiagnostic": true,
+    "BankDetail": true,
+    "EWalletDetail": true,
+    "Transaction": true,
+    "PaymentDetail": true
+}

@@ -1,0 +1,11 @@
+{
+    "name": "EWalletDetail",
+    "alias": "ewalletdetail",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\EWalletDetail\\Providers\\EWalletDetailServiceProvider"
+    ],
+    "files": []
+}
