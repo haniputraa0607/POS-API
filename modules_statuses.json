@@ -7,12 +7,12 @@
     "Order": true,
     "OrderConsultation": true,
     "Consultation": true,
-    "Grievnace": true,
     "Diagnostic": true,
     "PatientGrievance": true,
     "PatientDiagnostic": true,
     "BankDetail": true,
     "EWalletDetail": true,
     "Transaction": true,
-    "PaymentDetail": true
+    "PaymentDetail": true,
+    "Grievance": true
 }

@@ -11,6 +11,3 @@
 |
 */
 
-Route::prefix('ewalletdetail')->group(function() {
-    Route::get('/', 'EWalletDetailController@index');
-});

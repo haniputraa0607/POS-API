@@ -11,6 +11,3 @@
 |
 */
 
-Route::prefix('queue')->group(function() {
-    Route::get('/', 'QueueController@index');
-});

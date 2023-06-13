@@ -4,7 +4,9 @@ namespace Modules\Outlet\Http\Controllers;
 
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
+use App\Http\Controllers\Controller;
+use Modules\Outlet\Entities\Outlet;
+use Modules\Outlet\Http\Requests\OutletRequest;
 
 class OutletController extends Controller
 {
@@ -12,18 +14,10 @@ class OutletController extends Controller
      * Display a listing of the resource.
      * @return Renderable
      */
-    public function index()
+    public function index(Request $request)
     {
-        return view('outlet::index');
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     * @return Renderable
-     */
-    public function create()
-    {
-        return view('outlet::create');
+        $outlet = $request->length ? Outlet::paginate($request->length ?? 10) : Outlet::get();
+        return $this->ok('', $outlet);
     }
 
     /**
@@ -31,9 +25,9 @@ class OutletController extends Controller
      * @param Request $request
      * @return Renderable
      */
-    public function store(Request $request)
+    public function store(OutletRequest $request)
     {
-        //
+        return $this->ok("success create outlet", Outlet::create($request->all()));
     }
 
     /**
@@ -41,19 +35,9 @@ class OutletController extends Controller
      * @param int $id
      * @return Renderable
      */
-    public function show($id)
+    public function show(Outlet $outlet)
     {
-        return view('outlet::show');
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     * @param int $id
-     * @return Renderable
-     */
-    public function edit($id)
-    {
-        return view('outlet::edit');
+        return $this->ok('', $outlet);
     }
 
     /**
@@ -62,9 +46,9 @@ class OutletController extends Controller
      * @param int $id
      * @return Renderable
      */
-    public function update(Request $request, $id)
+    public function update(OutletRequest $request, Outlet $outlet)
     {
-        //
+        return $this->ok("success update outlet", $outlet->update($request->all()));
     }
 
     /**
@@ -72,8 +56,14 @@ class OutletController extends Controller
      * @param int $id
      * @return Renderable
      */
-    public function destroy($id)
+    public function destroy(Outlet $outlet)
     {
-        //
+        $outlet->delete();
+        return $this->ok("success delete outlet", $outlet);
+    }
+
+    public function activities()
+    {
+        return $this->ok("success get data all outlet activities", config('outlet_activities'));
     }
 }

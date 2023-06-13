@@ -7,7 +7,7 @@ trait ApiResponse
     protected function ok($message, $data)
     {
         return response()->json([
-            'status' => 200,
+            'status' => "success",
             'message' => $message,
             'result' => $data
         ], 200);
@@ -16,7 +16,7 @@ trait ApiResponse
     protected function created($message, $data)
     {
         return response()->json([
-            'status' => 201,
+            'status' => "success",
             'message' => $message,
             'result' => $data
         ], 201);
@@ -25,16 +25,16 @@ trait ApiResponse
     protected function delete($message, $data)
     {
         return response()->json([
-            'status' => 204,
+            'status' => "success",
             'message' => $message,
-            'data' => $data
+            'result' => $data
         ]);
     }
 
     protected function unauthorized($message, $error)
     {
         return response()->json([
-            'status' => 401,
+            'status' => "fail",
             'message' => $message,
             'error' => $error
         ], 401);
@@ -43,25 +43,25 @@ trait ApiResponse
     protected function invalidNoPermission($message, $error)
     {
         return response()->json([
-            'status' => 403,
+            'status' => "fail",
             'message' => $message,
             'error' => $error
         ], 403);
     }
 
-    protected function NotFound($error)
+    protected function notFound($error)
     {
         return response()->json([
-            'status' => 404,
+            'status' => "fail",
             'message' => "Data Not Found",
             'error' => $error
         ], 404);
     }
 
-    protected function InvalidValidation($message, $error)
+    protected function invalidValidation($message, $error)
     {
         return response()->json([
-            'status' => 422,
+            'status' => "fail",
             'message' => $message,
             'error' => $error
         ], 422);
@@ -70,7 +70,7 @@ trait ApiResponse
     protected function error($message)
     {
         return response()->json([
-            'status' => 400,
+            'status' => "fail",
             'message' => $message,
             'error' => ''
         ], 400);

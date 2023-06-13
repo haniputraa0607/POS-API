@@ -10,7 +10,3 @@
 | contains the "web" middleware group. Now create something great!
 |
 */
-
-Route::prefix('patientgrievance')->group(function() {
-    Route::get('/', 'PatientGrievanceController@index');
-});

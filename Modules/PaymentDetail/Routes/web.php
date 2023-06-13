@@ -11,6 +11,3 @@
 |
 */
 
-Route::prefix('paymentdetail')->group(function() {
-    Route::get('/', 'PaymentDetailController@index');
-});
