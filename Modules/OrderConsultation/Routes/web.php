@@ -11,6 +11,3 @@
 |
 */
 
-Route::prefix('orderconsultation')->group(function() {
-    Route::get('/', 'OrderConsultationController@index');
-});

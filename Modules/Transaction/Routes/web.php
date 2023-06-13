@@ -11,6 +11,3 @@
 |
 */
 
-Route::prefix('transaction')->group(function() {
-    Route::get('/', 'TransactionController@index');
-});

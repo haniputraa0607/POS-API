@@ -11,6 +11,3 @@
 |
 */
 
-Route::prefix('patientdiagnostic')->group(function() {
-    Route::get('/', 'PatientDiagnosticController@index');
-});

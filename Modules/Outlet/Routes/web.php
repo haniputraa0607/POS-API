@@ -11,6 +11,3 @@
 |
 */
 
-Route::prefix('outlet')->group(function() {
-    Route::get('/', 'OutletController@index');
-});

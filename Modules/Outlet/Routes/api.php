@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use Modules\Outlet\Http\Controllers\OutletController;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,6 +15,13 @@ use Illuminate\Http\Request;
 |
 */
 
-Route::middleware('auth:api')->get('/outlet', function (Request $request) {
-    return $request->user();
+Route::controller(OutletController::class)->prefix('outlet')->group(function ()
+{
+    $outlet = '{outlet}';
+    Route::get('', 'index')->name('outlet.list');
+    Route::get('activities', 'activities')->name('outlet.activities');
+    Route::post('', 'store')->name('outlet.store');
+    Route::get($outlet, 'show')->name('outlet.show');
+    Route::patch($outlet, 'update')->name('outlet.update');
+    Route::delete($outlet, 'destroy')->name('outlet.delete');
 });
