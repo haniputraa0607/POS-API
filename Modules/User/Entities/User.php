@@ -81,4 +81,9 @@ class User extends Authenticatable
     {
         return UserFactory::new();
     }
+
+    public function features()
+	{
+		return $this->belongsToMany(\App\Http\Models\Feature::class, 'user_features', 'id_user', 'id_feature');
+	}
 }

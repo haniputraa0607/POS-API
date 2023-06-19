@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 // use Illuminate\Support\Facades\Gate;
+use Laravel\Passport\Passport;
+use Route;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
@@ -21,6 +23,16 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        $this->registerPolicies();
+
+        Route::group(['middleware' => ['custom_auth', 'decrypt_pin:password,username']], function () {
+            Passport::tokensCan([
+                'be' => 'Manage admin panel scope',
+                'pos' => 'Manage pos order scope',
+                'doctor' => 'Manage doctor scope',
+            ]);
+        });
+
+        Passport::tokensExpireIn(now()->addDays(15000));
     }
 }

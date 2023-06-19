@@ -25,3 +25,8 @@ Route::controller(OutletController::class)->prefix('outlet')->group(function ()
     Route::patch($outlet, 'update')->name('outlet.update');
     Route::delete($outlet, 'destroy')->name('outlet.delete');
 });
+
+Route::middleware('scopes:pos')->controller(OutletController::class)->prefix('home')->group(function (){
+    Route::get('', function(){return 'tes';});
+
+});
