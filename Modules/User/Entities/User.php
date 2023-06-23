@@ -35,6 +35,11 @@ class User extends Authenticatable
         'email_verified_at',
         'type',
         'outlet_id',
+        'password',
+        'id_city',
+        'address',
+        'gender',
+        'level'
     ];
 
     /**
@@ -86,4 +91,9 @@ class User extends Authenticatable
 	{
 		return $this->belongsToMany(\App\Http\Models\Feature::class, 'user_features', 'id_user', 'id_feature');
 	}
+
+    public function findForPassport(string $username): User
+    {
+        return $this->where('phone', $username)->first();
+    }
 }

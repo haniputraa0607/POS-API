@@ -30,6 +30,7 @@ class AuthServiceProvider extends ServiceProvider
                 'be' => 'Manage admin panel scope',
                 'pos' => 'Manage pos order scope',
                 'doctor' => 'Manage doctor scope',
+                'landing-page' => 'Manage landing page scope',
             ]);
         });
 

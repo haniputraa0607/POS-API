@@ -8,7 +8,7 @@ use League\OAuth2\Server\Exception\OAuthServerException;
 use Psr\Http\Message\ServerRequestInterface;
 use Nyholm\Psr7\Response as Psr7Response;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Models\User;
+use Modules\User\Entities\User;
 
 class AccessTokenController extends PassportAccessTokenController
 {
@@ -25,37 +25,37 @@ class AccessTokenController extends PassportAccessTokenController
         // return response()->json($request->getParsedBody());
         try {
             if(isset($request->getParsedBody()['username']) && isset($request->getParsedBody()['password'])){
-                return [[Auth::attempt(['phone' => $request->getParsedBody()['username'], 'password' => $request->getParsedBody()['password']])]];
+
                 if(Auth::attempt(['phone' => $request->getParsedBody()['username'], 'password' => $request->getParsedBody()['password']])){
                     $user = User::where('phone', $request->getParsedBody()['username'])->first();
                     if($user){
                         //check if user already suspended
-                        if($user->is_suspended == '1'){
-                            return response()->json(['status' => 'fail', 'messages' => 'Akun Anda telah diblokir karena menunjukkan aktivitas mencurigakan. Untuk informasi lebih lanjut harap hubungi customer service kami.']);
-                        }
+                        // if($user->is_suspended == '1'){
+                        //     return response()->json(['status' => 'fail', 'messages' => 'Akun Anda telah diblokir karena menunjukkan aktivitas mencurigakan. Untuk informasi lebih lanjut harap hubungi customer service kami.']);
+                        // }
 
-                        //check if otp have expired and the current time exceeds the expiration time
-                        if(!empty($user->otp_forgot) && !is_null($user->otp_valid_time) && strtotime(date('Y-m-d H:i:s')) > strtotime($user->otp_valid_time)){
-                            return response()->json(['status' => 'fail', 'messages' => 'This OTP is expired, please re-request OTP from apps']);
-                        }
+                        // //check if otp have expired and the current time exceeds the expiration time
+                        // if(!empty($user->otp_forgot) && !is_null($user->otp_valid_time) && strtotime(date('Y-m-d H:i:s')) > strtotime($user->otp_valid_time)){
+                        //     return response()->json(['status' => 'fail', 'messages' => 'This OTP is expired, please re-request OTP from apps']);
+                        // }
 
                         if(isset($request->getParsedBody()['scope'])){
-                            if($request->getParsedBody()['scope'] == 'be' && strtolower($user->level) == 'customer'){
-                                return response()->json(['status' => 'fail', 'messages' => "You don't have access in this app"]);
-                            }
-
-                            if($request->getParsedBody()['scope'] == 'employee-apps' && empty($user->id_role)){
+                            if($request->getParsedBody()['scope'] == 'doctor' && strtolower($user->type) == 'cashier'){
                                 return response()->json(['status' => 'fail', 'messages' => "You don't have access in this app"]);
                             }
                         }else{
                             return response()->json(['status' => 'fail', 'messages' => 'Incompleted input']);
                         }
                     }
+                }else{
+                    return response()->json(['status' => 'fail', 'messages' => 'Usermame atau pin tidak sesuai.']);
                 }
             }
+
             return $this->convertResponse(
                 $this->server->respondToAccessTokenRequest($request, new Psr7Response)
             );
+
 
         }
         catch (OAuthServerException $exception) {

@@ -8,10 +8,16 @@ use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Throwable;
+use League\OAuth2\Server\Exception\OAuthServerException;
+
 
 class Handler extends ExceptionHandler
 {
     use ApiResponse;
+
+    protected $dontReport = [
+        OAuthServerException::class,
+    ];
 
     /**
      * The list of the inputs that are never flashed to the session on validation exceptions.

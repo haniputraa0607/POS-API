@@ -14,5 +14,7 @@
     "EWalletDetail": true,
     "Transaction": true,
     "PaymentDetail": true,
-    "Grievance": true
+    "Grievance": true,
+    "POS": true,
+    "Doctor": true
 }

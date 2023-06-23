@@ -21,7 +21,7 @@ class CheckScopes
      */
     public function handle($request, Closure $next, $scope = null, $scope2 = null): Response
     {
-        $mtScope = ['be', 'pos', 'doctor'];
+        $mtScope = ['be', 'pos', 'doctor', 'landing-page'];
         if (in_array($scope,$mtScope) || in_array($scope2,$mtScope)) {
             $getMaintenance = Setting::where('key', 'maintenance_mode')->first();
             if($getMaintenance && $getMaintenance['value'] == 1){
@@ -62,7 +62,7 @@ class CheckScopes
             }
         }
 
-        $arrScope = ['be', 'pos', 'doctor'];
+        $arrScope = ['be', 'pos', 'doctor', 'landing-page'];
         if((in_array($scope, $arrScope) && $scope == $scopeUser) ||
             (in_array($scope2,$arrScope) && $scope2 == $scopeUser)){
             return $next($request);
