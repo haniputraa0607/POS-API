@@ -9,10 +9,14 @@ class Customer extends Model
 {
     use HasFactory;
 
-    protected $fillable = [];
-    
-    protected static function newFactory()
-    {
-        return \Modules\Customer\Database\factories\CustomerFactory::new();
-    }
+    protected $table = 'customers';
+    protected $fillable = [
+        'name',
+        'gender',
+        'birth_date',
+        'phone',
+        'email',
+        'last_transaction',
+        'count_transaction',
+    ];
 }

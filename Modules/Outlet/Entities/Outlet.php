@@ -16,13 +16,22 @@ class Outlet extends Model
     protected $table = 'outlets';
     protected $fillable = [
         'name',
+        'id_partner',
+        'outlet_code',
+        'id_city',
+        'outlet_phone',
+        'outlet_email',
+        'outlet_latitude',
+        'outlet_longitude',
+        'status',
+        'is_tax',
         'address',
         'district_code',
         'postal_code',
         'coordinates',
         'activities'
     ];
-    
+
     protected static function newFactory()
     {
         return OutletFactory::new();

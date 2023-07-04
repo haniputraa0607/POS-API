@@ -9,10 +9,9 @@ class PatientDiagnostic extends Model
 {
     use HasFactory;
 
-    protected $fillable = [];
-    
-    protected static function newFactory()
-    {
-        return \Modules\PatientDiagnostic\Database\factories\PatientDiagnosticFactory::new();
-    }
+    protected $table = 'patient_diagnostics';
+    protected $fillable = [
+        'id_transaction_consultation',
+        'id_diagnostic'
+    ];
 }
