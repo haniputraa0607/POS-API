@@ -17,6 +17,9 @@ class UserDatabaseSeeder extends Seeder
     {
         Model::unguard();
 
+        User::factory()->create(['username' => 'admin']);
+        User::factory()->create(['username' => 'dokter', 'type' => 'salesman']);
+        User::factory()->create(['username' => 'kasir', 'type' => 'cashier']);
         User::factory(10)->create();
 
     }

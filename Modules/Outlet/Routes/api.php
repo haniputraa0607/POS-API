@@ -15,8 +15,7 @@ use Modules\Outlet\Http\Controllers\OutletController;
 |
 */
 
-Route::controller(OutletController::class)->prefix('outlet')->group(function ()
-{
+Route::middleware('auth:api')->controller(OutletController::class)->prefix('outlet')->group(function () {
     $outlet = '{outlet}';
     Route::get('', 'index')->name('outlet.list');
     Route::get('activities', 'activities')->name('outlet.activities');

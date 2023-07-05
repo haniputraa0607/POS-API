@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('settings', function(Blueprint $table)
 		{
-			$table->increments('id_setting');
+			$table->id();
 			$table->string('key', 200);
 			$table->string('value', 200)->nullable();
 			$table->text('value_text', 16777215)->nullable();

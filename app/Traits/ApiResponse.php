@@ -31,12 +31,12 @@ trait ApiResponse
         ]);
     }
 
-    protected function unauthorized($message, $error)
+    protected function unauthorized($message)
     {
         return response()->json([
             'status' => "fail",
             'message' => $message,
-            'error' => $error
+            'error' => "Unauthorized action",
         ], 401);
     }
 

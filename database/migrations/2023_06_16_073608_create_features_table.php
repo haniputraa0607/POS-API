@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('features', function(Blueprint $table)
 		{
-			$table->increments('id_feature');
+			$table->id();
 			$table->enum('feature_type', array('Report','List','Detail','Create','Update','Delete'));
 			$table->string('feature_module', 100);
 			$table->timestamps();

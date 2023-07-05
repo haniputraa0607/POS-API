@@ -2,78 +2,29 @@
 
 namespace Modules\Queue\Http\Controllers;
 
-use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Lib\MyHelper;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
+use Modules\Queue\Entities\Queue;
 
 class QueueController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     * @return Renderable
-     */
-    public function index()
+
+    public function generate(Request $request): JsonResponse
     {
-        return view('queue::index');
+        $code = (int) substr(Queue::where('outlet_id', Auth::user()->outlet_id)->where('type', $request->type)->today()->latest()->first()->code, 1, 2) + 1;
+        return $this->ok("success", ['code' => MyHelper::addLeadingZeros(ucfirst(substr($request->type, 0, 1)) . $code)]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     * @return Renderable
-     */
-    public function create()
-    {
-        return view('queue::create');
-    }
+    public function current(): JsonResponse {
+        $currentQueue = [
+            'consultation' => Queue::where('outlet_id', Auth::user()->outlet_id)->consultation()->today()->latest()->first(),
+            'product' => Queue::where('outlet_id', Auth::user()->outlet_id)->product()->today()->latest()->first(),
+            'treatment' => Queue::where('outlet_id', Auth::user()->outlet_id)->treatment()->today()->latest()->first(),
+        ];
+        return $this->ok("success", $currentQueue);
 
-    /**
-     * Store a newly created resource in storage.
-     * @param Request $request
-     * @return Renderable
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Show the specified resource.
-     * @param int $id
-     * @return Renderable
-     */
-    public function show($id)
-    {
-        return view('queue::show');
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     * @param int $id
-     * @return Renderable
-     */
-    public function edit($id)
-    {
-        return view('queue::edit');
-    }
-
-    /**
-     * Update the specified resource in storage.
-     * @param Request $request
-     * @param int $id
-     * @return Renderable
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     * @param int $id
-     * @return Renderable
-     */
-    public function destroy($id)
-    {
-        //
     }
 }

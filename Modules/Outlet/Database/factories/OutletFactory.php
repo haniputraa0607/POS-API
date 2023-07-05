@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Arr;
 use KodePandai\Indonesia\Models\District;
 use Modules\Outlet\Entities\Outlet;
+use Modules\Outlet\Entities\Partner;
 
 class OutletFactory extends Factory
 {
@@ -23,8 +24,13 @@ class OutletFactory extends Factory
      */
     public function definition()
     {
+        $name = $this->faker->city();
         return [
-            'name' => $this->faker->city(),
+            'id_partner' => Partner::inRandomorder()->first()->id,
+            'name' => $name,
+            'outlet_code' => ucfirst(substr($name,0,1)).rand(1000,9999),
+            'outlet_phone' => $this->faker->phoneNumber(),
+            'outlet_email' => $this->faker->safeEmail(),
             'address' => $this->faker->address(),
             'district_code' => District::InRandomOrder()->first()->code,
             'postal_code' => $this->faker->postcode(),

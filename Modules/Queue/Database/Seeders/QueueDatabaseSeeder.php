@@ -4,6 +4,7 @@ namespace Modules\Queue\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Queue\Entities\Queue;
 
 class QueueDatabaseSeeder extends Seeder
 {
@@ -15,7 +16,6 @@ class QueueDatabaseSeeder extends Seeder
     public function run()
     {
         Model::unguard();
-
-        // $this->call("OthersTableSeeder");
+        Queue::factory(50)->create();
     }
 }

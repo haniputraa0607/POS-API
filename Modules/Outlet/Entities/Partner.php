@@ -4,6 +4,7 @@ namespace Modules\Outlet\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Modules\Outlet\Database\factories\PartnerFactory;
 
 class Partner extends Model
 {
@@ -17,4 +18,9 @@ class Partner extends Model
         'partner_phone',
         'partner_address'
     ];
+
+    protected static function newFactory()
+    {
+        return PartnerFactory::new();
+    }
 }

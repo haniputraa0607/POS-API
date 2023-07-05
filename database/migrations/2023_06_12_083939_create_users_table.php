@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->integer('equal_id')->unique();
             $table->string('name');
-            $table->string('username');
+            $table->string('username')->unique();
             $table->string('email')->unique();
             $table->string('phone')->unique();
             $table->string('idc')->comment('nik ktp')->unique();
@@ -24,6 +24,7 @@ return new class extends Migration
             $table->enum('type', config('user_type'))->default('cashier');
             $table->foreignId('outlet_id')->constrained('outlets');
             $table->rememberToken();
+            $table->string('image_url')->nullable();
             $table->timestamps();
         });
     }

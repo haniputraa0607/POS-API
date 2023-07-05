@@ -5,6 +5,7 @@ namespace Modules\Outlet\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Outlet\Entities\Outlet;
+use Modules\Outlet\Entities\Partner;
 
 class OutletDatabaseSeeder extends Seeder
 {
@@ -16,6 +17,7 @@ class OutletDatabaseSeeder extends Seeder
     public function run()
     {
         Model::unguard();
+        Partner::factory(10)->create();
         Outlet::factory()->create([
             'activities' => json_encode(['product']),
         ]);

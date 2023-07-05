@@ -4,6 +4,7 @@ namespace Modules\Consultation\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Consultation\Entities\Consultation;
 
 class ConsultationDatabaseSeeder extends Seeder
 {
@@ -15,7 +16,6 @@ class ConsultationDatabaseSeeder extends Seeder
     public function run()
     {
         Model::unguard();
-
-        // $this->call("OthersTableSeeder");
+        Consultation::factory(50)->create();
     }
 }

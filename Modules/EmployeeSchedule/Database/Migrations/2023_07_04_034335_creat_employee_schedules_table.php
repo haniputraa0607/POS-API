@@ -3,7 +3,6 @@
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
-use Modules\Queue\Entities\Queue;
 
 return new class extends Migration
 {
@@ -14,13 +13,15 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('queues', function (Blueprint $table) {
+        Schema::create('employee_shcedules', function(Blueprint $table)
+		{
             $table->id();
-            $table->string('code');
-            $table->enum('type',Queue::QUEUE_TYPE);
-            $table->foreignId('outlet_id')->constrained('outlets');
+            $table->foreignId('user_id')->constrained('users');
+            $table->date('date');
+            $table->time('start_time');
+            $table->time('end_time');
             $table->timestamps();
-        });
+		});
     }
 
     /**
@@ -30,6 +31,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('queues');
+        Schema::dropIfExists('employee_shcedules');
     }
 };

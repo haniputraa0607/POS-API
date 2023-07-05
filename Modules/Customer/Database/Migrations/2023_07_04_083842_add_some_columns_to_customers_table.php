@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Modules\Customer\Entities\Customer;
 
 return new class extends Migration
 {
@@ -15,12 +16,13 @@ return new class extends Migration
     {
         Schema::table('customers', function (Blueprint $table) {
             $table->string('name')->after('id');
-            $table->enum('gender',['Male','Female'])->after('name');
+            $table->enum('gender',Customer::GENDER)->after('name');
             $table->date('birth_date')->after('gender');
-            $table->string('phone')->after('birth_date');
-            $table->string('email')->after('phone');
-            $table->integer('last_transaction')->after('email');
-            $table->integer('count_transaction')->after('last_transaction');
+            $table->string('phone')->unique()->after('birth_date');
+            $table->string('email')->unique()->after('phone');
+            $table->boolean('is_active')->default(true);
+            $table->integer('last_transaction')->default(0)->after('email');
+            $table->integer('count_transaction')->default(0)->after('last_transaction');
         });
     }
 
