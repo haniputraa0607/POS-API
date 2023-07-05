@@ -22,20 +22,20 @@ class CheckScopes
     public function handle($request, Closure $next, $scope = null, $scope2 = null): Response
     {
         $mtScope = ['be', 'pos', 'doctor', 'landing-page'];
-        if (in_array($scope,$mtScope) || in_array($scope2,$mtScope)) {
+        if (in_array($scope, $mtScope) || in_array($scope2, $mtScope)) {
             $getMaintenance = Setting::where('key', 'maintenance_mode')->first();
-            if($getMaintenance && $getMaintenance['value'] == 1){
+            if ($getMaintenance && $getMaintenance['value'] == 1) {
                 $dt = (array)json_decode($getMaintenance['value_text']);
                 $message = $dt['message'];
-                if($dt['image'] != ""){
-                    $url_image = config('url.storage_url_api').$dt['image'];
-                }else{
-                    $url_image = config('url.storage_url_api').'img/maintenance/default.png';
+                if ($dt['image'] != "") {
+                    $url_image = config('url.storage_url_api') . $dt['image'];
+                } else {
+                    $url_image = config('url.storage_url_api') . 'img/maintenance/default.png';
                 }
                 return response()->json([
                     'status' => 'fail',
                     'messages' => [$message],
-                    'maintenance' => config('url.api_url') ."api/maintenance-mode",
+                    'maintenance' => config('url.api_url') . "api/maintenance-mode",
                     'data_maintenance' => [
                         'url_image' => $url_image,
                         'text' => $message
@@ -44,11 +44,11 @@ class CheckScopes
             }
         }
 
-        if($request->user()){
+        if ($request->user()) {
             $dataToken = json_decode($request->user()->token());
             $scopeUser = $dataToken->scopes[0];
-        }else{
-            try{
+        } else {
+            try {
                 $bearerToken = $request->bearerToken();
 
                 $parser = new Parser(new JoseEncoder());
@@ -56,15 +56,17 @@ class CheckScopes
                 $tokenId = $token->claims()->get('jti');
 
                 $getOauth = OauthAccessToken::find($tokenId);
-                $scopeUser = str_replace(str_split('[]""'),"",$getOauth['scopes']);
-            }catch (\Exception $e){
+                $scopeUser = str_replace(str_split('[]""'), "", $getOauth['scopes']);
+            } catch (\Exception $e) {
                 return response()->json(['error' => 'Unauthenticated.'], 401);
             }
         }
 
         $arrScope = ['be', 'pos', 'doctor', 'landing-page'];
-        if((in_array($scope, $arrScope) && $scope == $scopeUser) ||
-            (in_array($scope2,$arrScope) && $scope2 == $scopeUser)){
+        if (
+            (in_array($scope, $arrScope) && $scope == $scopeUser) ||
+            (in_array($scope2, $arrScope) && $scope2 == $scopeUser)
+        ) {
             return $next($request);
         }
 

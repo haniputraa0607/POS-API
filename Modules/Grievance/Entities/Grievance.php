@@ -9,10 +9,10 @@ class Grievance extends Model
 {
     use HasFactory;
 
-    protected $fillable = [];
-    
-    protected static function newFactory()
-    {
-        return \Modules\Grievance\Database\factories\GrievanceFactory::new();
-    }
+    protected $table = 'grievances';
+    protected $fillable = [
+        'grievance_name',
+        'description',
+        'is_active'
+    ];
 }
