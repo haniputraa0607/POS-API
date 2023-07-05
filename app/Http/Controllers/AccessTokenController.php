@@ -24,11 +24,10 @@ class AccessTokenController extends PassportAccessTokenController
     {
         // return response()->json($request->getParsedBody());
         try {
-            if(isset($request->getParsedBody()['username']) && isset($request->getParsedBody()['password'])){
-
-                if(Auth::attempt(['phone' => $request->getParsedBody()['username'], 'password' => $request->getParsedBody()['password']])){
+            if (isset($request->getParsedBody()['username']) && isset($request->getParsedBody()['password'])) {
+                if (Auth::attempt(['phone' => $request->getParsedBody()['username'], 'password' => $request->getParsedBody()['password']])) {
                     $user = User::where('phone', $request->getParsedBody()['username'])->first();
-                    if($user){
+                    if ($user) {
                         //check if user already suspended
                         // if($user->is_suspended == '1'){
                         //     return response()->json(['status' => 'fail', 'messages' => 'Akun Anda telah diblokir karena menunjukkan aktivitas mencurigakan. Untuk informasi lebih lanjut harap hubungi customer service kami.']);
@@ -39,33 +38,30 @@ class AccessTokenController extends PassportAccessTokenController
                         //     return response()->json(['status' => 'fail', 'messages' => 'This OTP is expired, please re-request OTP from apps']);
                         // }
 
-                        if(isset($request->getParsedBody()['scope'])){
-                            if($request->getParsedBody()['scope'] == 'doctor' && strtolower($user->type) == 'cashier'){
+                        if (isset($request->getParsedBody()['scope'])) {
+                            if ($request->getParsedBody()['scope'] == 'doctor' && strtolower($user->type) == 'cashier') {
                                 return response()->json(['status' => 'fail', 'messages' => "You don't have access in this app"]);
                             }
-                        }else{
+                        } else {
                             return response()->json(['status' => 'fail', 'messages' => 'Incompleted input']);
                         }
                     }
-                }else{
+                } else {
                     return response()->json(['status' => 'fail', 'messages' => 'Usermame atau pin tidak sesuai.']);
                 }
             }
 
             return $this->convertResponse(
-                $this->server->respondToAccessTokenRequest($request, new Psr7Response)
+                $this->server->respondToAccessTokenRequest($request, new Psr7Response())
             );
-
-
-        }
-        catch (OAuthServerException $exception) {
+        } catch (OAuthServerException $exception) {
             //return error message
 
-            if($exception->getCode() == 6){
+            if ($exception->getCode() == 6) {
                 return response()->json(['status' => 'fail', 'messages' => 'Pin tidak sesuai.']);
             }
 
-            return $this->withErrorHandling(function () use($exception) {
+            return $this->withErrorHandling(function () use ($exception) {
                 throw $exception;
             });
         }

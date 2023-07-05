@@ -10,7 +10,6 @@ use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Throwable;
 use League\OAuth2\Server\Exception\OAuthServerException;
 
-
 class Handler extends ExceptionHandler
 {
     use ApiResponse;
