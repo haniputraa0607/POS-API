@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use App\Http\Models\Setting;
 use App\Http\Models\OauthAccessToken;
+use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Passport\Passport;
 use Lcobucci\JWT\Token\Parser;
@@ -14,6 +15,8 @@ use Lcobucci\JWT\Encoding\JoseEncoder;
 
 class CheckScopes
 {
+    use ApiResponse;
+
     /**
      * Handle an incoming request.
      *
@@ -70,6 +73,6 @@ class CheckScopes
             return $next($request);
         }
 
-        return response()->json(['error' => 'Unauthenticated.'], 401);
+        return $this->unauthorized("Unauthenticated.");
     }
 }

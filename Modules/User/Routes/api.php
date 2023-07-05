@@ -15,14 +15,14 @@
 use Modules\User\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/banks', function () {
+Route::middleware('auth:api')->get('/banks', function () {
     return response()->json([
         'banks' => config('bank')
     ]);
 });
 
 
-Route::controller(UserController::class)->prefix('/user')->group(function () {
+Route::middleware('auth:api')->controller(UserController::class)->prefix('/user')->group(function () {
     $user = '{user}';
     Route::get('', 'index')->name('user.list');
     Route::get('doctor', 'doctor')->name('group.doctor');

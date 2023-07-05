@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Http\Request;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,6 +12,10 @@ use Illuminate\Http\Request;
 |
 */
 
-Route::middleware('auth:api')->get('/consultation', function (Request $request) {
-    return $request->user();
+use Illuminate\Support\Facades\Route;
+use Modules\Consultation\Http\Controllers\ConsultationController;
+
+Route::middleware('auth:api')->controller(ConsultationController::class)->prefix('consultation')->group(function () {
+    Route::get('mine', 'mine')->name('consultation.mine');
+    Route::get('mine-today', 'mineToday')->name('consultation.mine.today');
 });

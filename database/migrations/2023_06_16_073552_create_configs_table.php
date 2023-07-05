@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('configs', function (Blueprint $table) {
-            $table->increments('id_config');
+            $table->id();
 			$table->string('config_name');
 			$table->string('description')->nullable()->default(null);
             $table->timestamps();

@@ -5,9 +5,12 @@ namespace Modules\User\Entities;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use KodePandai\Indonesia\Models\District;
 use Laravel\Passport\HasApiTokens;
+use Modules\EmployeeSchedule\Entities\EmployeeSchedule;
 use Modules\Outlet\Entities\Outlet;
 use Modules\User\Database\factories\UserFactory;
 use Spatie\Permission\Traits\HasRoles;
@@ -36,10 +39,10 @@ class User extends Authenticatable
         'type',
         'outlet_id',
         'password',
-        'id_city',
+        'district_code',
         'address',
         'gender',
-        'level'
+        'level',
     ];
 
     /**
@@ -67,6 +70,15 @@ class User extends Authenticatable
         return $this->belongsTo(Outlet::class);
     }
 
+    public function district(): BelongsTo
+    {
+        return $this->belongsTo(District::class, 'district_code', 'code');
+    }
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(EmployeeSchedule::class)->orderBy('date', 'desc');
+    }
+
     public function scopeDoctor(Builder $query): Builder
     {
         return $query->where('type', 'salesman');
@@ -82,15 +94,20 @@ class User extends Authenticatable
         return $query->with(['outlet.district'])
             ->select('id', 'name', 'idc', 'email', 'phone', 'birthdate', 'type', 'outlet_id');
     }
+
+    public function scopeIsActive(Builder $query): Builder
+    {
+        return $query->where('is_active', true);
+    }
     protected static function newFactory()
     {
         return UserFactory::new();
     }
 
     public function features()
-	{
-		return $this->belongsToMany(\App\Http\Models\Feature::class, 'user_features', 'id_user', 'id_feature');
-	}
+    {
+        return $this->belongsToMany(\App\Http\Models\Feature::class, 'user_features', 'id_user', 'id_feature');
+    }
 
     public function findForPassport(string $username): User
     {

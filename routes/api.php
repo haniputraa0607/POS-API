@@ -10,3 +10,14 @@
 | be assigned to the "api" middleware group. Make something great!
 |
 */
+
+use App\Http\Controllers\AccessTokenController;
+use Illuminate\Support\Facades\Route;
+
+Route::controller( AccessTokenController::class)->prefix('/login')->group(function(){
+    Route::post('cms', 'loginCMS')->name('login.cms');
+    Route::post('doctor', 'loginDoctor')->name('login.doctor');
+    Route::post('cashier', 'loginCashier')->name('login.cashier');
+});
+
+Route::get('/logout', [AccessTokenController::class, 'logout'])->name('logout')->middleware('auth:api');;

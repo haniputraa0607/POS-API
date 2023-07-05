@@ -4,6 +4,7 @@ namespace App\Http\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Modules\User\Entities\User;
 
 class UserFeature extends Model
 {
@@ -24,11 +25,11 @@ class UserFeature extends Model
 
     public function feature()
     {
-        return $this->belongsTo(\App\Http\Models\Feature::class, 'id_feature');
+        return $this->belongsTo(Feature::class);
     }
 
     public function user()
     {
-        return $this->belongsTo(\Modules\User\Entities\User::class, 'id_user');
+        return $this->belongsTo(User::class);
     }
 }

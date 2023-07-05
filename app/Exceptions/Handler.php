@@ -3,6 +3,7 @@
 namespace App\Exceptions;
 
 use App\Traits\ApiResponse;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -36,19 +37,23 @@ class Handler extends ExceptionHandler
     {
         $this->renderable(function (Throwable $e, $request) {
             if ($request->wantsJson() || $request->is('*api*')) {
-
-            /**
-             * @var \Symfony\Component\HttpFoundation\Response|\Illuminate\Http\Response $e
-             */
+                /**
+                 * @var \Symfony\Component\HttpFoundation\Response|\Illuminate\Http\Response $e
+                 */
                 $statusCode = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
                 switch (true) {
                     case $e instanceof ValidationException:
                         $error = $this->invalidValidation($e->getMessage(), collect($e->errors())->flatten());
-                        // $error = $this->invalidValidation($e->getMessage(), $e->errors());
                         break;
                     case $e instanceof NotFoundHttpException:
+                        if ($e->getPrevious() instanceof ModelNotFoundException) {
+                            $modelException = $e->getPrevious();
+                            $modelName = $modelException->getModel();
+                            $error = $this->notFound(class_basename($modelName) . " is not found.");
+                            break;
+                        }
                     case $e instanceof RouteNotFoundException:
-                        $error = $this->notFound($e->getMessage());
+                        $error = $e->getMessage() == "Route [login] not defined." ? $this->unauthorized("Please login") : $this->notFound($e->getMessage());
                         break;
                     default:
                         $error = $this->error($e->getMessage(), $statusCode);

@@ -2,78 +2,80 @@
 
 namespace Modules\EmployeeSchedule\Http\Controllers;
 
-use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
+use Modules\EmployeeSchedule\Entities\EmployeeSchedule;
+use Modules\EmployeeSchedule\Http\Requests\StoreRequest;
+use Modules\EmployeeSchedule\Http\Requests\UpdateRequest;
+use Modules\User\Entities\User;
 
 class EmployeeScheduleController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     * @return Renderable
-     */
-    public function index()
+
+    public function index(Request $request): JsonResponse
     {
-        return view('employeeschedule::index');
+        $data = EmployeeSchedule::with('user.outlet.district')
+        ->when($request->date , function ($query, $date) {
+            return $query->whereDate('date', $date);
+        })
+        ->paginate(10);
+        return $this->ok("success get all schedules", $data);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     * @return Renderable
-     */
-    public function create()
+    public function doctor(): JsonResponse
     {
-        return view('employeeschedule::create');
+        $data = EmployeeSchedule::with('user.outlet.district')->doctor()->paginate(10);
+        return $this->ok("succes get all schedules of all doctors", $data);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     * @param Request $request
-     * @return Renderable
-     */
-    public function store(Request $request)
+    public function doctorDetail(int $id): JsonResponse
     {
-        //
+        $data = User::with(['schedules', 'outlet.district'])->doctor()->where('id', $id)->firstOrFail();
+        return $this->ok("success get all schedules of doctor $data->name", $data);
     }
 
-    /**
-     * Show the specified resource.
-     * @param int $id
-     * @return Renderable
-     */
-    public function show($id)
+    public function cashier(): JsonResponse
     {
-        return view('employeeschedule::show');
+        $data = EmployeeSchedule::with('user.outlet.district')->cashier()->paginate(10);
+        return $this->ok("succes get all schedules of all cashiers", $data);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     * @param int $id
-     * @return Renderable
-     */
-    public function edit($id)
+    public function cashierDetail(int $id): JsonResponse
     {
-        return view('employeeschedule::edit');
+        $data = User::with(['schedules', 'outlet.district'])->cashier()->where('id', $id)->firstOrFail();
+        return $this->ok("success get all schedules of cashier $data->name ", $data);
     }
 
-    /**
-     * Update the specified resource in storage.
-     * @param Request $request
-     * @param int $id
-     * @return Renderable
-     */
-    public function update(Request $request, $id)
+    public function store(StoreRequest $request): JsonResponse
     {
-        //
+        $data = EmployeeSchedule::create($request->all());
+        return $this->ok("succes", $data);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     * @param int $id
-     * @return Renderable
-     */
-    public function destroy($id)
+    public function show(EmployeeSchedule $schedule): JsonResponse
     {
-        //
+        return $this->ok("succes", $schedule->load('user.outlet.district'));
+    }
+
+    public function update(UpdateRequest $request, EmployeeSchedule $schedule): JsonResponse
+    {
+        $schedule->update($request->all());
+        return $this->ok("succes",  $schedule);
+    }
+
+    public function destroy(EmployeeSchedule $schedule): JsonResponse
+    {
+        $schedule->delete();
+        return $this->ok("succes", $schedule);
+    }
+
+    public function mine(): JsonResponse
+    {
+        /**
+         * @var User Auth::user()
+         */
+        return $this->ok("succes", Auth::user()->load(['schedules', 'outlet.district']));
     }
 }

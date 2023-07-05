@@ -11,8 +11,6 @@ class Config extends Model
 
     protected $table = 'configs';
 
-    protected $primaryKey = 'id_config';
-
     protected $fillable   = [
         'config_name',
         'description',

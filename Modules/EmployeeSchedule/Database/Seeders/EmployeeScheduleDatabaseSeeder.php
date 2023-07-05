@@ -4,6 +4,7 @@ namespace Modules\EmployeeSchedule\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
+use Modules\EmployeeSchedule\Entities\EmployeeSchedule;
 
 class EmployeeScheduleDatabaseSeeder extends Seeder
 {
@@ -16,6 +17,6 @@ class EmployeeScheduleDatabaseSeeder extends Seeder
     {
         Model::unguard();
 
-        // $this->call("OthersTableSeeder");
+        EmployeeSchedule::factory(50)->create();
     }
 }

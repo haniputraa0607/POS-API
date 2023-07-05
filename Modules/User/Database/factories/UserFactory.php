@@ -4,6 +4,7 @@ namespace Modules\User\Database\factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Arr;
+use KodePandai\Indonesia\Models\District;
 
 class UserFactory extends Factory
 {
@@ -34,6 +35,8 @@ class UserFactory extends Factory
             'birthdate' => $this->faker->date(),
             'type' => $type,
             'outlet_id' => rand(1, 4),
+            'district_code' => District::InRandomOrder()->first()->code,
+            'password' => bcrypt('password')
         ];
     }
 

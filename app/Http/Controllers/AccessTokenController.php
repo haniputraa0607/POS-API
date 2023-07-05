@@ -2,7 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\LoginCashierRequest;
+use App\Http\Requests\LoginCmsRequest;
+use App\Http\Requests\LoginDoctorRequest;
+use App\Traits\ApiResponse;
 use GuzzleHttp\Exception\ClientException;
+use Illuminate\Http\JsonResponse;
 use Laravel\Passport\Http\Controllers\AccessTokenController as PassportAccessTokenController;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use Psr\Http\Message\ServerRequestInterface;
@@ -12,6 +17,8 @@ use Modules\User\Entities\User;
 
 class AccessTokenController extends PassportAccessTokenController
 {
+    use ApiResponse;
+
     /**
      * Authorize a client to access the user's account.
      *
@@ -65,5 +72,35 @@ class AccessTokenController extends PassportAccessTokenController
                 throw $exception;
             });
         }
+    }
+
+    public function loginCMS(LoginCmsRequest $request): JsonResponse
+    {
+        Auth::attempt($request->all());
+        $token = auth()->user()->createToken('API Token')->accessToken;
+        $data = ['user' => auth()->user()->load('outlet.district'), 'token' => $token];
+
+        return $this->ok("success login cms", $data);
+    }
+
+    public function loginCashier(LoginCashierRequest $request): JsonResponse
+    {
+        Auth::loginUsingId(User::cashier()->isActive()->where('username', $request->username)->firstOrFail()->id);
+        $token = auth()->user()->createToken('CashierToken')->accessToken;
+        $data = ['user' => auth()->user()->load('outlet.district'), 'token' => $token];
+        return $this->ok("success login cashier", $data);
+    }
+    public function loginDoctor(LoginDoctorRequest $request): JsonResponse
+    {
+        Auth::loginUsingId(User::doctor()->isActive()->where('username', $request->username)->firstOrFail()->id);
+        $token = auth()->user()->createToken('CashierToken')->accessToken;
+        $data = ['user' => auth()->user()->load('outlet.district'), 'token' => $token];
+        return $this->ok("success login cashier", $data);
+    }
+
+    public function logout(): JsonResponse
+    {
+        Auth::user()->token()->revoke();
+        return $this->ok("success logout", []);
     }
 }
