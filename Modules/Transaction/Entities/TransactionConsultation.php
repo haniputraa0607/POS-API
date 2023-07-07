@@ -11,8 +11,9 @@ class TransactionConsultation extends Model
 
     protected $table = 'transaction_consultations';
     protected $fillable = [
-        'id_transaction',
-        'id_doctor',
+        'transaction_id',
+        'user_id',
+        'doctor_schedule_date_id',
         'schdule_date',
         'start_time',
         'end_time',
@@ -24,4 +25,5 @@ class TransactionConsultation extends Model
         'transaction_consultation_price',
         'transaction_discount'
     ];
+
 }

@@ -11,11 +11,9 @@ class Transaction extends Model
 
     protected $table = 'transactions';
     protected $fillable = [
-        'id_outlet',
-        'id_customer',
-        'id_promo_campaign_code',
-        'id_deal_voucher',
-        'id_cashier',
+        'outlet_id',
+        'customer_id',
+        'user_id',
         'transaction_date',
         'completed_at',
         'transaction_receipt_number',

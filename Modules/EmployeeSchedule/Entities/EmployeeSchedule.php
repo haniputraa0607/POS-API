@@ -7,29 +7,35 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Modules\Consultation\Entities\Consultation;
+// use Modules\Consultation\Entities\Consultation;
 use Modules\EmployeeSchedule\Database\factories\EmployeeScheduleFactory;
 use Modules\User\Entities\User;
+use Modules\EmployeeSchedule\Entities\EmployeeScheduleDate;
+use Modules\Outlet\Entities\Outlet;
 
 class EmployeeSchedule extends Model
 {
     use HasFactory;
 
-    protected $table = 'employee_shcedules';
+    protected $table = 'employee_schedules';
     protected $fillable = [
         'user_id',
-        'date',
-        'start_time',
-        'end_time',
+        'outlet_id',
+        'schedule_month',
+        'schedule_year',
     ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
-    public function consultations(): HasMany
+    public function outlet(): BelongsTo
     {
-        return $this->hasMany(Consultation::class);
+        return $this->belongsTo(Outlet::class);
+    }
+    public function employee_schedule_dates(): HasMany
+    {
+        return $this->hasMany(EmployeeScheduleDate::class);
     }
     public function scopeDoctor(Builder $query): Builder
     {
@@ -47,7 +53,7 @@ class EmployeeSchedule extends Model
     {
         return $query->whereRelation('user', 'type', 'cashier')->whereRelation('user', 'id', $id);
     }
-    
+
     protected static function newFactory()
     {
         return EmployeeScheduleFactory::new();
