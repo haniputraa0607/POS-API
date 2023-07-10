@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use KodePandai\Indonesia\Models\District;
 use Modules\Outlet\Database\factories\OutletFactory;
+use Modules\Outlet\Entities\OutletSchedule;
 
 class Outlet extends Model
 {
@@ -40,6 +41,11 @@ class Outlet extends Model
     public function district(): BelongsTo
     {
         return $this->belongsTo(District::class, 'district_code', 'code');
+    }
+
+    public function outlet_schedule(): HasMany
+    {
+        return $this->hasMany(OutletSchedule::class);
     }
 
 }
