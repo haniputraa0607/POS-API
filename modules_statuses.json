@@ -16,5 +16,6 @@
     "PaymentDetail": true,
     "Grievance": true,
     "POS": true,
-    "Doctor": true
+    "Doctor": true,
+    "Product": true
 }

@@ -14,6 +14,7 @@ use Modules\EmployeeSchedule\Entities\EmployeeSchedule;
 use Modules\Outlet\Entities\Outlet;
 use Modules\User\Database\factories\UserFactory;
 use Spatie\Permission\Traits\HasRoles;
+use Modules\User\Entities\Admin;
 
 class User extends Authenticatable
 {
@@ -38,6 +39,7 @@ class User extends Authenticatable
         'email_verified_at',
         'type',
         'outlet_id',
+        'admin_id',
         'password',
         'district_code',
         'address',
@@ -70,6 +72,11 @@ class User extends Authenticatable
         return $this->belongsTo(Outlet::class);
     }
 
+    public function admin(): BelongsTo
+    {
+        return $this->belongsTo(Admin::class);
+    }
+
     public function district(): BelongsTo
     {
         return $this->belongsTo(District::class, 'district_code', 'code');
@@ -83,6 +90,12 @@ class User extends Authenticatable
     {
         return $query->where('type', 'salesman');
     }
+
+    public function scopeAdmin(Builder $query): Builder
+    {
+        return $query->where('type', 'admin');
+    }
+
 
     public function scopeCashier(Builder $query): Builder
     {

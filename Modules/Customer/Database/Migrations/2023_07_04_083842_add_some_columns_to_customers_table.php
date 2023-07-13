@@ -20,7 +20,6 @@ return new class extends Migration
             $table->date('birth_date')->after('gender');
             $table->string('phone')->unique()->after('birth_date');
             $table->string('email')->unique()->after('phone');
-            $table->boolean('is_active')->default(true);
             $table->integer('last_transaction')->default(0)->after('email');
             $table->integer('count_transaction')->default(0)->after('last_transaction');
         });

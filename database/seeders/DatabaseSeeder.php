@@ -12,6 +12,7 @@ use Modules\Grievance\Database\Seeders\GrievanceDatabaseSeeder;
 use Modules\Outlet\Database\Seeders\OutletDatabaseSeeder;
 use Modules\Queue\Database\Seeders\QueueDatabaseSeeder;
 use Modules\User\Database\Seeders\UserDatabaseSeeder;
+use Database\Seeders\FeaturesTableSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -26,8 +27,9 @@ class DatabaseSeeder extends Seeder
             // EmployeeScheduleDatabaseSeeder::class,
             CustomerDatabaseSeeder::class,
             // QueueDatabaseSeeder::class,
-            // ConsultationDatabaseSeeder::class
+            // ConsultationDatabaseSeeder::class,
+            FeaturesTableSeeder::class
         ]);
-    
+
     }
 }

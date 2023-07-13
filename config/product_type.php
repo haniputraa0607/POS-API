@@ -1,0 +1,1 @@
+<?php return ['Product', 'Treatment'];

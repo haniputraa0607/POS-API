@@ -14,11 +14,12 @@ class Update extends FormRequest
     public function rules()
     {
         return [
+            'id' => 'required|integer',
             'name' => 'required|string',
             'gender' => 'required|in:Male,Female',
             'birth_date' => 'required|date_format:Y-m-d',
-            'phone' => 'required|unique:customers,phone,'.$this->customer->id,
-            'email' => 'required|email|unique:customers,email,'.$this->customer->id,
+            'phone' => 'required|string',
+            'email' => 'required|string',
         ];
     }
     protected function prepareForValidation(): void

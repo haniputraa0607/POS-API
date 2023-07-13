@@ -15,12 +15,12 @@ use Modules\Customer\Http\Controllers\CustomerController;
 |
 */
 
-Route::middleware('auth:api')->controller(CustomerController::class)->prefix('customer')->group(function(){
+Route::middleware(['scopes:pos'])->controller(CustomerController::class)->prefix('pos/customer')->group(function(){
     $customer = '{customer}';
+    Route::post('detail', 'showByPhone')->name('customer.show.byPhone');
+    Route::post('register', 'store')->name('customer.store');
+    Route::post('edit', 'update')->name('customer.update');
     Route::get('', 'index')->name('customer.list');
-    Route::get('show-by-phone', 'showByPhone')->name('customer.show.byPhone');
-    Route::post('', 'store')->name('customer.store');
     Route::get('{id}', 'show')->name('customer.show');
-    Route::patch($customer, 'update')->name('customer.update');
     Route::delete($customer, 'destroy')->name('customer.delete');
 });

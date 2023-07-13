@@ -1,1 +1,1 @@
-<?php return ['salesman', 'cashier'];
+<?php return ['salesman', 'cashier', 'admin'];
