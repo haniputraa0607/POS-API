@@ -36,7 +36,7 @@ class UserFactory extends Factory
             'type' => $type,
             'outlet_id' => rand(1, 4),
             'district_code' => District::InRandomOrder()->first()->code,
-            'password' => bcrypt('password')
+            'password' => bcrypt('123456')
         ];
     }
 

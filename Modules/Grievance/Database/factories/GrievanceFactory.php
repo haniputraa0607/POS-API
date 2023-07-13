@@ -3,6 +3,7 @@
 namespace Modules\Grievance\Database\factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Modules\Grievance\Entities\Grievance;
 
 class GrievanceFactory extends Factory
 {
@@ -11,7 +12,7 @@ class GrievanceFactory extends Factory
      *
      * @var string
      */
-    protected $model = \Modules\Grievance\Entities\Grievance::class;
+    protected $model = Grievance::class;
 
     /**
      * Define the model's default state.
@@ -21,7 +22,9 @@ class GrievanceFactory extends Factory
     public function definition()
     {
         return [
-            //
+            'grievance_name' => $this->faker->word(),
+            'description' => $this->faker->sentence(10),
+            'is_active' => rand(0,1),
         ];
     }
 }
