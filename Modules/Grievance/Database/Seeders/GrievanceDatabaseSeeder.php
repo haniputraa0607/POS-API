@@ -4,6 +4,7 @@ namespace Modules\Grievance\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Grievance\Entities\Grievance;
 
 class GrievanceDatabaseSeeder extends Seeder
 {
@@ -15,7 +16,6 @@ class GrievanceDatabaseSeeder extends Seeder
     public function run()
     {
         Model::unguard();
-
-        // $this->call("OthersTableSeeder");
+        Grievance::factory(10)->create();
     }
 }

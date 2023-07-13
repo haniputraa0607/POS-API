@@ -21,7 +21,9 @@ class DiagnosticFactory extends Factory
     public function definition()
     {
         return [
-            //
+            'diagnostic_name' => $this->faker->word(),
+            'description' => $this->faker->sentence(10),
+            'is_active' => rand(0,1),
         ];
     }
 }

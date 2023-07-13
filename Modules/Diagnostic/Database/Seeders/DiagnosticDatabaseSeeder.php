@@ -4,6 +4,7 @@ namespace Modules\Diagnostic\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Diagnostic\Entities\Diagnostic;
 
 class DiagnosticDatabaseSeeder extends Seeder
 {
@@ -16,6 +17,6 @@ class DiagnosticDatabaseSeeder extends Seeder
     {
         Model::unguard();
 
-        // $this->call("OthersTableSeeder");
+        Diagnostic::factory(10)->create();
     }
 }

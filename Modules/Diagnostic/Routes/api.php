@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Http\Request;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,6 +12,14 @@ use Illuminate\Http\Request;
 |
 */
 
-Route::middleware('auth:api')->get('/diagnostic', function (Request $request) {
-    return $request->user();
+use Illuminate\Support\Facades\Route;
+use Modules\Diagnostic\Http\Controllers\DiagnosticController;
+
+Route::middleware('auth:api')->controller(DiagnosticController::class)->prefix('diagnostic')->group(function () {
+    $diagnostic = '{diagnostic}';
+    Route::get('', 'index')->name('diagnostic.list');
+    Route::post('', 'store')->name('diagnostic.store');
+    Route::get($diagnostic, 'show')->name('diagnostic.show');
+    Route::patch($diagnostic, 'update')->name('diagnostic.update');
+    Route::delete($diagnostic, 'destroy')->name('diagnostic.destroy');
 });

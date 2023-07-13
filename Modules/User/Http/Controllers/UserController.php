@@ -5,6 +5,7 @@ namespace Modules\User\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Modules\User\Entities\User;
 use Modules\User\Http\Requests\UserRequest;
 
@@ -75,7 +76,6 @@ class UserController extends Controller
      */
     public function destroy(User $user):JsonResponse
     {
-        $user->delete();
-        return $this->ok("success delete user", $user);
+        return $this->ok("success delete user", Auth::user());
     }
 }
