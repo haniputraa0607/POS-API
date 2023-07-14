@@ -24,7 +24,7 @@ Route::middleware(['auth:api','scopes:be'])->prefix('be')->group(function (){
 
 });
 
-Route::middleware(['scopes:pos'])->prefix('pos')->group(function (){
+Route::middleware(['auth:api','scopes:pos'])->prefix('pos')->group(function (){
     Route::prefix('product-category')->controller(ProductCategoryController::class)->group(function () {
         Route::get('list', 'list');
     });

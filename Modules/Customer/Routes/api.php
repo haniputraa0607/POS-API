@@ -15,7 +15,7 @@ use Modules\Customer\Http\Controllers\CustomerController;
 |
 */
 
-Route::middleware(['scopes:pos'])->controller(CustomerController::class)->prefix('pos/customer')->group(function(){
+Route::middleware(['auth:api','scopes:pos'])->controller(CustomerController::class)->prefix('pos/customer')->group(function(){
     $customer = '{customer}';
     Route::post('detail', 'showByPhone')->name('customer.show.byPhone');
     Route::post('register', 'store')->name('customer.store');

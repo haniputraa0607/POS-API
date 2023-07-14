@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Product\Entities\Product;
+use Modules\Outlet\Http\Controllers\OutletController;
 
 class ProductController extends Controller
 {
@@ -23,7 +24,7 @@ class ProductController extends Controller
             return $this->error('Type cant be null');
         }
 
-        if($post['type'] == 'Product' && (!isset($post['product_categoriy_id']) || $post['product_categoriy_id'] == '')){
+        if($post['type'] == 'Product' && (!isset($post['product_category_id']) || $post['product_category_id'] == '')){
             return $this->error('Product Category name cant be null');
         }
 
@@ -41,11 +42,33 @@ class ProductController extends Controller
     public function list(Request $request):mixed
     {
         $post = $request->json()->all();
+        $cashie = $request->user();
+        $outlet =  (new OutletController)->getOutletByCode($cashie['outlet_id']??null);
 
-        $product = Product::where('product_categoriy_id', $post['id'])->select('id','product_name')->product()->get()->toArray();
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+
+        $product = Product::with(['global_price','outlet_price' => function($outlet_price) use ($outlet){$outlet_price->where('outlet_id',$outlet['id']);}, 'outlet_stock'])->where('product_category_id', $post['id'])->select('id','product_name')->product()->get()->toArray();
         if(!$product){
             return $this->error('Something Error');
         }
+
+        $product = array_map(function($value){
+
+            if(isset($value['outlet_price'][0]['price']) ?? false){
+                $price = $value['outlet_price'][0]['price'];
+            }else{
+                $price = $value['global_price']['price'];
+            }
+            $data = [
+                'id' => $value['id'],
+                'product_name' => $value['product_name'],
+                'price' => $price,
+                'stock' => $value['outlet_stock']['stock'] ?? 0
+            ];
+            return $data;
+        },$product);
         return $this->ok('success', $product);
     }
 }

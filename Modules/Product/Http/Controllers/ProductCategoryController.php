@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Product\Entities\ProductCategory;
+use Modules\Outlet\Http\Controllers\OutletController;
 
 class ProductCategoryController extends Controller
 {
@@ -34,6 +35,12 @@ class ProductCategoryController extends Controller
     public function list(Request $request):JsonResponse
     {
         $post = $request->json()->all();
+        $cashie = $request->user();
+        $outlet =  (new OutletController)->getOutletByCode($cashie['outlet_id']??null);
+
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
 
         $productCategories = ProductCategory::select('id','product_category_name')->get()->toArray();
         if(!$productCategories){
