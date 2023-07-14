@@ -22,7 +22,7 @@ class CheckScopes
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle($request, Closure $next, $scope = null, $scope2 = null): Response
+    public function handle($request, Closure $next, $scope = null, $scope2 = null): mixed
     {
         $mtScope = ['be', 'pos', 'doctor', 'landing-page'];
         if (in_array($scope, $mtScope) || in_array($scope2, $mtScope)) {

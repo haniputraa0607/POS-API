@@ -5,6 +5,7 @@ namespace Modules\Product\Entities;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Product\Entities\Product;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductCategory extends Model
 {
