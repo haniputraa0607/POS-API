@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\User\Entities\User;
 use Modules\User\Http\Requests\UserRequest;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Models\Feature;
 use Modules\User\Entities\Admin;
 
