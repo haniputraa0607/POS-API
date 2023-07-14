@@ -10,15 +10,15 @@ class Feature extends Model
 {
     use HasFactory;
 
-     protected $fillable = [
+    protected $fillable = [
         'feature_type',
         'feature_module',
         'show_hide',
         'order'
-     ];
+    ];
 
-     public function users()
-     {
-         return $this->belongsToMany(User::class);
-     }
+    public function users()
+    {
+        return $this->belongsToMany(User::class);
+    }
 }

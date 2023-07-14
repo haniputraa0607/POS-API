@@ -14,6 +14,7 @@
 
 use Modules\User\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 
 Route::middleware('auth:api')->get('/banks', function () {
     return response()->json([
@@ -31,4 +32,10 @@ Route::middleware('auth:api')->controller(UserController::class)->prefix('/user'
     Route::get($user, 'show')->name('user.detail');
     Route::patch($user, 'update')->name('user.update');
     Route::delete($user, 'destroy')->name('user.delete');
+});
+
+Route::middleware(['auth:api','scopes:be'])->controller(UserController::class)->prefix('be')->group(function (){
+    Route::get('user', 'detailUser');
+    Route::get('list-service', 'listService');
+
 });

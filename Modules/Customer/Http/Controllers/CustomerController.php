@@ -21,7 +21,9 @@ class CustomerController extends Controller
 
     public function store(Create $request): JsonResponse
     {
-        $customer = Customer::create($request->all());
+        $post = $request->json()->all();
+
+        $customer = Customer::create($post);
         return $this->ok('success', $customer);
     }
 
@@ -30,17 +32,40 @@ class CustomerController extends Controller
         $customer = Customer::isActive()->whereId($id)->firstOrFail();
         return $this->ok('success', $customer);
     }
-   
+
     public function showByPhone(Request $request): JsonResponse
     {
-        $data = Customer::where('phone', (string)$request->phone)->firstOrFail();
+        $post = $request->json()->all();
+
+        $data = Customer::where('phone', (string)$post['phone'])->firstOrFail();
         return $this->ok('success', $data);
     }
 
-    public function update(Update $request, Customer $customer): JsonResponse
+    public function update(Update $request): mixed
     {
-        $customer->update($request->all());
-        return $this->ok('success', $customer);
+        $post = $request->json()->all();
+
+        $customer = Customer::where('id', $post['id'])->first();
+        if($customer){
+
+            $request->validate([
+                'phone' => 'required|unique:customers,phone,'.$customer['id'],
+                'email' => 'required|email|unique:customers,email,'.$customer['id'],
+            ]);
+
+            $update = [
+                "name"       => $post['name'],
+                "gender"     => $post['gender'],
+                "birth_date" => $post['birth_date'],
+                "phone"      => $post['phone'],
+                "email"      => $post['email'],
+                "is_active"  => $post['is_active'],
+            ];
+            $customer->update($request->all());
+            return $this->ok('success', $customer);
+        }else{
+            return $this->error('customer not found');
+        }
     }
 
     public function destroy(Customer $customer): JsonResponse

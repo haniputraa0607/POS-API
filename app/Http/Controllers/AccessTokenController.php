@@ -49,6 +49,9 @@ class AccessTokenController extends PassportAccessTokenController
                             if ($request->getParsedBody()['scope'] == 'doctor' && strtolower($user->type) == 'cashier') {
                                 return response()->json(['status' => 'fail', 'messages' => "You don't have access in this app"]);
                             }
+                            if ($request->getParsedBody()['scope'] == 'be' && strtolower($user->type) != 'admin') {
+                                return response()->json(['status' => 'fail', 'messages' => "You don't have access in this app"]);
+                            }
                         } else {
                             return response()->json(['status' => 'fail', 'messages' => 'Incompleted input']);
                         }
