@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
             // EmployeeScheduleDatabaseSeeder::class,
             CustomerDatabaseSeeder::class,
             // QueueDatabaseSeeder::class,
-            // ConsultationDatabaseSeeder::class,
+            // ConsultationDatabaseSeeder::class
             FeaturesTableSeeder::class
         ]);
 
