@@ -20,3 +20,9 @@ Route::middleware('scopes:doctor')->controller(DoctorController::class)->prefix(
     Route::get('list-service', 'listService');
 
 });
+
+Route::middleware(['auth:api','scopes:pos'])->controller(DoctorController::class)->prefix('pos/consultation')->group(function(){
+    Route::prefix('doctor')->group(function () {
+        Route::post('/', 'getDoctor');
+    });
+});

@@ -35,8 +35,8 @@ class ProductCategoryController extends Controller
     public function list(Request $request):JsonResponse
     {
         $post = $request->json()->all();
-        $cashie = $request->user();
-        $outlet =  (new OutletController)->getOutletByCode($cashie['outlet_id']??null);
+        $cashier = $request->user();
+        $outlet =  $cashier->outlet;
 
         if(!$outlet){
             return $this->error('Outlet not found');
