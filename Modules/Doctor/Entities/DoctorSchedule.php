@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Outlet\Entities\Outlet;
 use Modules\Doctor\Entities\DoctorScheduleDate;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DoctorSchedule extends Model
 {
@@ -27,7 +29,7 @@ class DoctorSchedule extends Model
     {
         return $this->belongsTo(Outlet::class);
     }
-    public function doctor_schedule_dates(): HasMany
+    public function schedule_dates(): HasMany
     {
         return $this->hasMany(DoctorScheduleDate::class);
     }

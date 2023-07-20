@@ -18,8 +18,8 @@ class POSController extends Controller
 
     public function home(Request $request):mixed
     {
-        $cashie = $request->user();
-        $outlet =  (new OutletController)->getOutletByCode($cashie['outlet_id']??null);
+        $cashier = $request->user();
+        $outlet = $cashier->outlet;
 
         if($outlet){
             $data = [
@@ -40,8 +40,8 @@ class POSController extends Controller
 
     public function listService(Request $request):JsonResponse
     {
-        $cashie = $request->user();
-        $outlet =  (new OutletController)->getOutletByCode($cashie['outlet_id']??null);
+        $cashier = $request->user();
+        $outlet = $cashier->outlet;
 
         if(!$outlet){
             return $this->error('Outlet not found');

@@ -43,15 +43,4 @@ class OutletController extends Controller
         return $this->ok("success get data all outlet activities", config('outlet_activities'));
     }
 
-    public function getOutletByCode($id):mixed
-    {
-        if(!$id){
-            return false;
-        }
-
-        $outlet = Outlet::where('id', $id)->where('status', 'Active')
-        ->with('district.city.province')
-        ->first();
-        return $outlet;
-    }
 }

@@ -15,6 +15,7 @@ use Modules\Outlet\Entities\Outlet;
 use Modules\User\Database\factories\UserFactory;
 use Spatie\Permission\Traits\HasRoles;
 use Modules\User\Entities\Admin;
+use Modules\Doctor\Entities\DoctorSchedule;
 
 class User extends Authenticatable
 {
@@ -81,9 +82,15 @@ class User extends Authenticatable
     {
         return $this->belongsTo(District::class, 'district_code', 'code');
     }
-    public function schedules(): HasMany
+
+    public function employee_schedules(): HasMany
     {
-        return $this->hasMany(EmployeeSchedule::class)->orderBy('date', 'desc');
+        return $this->hasMany(EmployeeSchedule::class);
+    }
+
+    public function doctor_schedules(): HasMany
+    {
+        return $this->hasMany(DoctorSchedule::class);
     }
 
     public function scopeDoctor(Builder $query): Builder

@@ -10,7 +10,7 @@ class DoctorShift extends Model
 {
     use HasFactory;
 
-    protected $table = 'doctor_shift';
+    protected $table = 'doctor_shifts';
     protected $fillable = [
         'user_id',
         'day',
