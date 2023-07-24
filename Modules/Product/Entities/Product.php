@@ -8,10 +8,12 @@ use Modules\Product\Entities\ProductCategory;
 use Modules\Product\Entities\ProductGlobalPrice;
 use Modules\Product\Entities\ProductOutletPrice;
 use Modules\Product\Entities\ProductOutletStock;
+use Modules\Product\Entities\TreatmentOutlet;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Modules\Customer\Entities\TreatmentPatient;
 
 class Product extends Model
 {
@@ -53,8 +55,18 @@ class Product extends Model
         return $this->hasMany(ProductOutletPrice::class);
     }
 
-    public function outlet_stock(): HasOne
+    public function outlet_stock(): HasMany
     {
-        return $this->hasOne(ProductOutletStock::class);
+        return $this->hasMany(ProductOutletStock::class);
+    }
+
+    public function outlet_treatment(): HasMany
+    {
+        return $this->hasMany(TreatmentOutlet::class, 'treatment_id', 'id');
+    }
+
+    public function treatment_patients(): HasMany
+    {
+        return $this->hasMany(TreatmentPatient::class, 'treatment_id', 'id');
     }
 }

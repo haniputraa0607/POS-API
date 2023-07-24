@@ -33,4 +33,9 @@ Route::middleware(['auth:api','scopes:pos'])->prefix('pos')->group(function (){
         Route::post('list', 'list');
     });
 
+    Route::prefix('treatment')->controller(TreatmentController::class)->group(function () {
+        Route::post('list', 'list');
+        Route::post('customer-history', 'customerHistory');
+    });
+
 });

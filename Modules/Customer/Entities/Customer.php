@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Customer\Database\factories\CustomerFactory;
+use Modules\Customer\Entities\TreatmentPatient;
 
 class Customer extends Model
 {
@@ -34,6 +35,12 @@ class Customer extends Model
     {
         return $query->where('is_active', true);
     }
+
+    public function treatments(): HasMany
+    {
+        return $this->hasMany(TreatmentPatient::class, 'patient_id', 'id');
+    }
+
     protected static function newFactory()
     {
         return CustomerFactory::new();
