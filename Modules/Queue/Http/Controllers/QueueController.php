@@ -14,7 +14,7 @@ class QueueController extends Controller
 
     public function generate(Request $request): JsonResponse
     {
-        $code = (int) substr(Queue::where('outlet_id', Auth::user()->outlet_id)->where('type', $request->type)->today()->latest()->first()->code, 1, 2) + 1;
+        $code = (int) substr(Queue::where('outlet_id', Auth::user()->outlet_id)->where('type', $request->type)->today()->latest()->first()->code ?? ucfirst(substr($request->type, 0, 1)) .'00', 1, 2) + 1;
         return $this->ok("success", ['code' => MyHelper::addLeadingZeros(ucfirst(substr($request->type, 0, 1)) . $code)]);
     }
 

@@ -4,11 +4,14 @@ namespace Modules\Doctor\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Doctor\Database\factories\DoctorDayFactory;
 use Modules\User\Entities\User;
 
 class DoctorShift extends Model
 {
     use HasFactory;
+    public const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
     protected $table = 'doctor_shifts';
     protected $fillable = [
@@ -27,6 +30,6 @@ class DoctorShift extends Model
 
     protected static function newFactory()
     {
-        return \Modules\Doctor\Database\factories\DoctorDayFactory::new();
+        return DoctorDayFactory::new();
     }
 }

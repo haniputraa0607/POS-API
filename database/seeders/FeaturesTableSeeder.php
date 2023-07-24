@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Http\Models\Feature;
+use Modules\User\Entities\Admin;
+use Modules\User\Entities\AdminFeature;
 
 class FeaturesTableSeeder extends Seeder
 {
@@ -324,5 +326,8 @@ class FeaturesTableSeeder extends Seeder
                 'feature_module' => $row['feature_module'],
             ]);
         }
+
+        AdminFeature::factory(50)->create();
+
     }
 }

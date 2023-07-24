@@ -4,6 +4,8 @@ namespace Modules\Doctor\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Doctor\Database\factories\DoctorScheduleDateFactory;
 use Modules\Doctor\Entities\DoctorSchedule;
 
 class DoctorScheduleDate extends Model
@@ -17,6 +19,10 @@ class DoctorScheduleDate extends Model
         'date'
     ];
 
+    public function doctor_shit(): BelongsTo
+    {
+        return $this->belongsTo(DoctorShift::class);
+    }
     public function doctor_schedule(): BelongsTo
     {
         return $this->belongsTo(DoctorSchedule::class);
@@ -24,6 +30,6 @@ class DoctorScheduleDate extends Model
 
     protected static function newFactory()
     {
-        return \Modules\Doctor\Database\factories\DoctorScheduleDateFactory::new();
+        return DoctorScheduleDateFactory::new();
     }
 }
