@@ -56,7 +56,9 @@ class Handler extends ExceptionHandler
                         $error = $e->getMessage() == "Route [login] not defined." ? $this->unauthorized("Please login") : $this->notFound($e->getMessage());
                         break;
                     default:
-                        $error = $this->error($e->getMessage(), $statusCode);
+                        $debugmode = env('APP_DEBUG', true);
+                        $error = $this->error($debugmode == true ? $e->getMessage() : "Something went wrong", $statusCode);
+                        // $error = $this->error($e->getMessage(), $statusCode);
                         break;
                 }
             }

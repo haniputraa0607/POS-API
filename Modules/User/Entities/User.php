@@ -2,10 +2,12 @@
 
 namespace Modules\User\Entities;
 
+use App\Http\Models\Feature;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use KodePandai\Indonesia\Models\District;
@@ -73,9 +75,9 @@ class User extends Authenticatable
         return $this->belongsTo(Outlet::class);
     }
 
-    public function admin(): BelongsTo
+    public function admin(): HasOne
     {
-        return $this->belongsTo(Admin::class);
+        return $this->HasOne(Admin::class, 'id', 'id');
     }
 
     public function district(): BelongsTo
@@ -124,9 +126,9 @@ class User extends Authenticatable
         return UserFactory::new();
     }
 
-    public function features()
+    public function get_features(): mixed
     {
-        return $this->belongsToMany(\App\Http\Models\Feature::class, 'user_features', 'id_user', 'id_feature');
+        return $this->level == 'Super Admin' ? Feature::all()->pluck('id') : $this->admin->admin_features->map(fn ($item) => $item->feature_id);
     }
 
     public function findForPassport(string $username): User

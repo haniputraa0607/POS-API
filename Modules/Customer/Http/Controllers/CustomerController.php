@@ -21,9 +21,7 @@ class CustomerController extends Controller
 
     public function store(Create $request): JsonResponse
     {
-        $post = $request->json()->all();
-
-        $customer = Customer::create($post);
+        $customer = Customer::create($request->all());
         return $this->ok('success', $customer);
     }
 
@@ -35,37 +33,15 @@ class CustomerController extends Controller
 
     public function showByPhone(Request $request): JsonResponse
     {
-        $post = $request->json()->all();
-
-        $data = Customer::where('phone', (string)$post['phone'])->firstOrFail();
+        $data = Customer::where('phone', (string)$request->phone)->firstOrFail();
         return $this->ok('success', $data);
     }
 
     public function update(Update $request): mixed
     {
-        $post = $request->json()->all();
-
-        $customer = Customer::where('id', $post['id'])->first();
-        if($customer){
-
-            $request->validate([
-                'phone' => 'required|unique:customers,phone,'.$customer['id'],
-                'email' => 'required|email|unique:customers,email,'.$customer['id'],
-            ]);
-
-            $update = [
-                "name"       => $post['name'],
-                "gender"     => $post['gender'],
-                "birth_date" => $post['birth_date'],
-                "phone"      => $post['phone'],
-                "email"      => $post['email'],
-                "is_active"  => $post['is_active'],
-            ];
-            $customer->update($request->all());
-            return $this->ok('success', $customer);
-        }else{
-            return $this->error('customer not found');
-        }
+        $customer = Customer::where('id', $request->id)->firstOrFail();
+        $customer->update($request->all());
+        return $this->ok('success', $customer);
     }
 
     public function destroy(Customer $customer): JsonResponse
