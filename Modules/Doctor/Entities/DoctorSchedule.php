@@ -4,6 +4,9 @@ namespace Modules\Doctor\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Doctor\Database\factories\DoctorScheduleFactory;
 use Modules\Outlet\Entities\Outlet;
 use Modules\Doctor\Entities\DoctorScheduleDate;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,6 +39,6 @@ class DoctorSchedule extends Model
 
     protected static function newFactory()
     {
-        return \Modules\Doctor\Database\factories\DoctorScheduleFactory::new();
+        return DoctorScheduleFactory::new();
     }
 }

@@ -24,7 +24,7 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function doctor(Request $request):mixed
+    public function doctor(Request $request):JsonResponse
     {
         return $this->ok(
             "success get data all doctor",
@@ -50,22 +50,8 @@ class UserController extends Controller
 
     public function detailUser(Request $request):mixed
     {
-        $data['user'] = User::where('id', $request->user()->id)->with(['admin'])->first();
-
-        if($data['user']['level'] == 'Super Admin'){
-            $features = Feature::select('id')->get()->toArray();
-        }else{
-            $features = Admin::join('admin_features', 'admin_features.admin_id', 'admins.id')
-            ->join('features', 'features.id', 'admin_features.feature_id')
-            ->where([
-                ['admins.id', $data['user']['admin_id']]
-            ])
-            ->select('features.id')->get()->toArray();
-        }
-
-        $features = array_column($features, 'id');
-
-        $data['features'] = $features;
+        $data['user'] = Auth::user();
+        $data['features'] = Auth::user()->get_features();
 
         return $this->ok(
             "success get data user",
