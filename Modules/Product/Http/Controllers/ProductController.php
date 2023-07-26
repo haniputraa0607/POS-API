@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Product\Entities\Product;
 use Modules\Outlet\Http\Controllers\OutletController;
+use Modules\Product\Entities\ProductOutletStockLog;
 
 class ProductController extends Controller
 {
@@ -49,7 +50,14 @@ class ProductController extends Controller
             return $this->error('Outlet not found');
         }
 
-        $product = Product::with(['global_price','outlet_price' => function($outlet_price) use ($outlet){$outlet_price->where('outlet_id',$outlet['id']);}, 'outlet_stock' => function($outlet_stock) use ($outlet){$outlet_stock->where('outlet_id',$outlet['id']);}])->where('product_category_id', $post['id'])->select('id','product_name')->product()->get()->toArray();
+        $product = Product::with(['global_price','outlet_price' => function($outlet_price) use ($outlet){
+            $outlet_price->where('outlet_id',$outlet['id']);
+        }, 'outlet_stock' => function($outlet_stock) use ($outlet){
+            $outlet_stock->where('outlet_id',$outlet['id']);
+        }])->where('product_category_id', $post['id'])
+        ->select('id','product_name')
+        ->product()
+        ->get()->toArray();
         if(!$product){
             return $this->error('Something Error');
         }
@@ -71,5 +79,18 @@ class ProductController extends Controller
         },$product);
 
         return $this->ok('success', $product);
+    }
+
+    public function addLogProductStockLog($id, $qty, $stock_before, $stock_after, $source, $desc){
+
+        $stock_log = ProductOutletStockLog::create([
+            'product_outlet_stock_id' => $id,
+            'qty'                     => $qty,
+            'stock_before'            => $stock_before,
+            'stock_after'             => $stock_after,
+            'source'                  => $source,
+            'description'            => $desc ?? null,
+        ]);
+
     }
 }

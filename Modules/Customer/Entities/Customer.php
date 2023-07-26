@@ -21,8 +21,9 @@ class Customer extends Model
         'birth_date',
         'phone',
         'email',
-        'last_transaction',
         'count_transaction',
+        'last_transaction_id',
+        'last_order_id',
         'is_active'
     ];
 
