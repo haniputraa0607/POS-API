@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Customer\Database\factories\CustomerFactory;
+use Modules\Customer\Entities\TreatmentPatient;
 
 class Customer extends Model
 {
@@ -20,8 +21,9 @@ class Customer extends Model
         'birth_date',
         'phone',
         'email',
-        'last_transaction',
         'count_transaction',
+        'last_transaction_id',
+        'last_order_id',
         'is_active'
     ];
 
@@ -34,6 +36,12 @@ class Customer extends Model
     {
         return $query->where('is_active', true);
     }
+
+    public function treatments(): HasMany
+    {
+        return $this->hasMany(TreatmentPatient::class, 'patient_id', 'id');
+    }
+
     protected static function newFactory()
     {
         return CustomerFactory::new();

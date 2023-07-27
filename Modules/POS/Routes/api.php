@@ -15,8 +15,13 @@ use Modules\POS\Http\Controllers\POSController;
 |
 */
 
-Route::middleware(['auth:api','scopes:pos'])->controller(POSController::class)->prefix('pos-order')->group(function (){
+Route::middleware(['auth:api','scopes:pos'])->controller(POSController::class)->prefix('pos')->group(function (){
     Route::get('home', 'home');
     Route::get('list-service', 'listService');
 
+    Route::prefix('order')->controller(POSController::class)->group(function () {
+        Route::post('/', 'getOrder');
+        Route::post('add', 'addOrder');
+        Route::post('delete', 'deleteOrder');
+    });
 });

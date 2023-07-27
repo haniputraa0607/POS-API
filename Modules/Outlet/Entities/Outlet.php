@@ -5,11 +5,12 @@ namespace Modules\Outlet\Entities;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use KodePandai\Indonesia\Models\District;
 use Modules\Outlet\Database\factories\OutletFactory;
 use Modules\Outlet\Entities\OutletSchedule;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Outlet extends Model
 {

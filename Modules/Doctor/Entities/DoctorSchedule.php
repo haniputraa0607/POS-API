@@ -9,8 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Doctor\Database\factories\DoctorScheduleFactory;
 use Modules\Outlet\Entities\Outlet;
 use Modules\Doctor\Entities\DoctorScheduleDate;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DoctorSchedule extends Model
 {

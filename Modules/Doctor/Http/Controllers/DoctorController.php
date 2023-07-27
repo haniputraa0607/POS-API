@@ -111,8 +111,11 @@ class DoctorController extends Controller
                 ];
             }
         }
-
-        return $this->ok('', $list_doctors);
+        $return = [
+            'available' => count($list_doctors),
+            'list_doctors' => $list_doctors,
+        ];
+        return $this->ok('', $return);
 
     }
 }

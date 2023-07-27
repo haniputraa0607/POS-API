@@ -46,7 +46,10 @@ class AccessTokenController extends PassportAccessTokenController
                         // }
 
                         if (isset($request->getParsedBody()['scope'])) {
-                            if ($request->getParsedBody()['scope'] == 'doctor' && strtolower($user->type) == 'cashier') {
+                            if ($request->getParsedBody()['scope'] == 'doctor' && strtolower($user->type) != 'salesman') {
+                                return response()->json(['status' => 'fail', 'messages' => "You don't have access in this app"]);
+                            }
+                            if ($request->getParsedBody()['scope'] == 'pos' && strtolower($user->type) != 'cashier') {
                                 return response()->json(['status' => 'fail', 'messages' => "You don't have access in this app"]);
                             }
                             if ($request->getParsedBody()['scope'] == 'be' && strtolower($user->type) != 'admin') {
@@ -58,6 +61,8 @@ class AccessTokenController extends PassportAccessTokenController
                     } else {
                         return response()->json(['status' => 'fail', 'messages' => 'Usermame atau pin tidak sesuai.']);
                     }
+                }else {
+                    return response()->json(['status' => 'fail', 'messages' => 'Usermame atau pin tidak sesuai.']);
                 }
             }
 
