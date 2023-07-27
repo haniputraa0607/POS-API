@@ -22,5 +22,6 @@ Route::middleware(['auth:api','scopes:pos'])->controller(POSController::class)->
     Route::prefix('order')->controller(POSController::class)->group(function () {
         Route::post('/', 'getOrder');
         Route::post('add', 'addOrder');
+        Route::post('delete', 'deleteOrder');
     });
 });
