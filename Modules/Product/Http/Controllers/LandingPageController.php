@@ -21,37 +21,31 @@ class LandingPageController extends Controller
     public function list(Request $request):JsonResponse
     {
         $post = $request->json()->all();
-        if(empty($post['category'])){
-            return $this->error('Category is empty');
-        }
-        if(empty($post['order_by'])){
-            return $this->error('Order By is empty');
-        }
-        $orderBy = [
-            'ASC',
-            'DESC'
-        ];
-        if(!in_array($post['order_by'], $orderBy, TRUE)){
-            return $this->error('Order By cannot be other than asc and desc');
-        }
-        $products = Product::with(['global_price', 'product_category'])->orderBy('product_name', $post['order_by'])->paginate(10);
-        if($post['category'] != 'all'){
-            $dataCategory = ProductCategory::find($post['category']);
-            if(empty($dataCategory)){
-                return $this->error('Category not found');
-            }
-            $products->where('product_category_id', $post['category']);
-        }
+        $category = $post['category'];
+        $sortBy = $post['order_by'];
+        $products = Product::with(['global_price', 'product_category'])
+        ->when($category, function ($query) use ($category) {
+            return $query->where('product_category_id', $category);
+        })
+        ->when($sortBy, function ($query, $sortBy) {
+            return $query->orderBy('product_name', $sortBy);
+        })
+        ->paginate(10);
         return $this->ok('success', $products);
     }
 
     public function detail(Request $request):JsonResponse
     {
         $post = $request->json()->all();
-        if(empty($post['id'])){
-            return $this->error('ID Product is empty');
+        $id = $post['id'];
+        if(empty($id)){
+            return $this->error('ID Not found');
         }
-        $products = Product::with(['global_price', 'product_category'])->where(['id' => $post['id']])->get();
+        $products = Product::with(['global_price', 'product_category'])
+        ->when($id, function ($query) use ($id) {
+            return $query->where('id', $id);
+        })
+        ->get();
         if(empty($products)){
             return $this->error('Product Not Found');
         }
