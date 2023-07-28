@@ -39,3 +39,10 @@ Route::middleware(['auth:api','scopes:pos'])->prefix('pos')->group(function (){
     });
 
 });
+
+Route::middleware(['auth:api','scopes:be'])->prefix('landing-page')->group(function(){
+    Route::prefix('product')->controller(LandingPageController::class)->group(function(){
+        Route::post('list', 'list');
+        Route::post('detail', 'detail');
+    });
+});
