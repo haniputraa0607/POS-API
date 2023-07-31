@@ -39,14 +39,25 @@ class DoctorController extends Controller
 
     public function listService(Request $request){
 
-        $data = [
-            'service' => [
-                'product' => true,
-                'treatment' => true,
-                'consultation' => true,
-                'prescription' => true
-            ]
+        $doctor = $request->user();
+        $outlet = $doctor->outlet;
+
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+
+        $outlet_service = json_decode($outlet['activities'], true) ?? [];
+        $data['service'] = [];
+
+        foreach($outlet_service ?? [] as $key => $serv){
+
+            $data['service'][] = [
+                'icon' => 'tes',
+                'icon_active' => 'tes',
+                'title' => $serv == 'consultation' ? 'Overview' : ($serv == 'prescription' ? 'Prescription' : ($serv == 'product' ? 'Product' : ($serv == 'treatment' ? 'Treatment' : '')))
             ];
+
+        }
 
         return $this->ok('', $data);
 

@@ -42,6 +42,13 @@ return [
             'after_commit' => false,
         ],
 
+        'generatequeueorder' => [
+            'driver' => 'database',
+            'table' => 'generate_queue_order',
+            'queue' => 'generatequeueorder',
+            'retry_after' => 90,
+        ],
+
         'beanstalkd' => [
             'driver' => 'beanstalkd',
             'host' => 'localhost',
