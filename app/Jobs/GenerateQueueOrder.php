@@ -9,6 +9,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Modules\Order\Entities\Order;
+use Modules\Order\Entities\OrderConsultation;
 use Modules\Order\Entities\OrderProduct;
 
 class GenerateQueueOrder implements ShouldQueue
@@ -49,6 +50,8 @@ class GenerateQueueOrder implements ShouldQueue
                 $queue_code = 'P'.$queue;
             }
 
+            $update = OrderProduct::where('id', $order_product_id)->update(['queue'=>$queue,'queue_code'=>$queue_code]);
+
         }elseif($type == 'treatment'){
             $queue = OrderProduct::whereHas('order', function($order) use($order_id, $outlet_id){
                 $order->where('id', '<>', $order_id);
@@ -64,8 +67,28 @@ class GenerateQueueOrder implements ShouldQueue
             }else{
                 $queue_code = 'T'.$queue;
             }
+
+            $update = OrderProduct::where('id', $order_product_id)->update(['queue'=>$queue,'queue_code'=>$queue_code]);
+
+        }elseif($type == 'consultation'){
+            $queue = OrderConsultation::whereHas('order', function($order) use($order_id, $outlet_id){
+                $order->where('id', '<>', $order_id);
+                $order->where('outlet_id', $outlet_id);
+            })->whereDate('schedule_date', date('Y-m-d', strtotime($this->data['schedule_date'])))
+            ->where('doctor_id', $this->data['doctor_id'])
+            ->max('queue') + 1;
+
+            if($queue<10){
+                $queue_code = 'C00'.$queue;
+            }elseif($queue<100){
+                $queue_code = 'C0'.$queue;
+            }else{
+                $queue_code = 'C'.$queue;
+            }
+
+            $update = OrderConsultation::where('id', $order_product_id)->update(['queue'=>$queue,'queue_code'=>$queue_code]);
+
         }
 
-        $update = OrderProduct::where('id', $order_product_id)->update(['queue'=>$queue,'queue_code'=>$queue_code]);
     }
 }

@@ -101,14 +101,16 @@ class DoctorController extends Controller
         foreach($doctors ?? [] as $key => $doc){
 
             $day = date('l', strtotime($date));
-            $shifts = DoctorShift::where('user_id', $doc['id'])->where('day',$day)->get()->toArray();
+            $shifts = DoctorShift::with(['order_consultations', function($order_consultation) use($date){
+                $order_consultation->whereDate('schedule_date', $date);
+            }])->where('user_id', $doc['id'])->where('day',$day)->get()->toArray();
 
             $doc_shift = [];
             foreach($shifts ?? [] as $key_2 =>$shift){
                 $doc_shift[] = [
                     'id_doctor_shift' => $shift['id'],
                     'time'            => date('H:i',strtotime($shift['start'])).' - '.date('H:i',strtotime($shift['end'])),
-                    'quote'           => $shift['quota']
+                    'quote'           => $shift['quota'] - count($shift['order_consultations'])
                 ];
             }
 

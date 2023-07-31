@@ -333,8 +333,9 @@ class POSController extends Controller
                         'order_id'          => $order['id'],
                         'order_product_id'  => $create_order_consultation['id'],
                         'outlet_id'         => $outlet['id'],
-                        'type'              => 'treatment',
-                        'schedule_date'     => date('Y-m-d', strtotime($create_order_consultation['schedule_date']))
+                        'type'              => 'consultation',
+                        'schedule_date'     => date('Y-m-d', strtotime($create_order_consultation['schedule_date'])),
+                        'doctor_id'         => $doctor['id']
                     ];
 
                     $order->update([
@@ -345,7 +346,7 @@ class POSController extends Controller
 
                     DB::commit();
 
-                    // $generate = GenerateQueueOrder::dispatch($send)->onConnection('generatequeueorder');
+                    $generate = GenerateQueueOrder::dispatch($send)->onConnection('generatequeueorder');
                     return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Succes to add new order');
 
                 }
