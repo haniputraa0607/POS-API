@@ -30,6 +30,7 @@ class Order extends Model
         'order_tax',
         'order_grandtotal',
         'send_to_transaction',
+        'is_submited',
     ];
 
     public function order_products(): HasMany

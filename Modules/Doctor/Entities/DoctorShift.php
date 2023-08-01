@@ -37,6 +37,6 @@ class DoctorShift extends Model
 
     public function order_consultations(): HasMany
     {
-        return $this->hasMany(OrderConsultation::class, 'order_consultation_id', 'id');
+        return $this->hasMany(OrderConsultation::class);
     }
 }
