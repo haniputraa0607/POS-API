@@ -14,9 +14,9 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('outlets', function (Blueprint $table) {
+        // Schema::table('outlets', function (Blueprint $table) {
             DB::statement('ALTER TABLE "outlets" ALTER COLUMN "status" SET DEFAULT \'Active\'');
-        });
+        // });
     }
 
     /**
@@ -26,8 +26,8 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('outlets', function (Blueprint $table) {
+        // Schema::table('outlets', function (Blueprint $table) {
             DB::statement('ALTER TABLE "outlets" ALTER COLUMN "status" DROP DEFAULT');
-        });
+        // });
     }
 };
