@@ -7,8 +7,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Product\Entities\Product;
+use Modules\Product\Entities\ProductGlobalPrice;
 use Modules\Outlet\Http\Controllers\OutletController;
 use Modules\Product\Entities\ProductOutletStockLog;
+use Modules\Product\Http\Requests\ProductRequest;
 
 class ProductController extends Controller
 {
@@ -33,11 +35,48 @@ class ProductController extends Controller
             return $this->error('Product name cant be null');
         }
 
+        if(!isset($post['price'])){
+            return $this->error('Global Price cant be null');
+        }
+
         $store = Product::create($post);
+        $globalPrice = [
+            'price' => $post['price'],
+        ];
+        $store->global_price()->create($globalPrice);
         if(!$store){
             return $this->error('Something Error');
         }
         return $this->ok('success', $store);
+    }
+
+    public function update(Request $request, $id):JsonResponse
+    {
+        $post = $request->json()->all();
+        if(!$post || !isset($post['type']) || $post['type'] == ''){
+            return $this->error('Type cant be null');
+        }
+
+        if($post['type'] == 'Product' && (!isset($post['product_category_id']) || $post['product_category_id'] == '')){
+            return $this->error('Product Category name cant be null');
+        }
+
+        if(!isset($post['product_name']) || $post['product_name'] == ''){
+            return $this->error('Product name cant be null');
+        }
+
+        if(!isset($post['price'])){
+            return $this->error('Price cant be null');
+        }
+        $store = Product::find($id)->update($post);
+        $globalPrice = [
+            'price' => $post['price'],
+        ];
+        $price = ProductGlobalPrice::where(['product_id' => $id])->update($globalPrice);
+        if(!$store){
+            return $this->error('Something Error');
+        }
+        return $this->ok('Success Update Produk', $store);
     }
 
     public function list(Request $request):mixed
@@ -80,6 +119,13 @@ class ProductController extends Controller
 
         return $this->ok('success', $product);
     }
+
+    public function destroy(Product $product, $id):JsonResponse
+    {
+        $product->find($id)->delete();
+        return $this->ok("Success Delete Outlet", $product);
+    }
+
 
     public function addLogProductStockLog($id, $qty, $stock_before, $stock_after, $source, $desc){
 
