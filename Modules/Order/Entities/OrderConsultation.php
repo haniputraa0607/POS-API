@@ -8,33 +8,31 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Modules\Product\Entities\Product;
 use Modules\Order\Entities\Order;
+use Modules\User\Entities\User;
 
-class OrderProduct extends Model
+class OrderConsultation extends Model
 {
     use HasFactory;
 
-    protected $table = 'order_products';
+    protected $table = 'order_consultations';
     protected $fillable = [
         'order_id',
-        'product_id',
-        'type',
+        'doctor_id',
         'schedule_date',
-        'treatment_patient_id',
-        'qty',
-        'order_product_price',
-        'order_product_subtotal',
-        'order_product_discount',
-        'order_product_tax',
-        'order_product_grandtotal',
+        'doctor_shift_id',
+        'order_consultation_price',
+        'order_consultation_subtotal',
+        'order_consultation_discount',
+        'order_consultation_tax',
+        'order_consultation_grandtotal',
         'queue',
         'queue_code',
     ];
 
-    public function product(): BelongsTo
+    public function doctor(): BelongsTo
     {
-        return $this->belongsTo(Product::class, 'product_id', 'id');
+        return $this->belongsTo(User::class, 'doctor_id', 'id');
     }
 
     public function order(): BelongsTo

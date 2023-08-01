@@ -15,7 +15,7 @@ use Modules\Doctor\Http\Controllers\DoctorController;
 |
 */
 
-Route::middleware('scopes:doctor')->controller(DoctorController::class)->prefix('doctor')->group(function (){
+Route::middleware(['auth:api','scopes:doctor'])->controller(DoctorController::class)->prefix('doctor')->group(function (){
     Route::get('home', 'home');
     Route::get('list-service', 'listService');
 

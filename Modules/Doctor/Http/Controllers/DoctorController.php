@@ -39,14 +39,25 @@ class DoctorController extends Controller
 
     public function listService(Request $request){
 
-        $data = [
-            'service' => [
-                'product' => true,
-                'treatment' => true,
-                'consultation' => true,
-                'prescription' => true
-            ]
+        $doctor = $request->user();
+        $outlet = $doctor->outlet;
+
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+
+        $outlet_service = json_decode($outlet['activities'], true) ?? [];
+        $data['service'] = [];
+
+        foreach($outlet_service ?? [] as $key => $serv){
+
+            $data['service'][] = [
+                'icon' => 'tes',
+                'icon_active' => 'tes',
+                'title' => $serv == 'consultation' ? 'Overview' : ($serv == 'prescription' ? 'Prescription' : ($serv == 'product' ? 'Product' : ($serv == 'treatment' ? 'Treatment' : '')))
             ];
+
+        }
 
         return $this->ok('', $data);
 
@@ -90,14 +101,16 @@ class DoctorController extends Controller
         foreach($doctors ?? [] as $key => $doc){
 
             $day = date('l', strtotime($date));
-            $shifts = DoctorShift::where('user_id', $doc['id'])->where('day',$day)->get()->toArray();
+            $shifts = DoctorShift::with(['order_consultations', function($order_consultation) use($date){
+                $order_consultation->whereDate('schedule_date', $date);
+            }])->where('user_id', $doc['id'])->where('day',$day)->get()->toArray();
 
             $doc_shift = [];
             foreach($shifts ?? [] as $key_2 =>$shift){
                 $doc_shift[] = [
                     'id_doctor_shift' => $shift['id'],
                     'time'            => date('H:i',strtotime($shift['start'])).' - '.date('H:i',strtotime($shift['end'])),
-                    'quote'           => $shift['quota']
+                    'quote'           => $shift['quota'] - count($shift['order_consultations'])
                 ];
             }
 

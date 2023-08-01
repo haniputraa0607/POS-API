@@ -28,6 +28,7 @@ class Outlet extends Model
         // 'outlet_longitude',
         'status',
         'is_tax',
+        'consultation_price',
         'address',
         'district_code',
         'postal_code',

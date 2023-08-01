@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Order\Entities\OrderProduct;
+use Modules\Order\Entities\OrderConsultation;
+use Modules\Outlet\Entities\Outlet;
 
 class Order extends Model
 {
@@ -34,4 +36,15 @@ class Order extends Model
     {
         return $this->hasMany(OrderProduct::class);
     }
+
+    public function order_consultations(): HasMany
+    {
+        return $this->hasMany(OrderConsultation::class);
+    }
+
+    public function outlet(): BelongsTo
+    {
+        return $this->belongsTo(Outlet::class, 'outlet_id', 'id');
+    }
+
 }
