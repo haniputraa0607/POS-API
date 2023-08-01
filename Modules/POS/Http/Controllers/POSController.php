@@ -38,24 +38,20 @@ class POSController extends Controller
             $product = null;
             $treatment = null;
             $consultation = null;
-            $schedule = $outlet->outlet_schedule->where('day', date('l'))->firstOrfail();
+            $schedule = $outlet->outlet_schedule->where('day', date('l'))->first();
             if(!$schedule){
                 $status = false;
-            }
-
-            if($schedule['is_closed'] == 1){
+            }elseif($schedule['is_closed'] == 1){
                 $status = false;
-            }
-
-            if(($schedule['open'] && date('H:i') < date('H:i', strtotime($schedule['open']))) || ($schedule['close'] && date('H:i') > date('H:i', strtotime($schedule['close'])))){
+            }elseif(($schedule['open'] && date('H:i') < date('H:i', strtotime($schedule['open']))) || ($schedule['close'] && date('H:i') > date('H:i', strtotime($schedule['close'])))){
                 $status = false;
             }
 
             if($status){
 
-                $product = OrderProduct::whereHas('order',function($order) use($outlet){ $order->where('outlet_id', $outlet['id'])->whereDate('order_date', date('Y-m-d'));})->where('type', 'Product')->orderBy('queue', 'desc')->firstOrfail()['queue_code'] ?? null;
-                $treatment = OrderProduct::whereHas('order',function($order) use($outlet){ $order->where('outlet_id', $outlet['id']);})->whereDate('schedule_date', date('Y-m-d'))->where('type', 'Treatment')->orderBy('queue', 'desc')->firstOrfail()['queue_code'] ?? null;
-                $consultation = OrderConsultation::whereHas('order',function($order) use($outlet){ $order->where('outlet_id', $outlet['id']);})->whereDate('schedule_date', date('Y-m-d'))->orderBy('queue', 'desc')->firstOrfail()['queue_code'] ?? null;
+                $product = OrderProduct::whereHas('order',function($order) use($outlet){ $order->where('outlet_id', $outlet['id'])->whereDate('order_date', date('Y-m-d'));})->where('type', 'Product')->orderBy('queue', 'desc')->first()['queue_code'] ?? null;
+                $treatment = OrderProduct::whereHas('order',function($order) use($outlet){ $order->where('outlet_id', $outlet['id']);})->whereDate('schedule_date', date('Y-m-d'))->where('type', 'Treatment')->orderBy('queue', 'desc')->first()['queue_code'] ?? null;
+                $consultation = OrderConsultation::whereHas('order',function($order) use($outlet){ $order->where('outlet_id', $outlet['id']);})->whereDate('schedule_date', date('Y-m-d'))->orderBy('queue', 'desc')->first()['queue_code'] ?? null;
 
             }
 
