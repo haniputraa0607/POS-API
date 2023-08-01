@@ -77,7 +77,6 @@ class GenerateQueueOrder implements ShouldQueue
                 $order->where('id', '<>', $order_id);
                 $order->where('outlet_id', $outlet_id);
             })->whereDate('schedule_date', date('Y-m-d', strtotime($this->data['schedule_date'])))
-            ->where('doctor_id', $this->data['doctor_id'])
             ->max('queue') + 1;
 
             if ($queue < 10) {

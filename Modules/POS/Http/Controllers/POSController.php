@@ -33,12 +33,38 @@ class POSController extends Controller
         $outlet = $cashier->outlet;
 
         if($outlet){
+
+            $status = true;
+            $product = null;
+            $treatment = null;
+            $consultation = null;
+            $schedule = $outlet->outlet_schedule->where('day', date('l'))->firstOrfail();
+            if(!$schedule){
+                $status = false;
+            }
+
+            if($schedule['is_closed'] == 1){
+                $status = false;
+            }
+
+            if(($schedule['open'] && date('H:i') < date('H:i', strtotime($schedule['open']))) || ($schedule['close'] && date('H:i') > date('H:i', strtotime($schedule['close'])))){
+                $status = false;
+            }
+
+            if($status){
+
+                $product = OrderProduct::whereHas('order',function($order) use($outlet){ $order->where('outlet_id', $outlet['id'])->whereDate('order_date', date('Y-m-d'));})->where('type', 'Product')->orderBy('queue', 'desc')->firstOrfail()['queue_code'] ?? null;
+                $treatment = OrderProduct::whereHas('order',function($order) use($outlet){ $order->where('outlet_id', $outlet['id']);})->whereDate('schedule_date', date('Y-m-d'))->where('type', 'Treatment')->orderBy('queue', 'desc')->firstOrfail()['queue_code'] ?? null;
+                $consultation = OrderConsultation::whereHas('order',function($order) use($outlet){ $order->where('outlet_id', $outlet['id']);})->whereDate('schedule_date', date('Y-m-d'))->orderBy('queue', 'desc')->firstOrfail()['queue_code'] ?? null;
+
+            }
+
             $data = [
-                'status_outlet' => true,
+                'status_outlet' => $status,
                 'queue' => [
-                    'product' => 'P06',
-                    'treatment' => 'T11',
-                    'consultation' => 'C08'
+                    'product' => $product,
+                    'treatment' => $treatment,
+                    'consultation' => $consultation
                 ]
                 ];
 
@@ -99,7 +125,7 @@ class POSController extends Controller
         $id_customer = $data['id_customer'];
 
         $return = [];
-        $order = Order::with(['order_products.product'])->where('patient_id', $id_customer)
+        $order = Order::with(['order_products.product', 'order_consultations.shift', 'order_consultations.doctor'])->where('patient_id', $id_customer)
         ->where('send_to_transaction', 0)
         ->latest()
         ->first();
@@ -107,6 +133,7 @@ class POSController extends Controller
         if($order){
             $ord_prod = [];
             $ord_treat = [];
+            $ord_consul = [];
             foreach($order['order_products'] ?? [] as $key => $ord_pro){
 
                 if($ord_pro['type'] == 'Product'){
@@ -129,12 +156,25 @@ class POSController extends Controller
                 }
             }
 
+            foreach($order['order_consultations'] ?? [] as $key => $ord_con){
+
+                $ord_consul[] = [
+                    'order_consultation_id' => $ord_con['id'],
+                    'doctor_id'             => $ord_con['doctor']['id'],
+                    'doctor_name'           => $ord_con['doctor']['name'],
+                    'schedule_date'         => date('d F Y', strtotime($ord_con['schedule_date'])),
+                    'time'                  => date('H:i', strtotime($ord_con['shift']['start'])).'-'.date('H:i', strtotime($ord_con['shift']['end'])),
+                    'price_total'           => $ord_con['order_consultation_grandtotal'],
+                    'queue'                 => $ord_con['queue_code'],
+                ];
+            }
+
             $return = [
                 'order_id'            => $order['id'],
                 'order_code'          => $order['order_code'],
                 'order_products'      => $ord_prod,
                 'order_treatments'    => $ord_treat,
-                'order_consultations' => [],
+                'order_consultations' => $ord_consul,
                 'order_precriptions'  => [],
                 'sumarry'             => [
                     'subtotal'    => $order['order_subtotal'],
@@ -443,6 +483,34 @@ class POSController extends Controller
             return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Succes to delete order');
 
         }elseif(($type??false) == 'consultation'){
+
+            DB::beginTransaction();
+            $order_consultation = OrderConsultation::with(['order'])->whereHas('order', function($order) use($post){
+                $order->where('patient_id', $post['id_customer']);
+                $order->where('send_to_transaction', 0);
+            })->whereHas('doctor')
+            ->where('id', $post['id'])->first();
+
+            if(!$order_consultation){
+                DB::rollBack();
+                return $this->error('Order not found');
+            }
+
+            $order = Order::where('id', $order_consultation['order_id'])->update([
+                'order_subtotal'   => $order_consultation['order']['order_subtotal'] - $order_consultation['order_consultation_subtotal'],
+                'order_gross'      => $order_consultation['order']['order_gross'] - $order_consultation['order_consultation_subtotal'],
+                'order_grandtotal' => $order_consultation['order']['order_grandtotal'] - $order_consultation['order_consultation_grandtotal'],
+            ]);
+
+            if(!$order){
+                DB::rollBack();
+                return $this->error('Order not found');
+            }
+
+            $order_consultation->delete();
+
+            DB::commit();
+            return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Succes to delete order');
 
         }elseif(($type??false) == 'prescription'){
 
