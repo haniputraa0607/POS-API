@@ -19,12 +19,13 @@ class LandingPageController extends Controller
         date_default_timezone_set('Asia/Jakarta');
     }
 
-    public function list(Request $request):JsonResponse
+    public function list(Request $request, $type):JsonResponse
     {
         $post = $request->json()->all();
         $category = $post['product_category_id'] ? $post['product_category_id'] : 'all';
         $sortBy = $post['order_by'] ? $post['order_by'] : 'asc';
         $products = Product::with(['global_price', 'product_category'])
+        ->where('type', $type)
         ->when($category, function ($query) use ($category) {
             if($category != 'all'){
                 return $query->where('product_category_id', $category);
@@ -87,7 +88,7 @@ class LandingPageController extends Controller
             $row[] = $key->type;
             $row[] = '
                 <a data-id="'.$key->id.'" data-name="'.$key->product_name.'" class="btn btn-sm blue" onclick="main.detail(this)"><i class="fa fa-search"></i></a>
-                <a class="btn btn-sm red sweetalert-delete btn-primary" data-id="'.$key->id.'" data-name="'.$key->product_name.'" onclick="main.delete(this)"><i class="fa fa-trash-o"></i></a>            
+                <a class="btn btn-sm red sweetalert-delete btn-primary" data-id="'.$key->id.'" data-name="'.$key->product_name.'" onclick="main.delete(this)"><i class="fa fa-trash-o"></i></a>
             ';
             $data[] = $row;
         }
