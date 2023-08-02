@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Modules\Outlet\Http\Controllers\OutletController;
+use Modules\Outlet\Http\Controllers\PartnerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,4 +24,12 @@ Route::middleware('auth:api')->controller(OutletController::class)->prefix('outl
     Route::get($outlet, 'show')->name('outlet.show');
     Route::patch($outlet, 'update')->name('outlet.update');
     Route::delete($outlet, 'destroy')->name('outlet.delete');
+});
+// Route::middleware('auth:api')->controller(PartnerController::class)->prefix('partner')->group(function () {
+Route::prefix('landing-page')->group(function(){
+    Route::controller(PartnerController::class)->prefix('partner')->group(function () {
+        $partner = '{partner}';
+        Route::get('', 'index')->name('partner.list');
+        Route::get($partner, 'show')->name('partner.show');
+    });
 });
