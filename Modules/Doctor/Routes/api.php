@@ -18,6 +18,7 @@ use Modules\Doctor\Http\Controllers\DoctorController;
 Route::middleware(['auth:api','scopes:doctor'])->controller(DoctorController::class)->prefix('doctor')->group(function (){
     Route::get('home', 'home');
     Route::get('list-service', 'listService');
+    Route::get('next', 'nextQueue');
 
 });
 

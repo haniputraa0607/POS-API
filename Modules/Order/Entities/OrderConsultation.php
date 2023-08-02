@@ -27,6 +27,7 @@ class OrderConsultation extends Model
         'order_consultation_discount',
         'order_consultation_tax',
         'order_consultation_grandtotal',
+        'status',
         'queue',
         'queue_code',
     ];

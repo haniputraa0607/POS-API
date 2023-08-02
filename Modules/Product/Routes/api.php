@@ -39,3 +39,19 @@ Route::middleware(['auth:api','scopes:pos'])->prefix('pos')->group(function (){
     });
 
 });
+
+Route::middleware(['auth:api','scopes:doctor'])->prefix('doctor')->group(function (){
+    Route::prefix('product-category')->controller(ProductCategoryController::class)->group(function () {
+        Route::get('list', 'list');
+    });
+
+    Route::prefix('product')->controller(ProductController::class)->group(function () {
+        Route::post('list', 'list');
+    });
+
+    Route::prefix('treatment')->controller(TreatmentController::class)->group(function () {
+        Route::post('list', 'list');
+        Route::post('customer-history', 'customerHistory');
+    });
+
+});

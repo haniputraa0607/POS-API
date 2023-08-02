@@ -19,7 +19,7 @@ class TreatmentController extends Controller
         date_default_timezone_set('Asia/Jakarta');
     }
 
-    public function list(Request $request):JsonResponse
+    public function list(Request $request):mixed
     {
         $post = $request->json()->all();
         $cashier = $request->user();
@@ -29,35 +29,21 @@ class TreatmentController extends Controller
             return $this->error('Outlet not found');
         }
 
-        if(!isset($post['search']) || !isset($post['search']['filter'])){
+        if(!isset($post['search']) || count($post['search']) < 1){
             return $this->error('Filter cant be null');
-        }
-
-        $date = date('Y-m-d');
-        if($post['search']['filter'] == 'date'){
-            $date = date('Y-m-d', strtotime($post['search']['value']));
-        }
-
-        $outlet_schedule = $outlet->outlet_schedule->where('day', date('l', strtotime($date)))->first();
-
-        if(!$outlet_schedule){
-            return $this->error('Something Error');
         }
 
         $products = Product::with(['global_price','outlet_price' => function($outlet_price) use ($outlet){
             $outlet_price->where('outlet_id',$outlet['id']);
-        }])->whereHas('outlet_treatment', function($outlet_treatment) use ($outlet, $outlet_schedule){
+        }])->whereHas('outlet_treatment', function($outlet_treatment) use ($outlet, $post){
 
             $outlet_treatment->where('outlet_id',$outlet['id']);
-            if($outlet_schedule['all_products'] == 0){
-                $custom = json_decode($outlet_schedule['custom_products'], true) ?? [];
-                $outlet_treatment->whereIn('treatment_id',$custom);
-            }
 
         });
 
-        if($post['search']['filter'] == 'name'){
-            $products = $products->where('product_name', 'like', '%'.$post['search']['value'].'%');
+        $filter_name = array_search('name', array_column($post['search'], 'filter'));
+        if($filter_name !== false){
+            $products = $products->where('product_name', 'like', '%'.$post['search'][$filter_name]['value'].'%');
         }
 
         $products = $products->treatment()->get()->toArray();
@@ -78,9 +64,48 @@ class TreatmentController extends Controller
                 'price' => $price,
                 'can_continue' => false,
                 'record_history' => [],
+                'date' => date('d F Y'),
             ];
             return $data;
         },$products);
+
+        $filter_date = array_search('date', array_column($post['search'], 'filter'));
+        if($filter_date !== false){
+            $dates = $post['search'][$filter_date]['value'];
+            $new_product = [];
+            foreach($dates ?? [] as $key => $date){
+                $outlet_schedule = $outlet->outlet_schedule->where('day', date('l', strtotime($date)))->first();
+                if($outlet_schedule){
+                    if($outlet_schedule['all_products'] == 0){
+                        $custom = json_decode($outlet_schedule['custom_products'], true) ?? [];
+                        foreach($products ?? [] as $prod){
+                            if(in_array($prod['id'],$custom)){
+                                $new_product[] = [
+                                    'id' => $prod['id'],
+                                    'treatment_name' => $prod['treatment_name'],
+                                    'price' => $prod['price'],
+                                    'can_continue' => $prod['can_continue'],
+                                    'record_history' => $prod['record_history'],
+                                    'date' => date('d F Y', strtotime($date)),
+                                ];
+                            }
+                        }
+                    }else{
+                        foreach($products ?? [] as $prod){
+                            $new_product[] = [
+                                'id' => $prod['id'],
+                                'treatment_name' => $prod['treatment_name'],
+                                'price' => $prod['price'],
+                                'can_continue' => $prod['can_continue'],
+                                'record_history' => $prod['record_history'],
+                                'date' => date('d F Y', strtotime($date)),
+                            ];
+                        }
+                    }
+                }
+            }
+            $products = $new_product;
+        }
 
         $return = [
             'available' => count($products),
