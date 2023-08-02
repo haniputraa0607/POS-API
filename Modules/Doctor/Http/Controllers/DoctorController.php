@@ -10,6 +10,9 @@ use Illuminate\Http\JsonResponse;
 use Modules\Outlet\Http\Controllers\OutletController;
 use Modules\User\Entities\User;
 use Modules\Doctor\Entities\DoctorShift;
+use Modules\Doctor\Entities\DoctorSchedule;
+use Modules\Doctor\Entities\DoctorScheduleDate;
+use Modules\Order\Entities\OrderConsultation;
 
 class DoctorController extends Controller
 {
@@ -20,16 +23,56 @@ class DoctorController extends Controller
 
     public function home(Request $request){
 
-        $timezone = 7;
-        $status_queue = 'VACANT';
-        $status_queue = '2 QUEUE';
+        $doctor = $request->user();
+        $outlet = $doctor->outlet;
+
+        $status_outlet = true;
+        $status_doctor = true;
+        $order = [];
+        $schedule = $outlet->outlet_schedule->where('day', date('l'))->first();
+        if(!$schedule){
+            $status_outlet = false;
+        }elseif($schedule['is_closed'] == 1){
+            $status_outlet = false;
+        }elseif(($schedule['open'] && date('H:i') < date('H:i', strtotime($schedule['open']))) || ($schedule['close'] && date('H:i') > date('H:i', strtotime($schedule['close'])))){
+            $status_outlet = false;
+        }
+
+        $schedule_doc = DoctorScheduleDate::whereHas('doctor_schedule', function($sch) use($doctor){
+            $sch->where('user_id', $doctor['id']);
+        })->whereDate('date', date('Y-m-d'))->first();
+        if(!$schedule_doc){
+            $status_doctor = false;
+        }
+
+        $shift = DoctorShift::where('user_id', $doctor['id'])->where('day', date('l'))->whereTime('start', '<=', date('H:i'))->whereTime('end', '>=', date('H:i'))->first();
+        if(!$shift){
+            $status_doctor = false;
+        }
+
+        $timezone = $outlet->district->province['timezone'] ?? 7;
+
+        if($status_outlet && $status_doctor){
+            $order = OrderConsultation::whereHas('order', function($order) use($outlet){
+                $order->where('outlet_id', $outlet['id'])
+                ->where('is_submited', 1)
+                ->where('send_to_transaction', 0);
+            })
+            ->whereDate('schedule_date', date('Y-m-d'))
+            ->where('doctor_id', $doctor['id'])
+            ->get();
+        }
+
         $data = [
-            'status_outlet' => true,
+            'status_outlet' => $status_outlet,
+            'status_doctor' => $status_doctor,
             'clock' => MyHelper::adjustTimezone(date('H:i'), $timezone, 'H:i', true),
-            'status_queue' => $status_queue,
+            'status_queue' => count($order) > 0 ? count($order).' QUEUE' : 'VACANT',
+            'is_vacant' => count($order) > 0 ? false : true,
+            'queue' => $order[0]['queue_code'],
             'doctor' => [
-                'id' => 1,
-                'name' => 'dr. Karni Nasution',
+                'id' => $doctor['id'],
+                'name' => $doctor['name'],
             ],
         ];
 
@@ -89,7 +132,8 @@ class DoctorController extends Controller
             $query->where('schedule_month', date('m', strtotime($date)));
             $query->where('schedule_year', date('Y', strtotime($date)));
             $query->where('doctor_schedule_dates.date', $date);
-        });
+        })
+        ->where('outlet_id', $outlet['id']);
 
         if($post['search']['filter'] == 'name'){
             $doctors = $doctors->where('name', 'like', '%'.$post['search']['value'].'%');
@@ -101,7 +145,7 @@ class DoctorController extends Controller
         foreach($doctors ?? [] as $key => $doc){
 
             $day = date('l', strtotime($date));
-            $shifts = DoctorShift::with(['order_consultations', function($order_consultation) use($date){
+            $shifts = DoctorShift::with(['order_consultations' => function($order_consultation) use($date){
                 $order_consultation->whereDate('schedule_date', $date);
             }])->where('user_id', $doc['id'])->where('day',$day)->get()->toArray();
 

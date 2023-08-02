@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Order\Entities\Order;
 use Modules\User\Entities\User;
+use Modules\Doctor\Entities\DoctorShift;
 
 class OrderConsultation extends Model
 {
@@ -33,6 +34,11 @@ class OrderConsultation extends Model
     public function doctor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'doctor_id', 'id');
+    }
+
+    public function shift(): BelongsTo
+    {
+        return $this->belongsTo(DoctorShift::class, 'doctor_shift_id', 'id');
     }
 
     public function order(): BelongsTo

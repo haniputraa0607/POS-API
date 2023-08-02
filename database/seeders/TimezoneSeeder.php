@@ -76,5 +76,5 @@ class TimezoneSeeder extends Seeder
         Province::whereIn('name', $new_wit)->update(['timezone' => 9]);
     }
 
- 
+
 }

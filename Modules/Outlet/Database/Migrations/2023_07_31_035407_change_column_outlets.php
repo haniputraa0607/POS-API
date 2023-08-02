@@ -15,7 +15,10 @@ return new class extends Migration
     public function up()
     {
         Schema::table('outlets', function (Blueprint $table) {
-            DB::statement('ALTER TABLE "outlets" ALTER COLUMN "status" SET DEFAULT \'Active\'');
+            //commant for mysql
+            $table->enum('status',["Active","Inactive"])->nullback(false)->change(); 
+            //commant for pgsql
+            // DB::statement('ALTER TABLE "outlets" ALTER COLUMN "status" SET DEFAULT \'Active\'');
         });
     }
 
@@ -27,7 +30,8 @@ return new class extends Migration
     public function down()
     {
         Schema::table('outlets', function (Blueprint $table) {
-            DB::statement('ALTER TABLE "outlets" ALTER COLUMN "status" DROP DEFAULT');
+            //commant for pgsql
+            // DB::statement('ALTER TABLE "outlets" ALTER COLUMN "status" DROP DEFAULT');
         });
     }
 };
