@@ -20,6 +20,7 @@ header('Access-Control-Allow-Headers:  Content-Type, X-Auth-Token, Origin, Autho
 Route::middleware(['auth:api','scopes:doctor'])->controller(DoctorController::class)->prefix('doctor')->group(function (){
     Route::get('home', 'home');
     Route::get('list-service', 'listService');
+    Route::get('next', 'nextQueue');
 
 });
 

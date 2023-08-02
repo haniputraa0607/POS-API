@@ -13,6 +13,9 @@ use Modules\Doctor\Entities\DoctorShift;
 use Modules\Doctor\Entities\DoctorSchedule;
 use Modules\Doctor\Entities\DoctorScheduleDate;
 use Modules\Order\Entities\OrderConsultation;
+use Modules\Order\Entities\Order;
+use Modules\Order\Entities\OrderProduct;
+use Illuminate\Support\Facades\DB;
 
 class DoctorController extends Controller
 {
@@ -21,7 +24,8 @@ class DoctorController extends Controller
         date_default_timezone_set('Asia/Jakarta');
     }
 
-    public function home(Request $request){
+    public function home(Request $request):JsonResponse
+    {
 
         $doctor = $request->user();
         $outlet = $doctor->outlet;
@@ -51,8 +55,10 @@ class DoctorController extends Controller
         }
 
         $timezone = $outlet->district->province['timezone'] ?? 7;
+        $on_progress = false;
+        $queue = null;
 
-        if($status_outlet && $status_doctor){
+        if($status_outlet && $status_doctor && $shift){
             $order = OrderConsultation::whereHas('order', function($order) use($outlet){
                 $order->where('outlet_id', $outlet['id'])
                 ->where('is_submited', 1)
@@ -60,16 +66,34 @@ class DoctorController extends Controller
             })
             ->whereDate('schedule_date', date('Y-m-d'))
             ->where('doctor_id', $doctor['id'])
-            ->get();
+            ->where('doctor_shift_id', $shift['id'])
+            ->orderBy('queue', 'asc')
+            ->get()->toArray();
+
+            $ready = false;
+            foreach($order ?? [] as $ord){
+                if($ord['status'] == 'On Progress'){
+                    $on_progress = true;
+                    $queue = $ord['queue_code'];
+                }
+                if($ord['status'] == 'Ready'){
+                    $ready = true;
+                }
+
+            }
+
+            if(!$on_progress && !$ready){
+                OrderConsultation::where('id', $order[0]['id'])->update(['status' => 'Ready']);
+            }
         }
 
         $data = [
             'status_outlet' => $status_outlet,
             'status_doctor' => $status_doctor,
             'clock' => MyHelper::adjustTimezone(date('H:i'), $timezone, 'H:i', true),
-            'status_queue' => count($order) > 0 ? count($order).' QUEUE' : 'VACANT',
+            'status_queue' => count($order) > 0 ? ($on_progress ? $queue : count($order).' QUEUE') : 'VACANT',
+            'is_outline' => $on_progress ? false : true,
             'is_vacant' => count($order) > 0 ? false : true,
-            'queue' => $order[0]['queue_code'],
             'doctor' => [
                 'id' => $doctor['id'],
                 'name' => $doctor['name'],
@@ -80,7 +104,8 @@ class DoctorController extends Controller
 
     }
 
-    public function listService(Request $request){
+    public function listService(Request $request):JsonResponse
+    {
 
         $doctor = $request->user();
         $outlet = $doctor->outlet;
@@ -106,7 +131,145 @@ class DoctorController extends Controller
 
     }
 
-    public function getDoctor(Request $request):mixed
+    public function nextQueue(Request $request):mixed
+    {
+        $doctor = $request->user();
+        $outlet = $doctor->outlet;
+
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+
+        $shift = DoctorShift::where('user_id', $doctor['id'])->where('day', date('l'))->whereTime('start', '<=', date('H:i'))->whereTime('end', '>=', date('H:i'))->first();
+        if(!$shift){
+            return $this->error('Shift not found');
+        }
+
+        $order_consultation = OrderConsultation::with(['order'])->whereHas('order', function($order) use($outlet){
+            $order->where('outlet_id', $outlet['id'])
+            ->where('is_submited', 1)
+            ->where('send_to_transaction', 0);
+        })
+        ->whereDate('schedule_date', date('Y-m-d'))
+        ->where('doctor_id', $doctor['id'])
+        ->where('doctor_shift_id', $shift['id'])
+        ->where('status', 'Ready')
+        ->orderBy('queue', 'asc')
+        ->first();
+
+        $order_consultation_after = OrderConsultation::where('doctor_id', $order_consultation['doctor_id'])->where('doctor_shift_id', $order_consultation['doctor_shift_id'])->whereDate('schedule_date', date('Y-m-d', strtotime($order_consultation['schedule_date'])))->where('status', '<>', 'Finished')->update(['status' => 'Pending']);
+
+        if($order_consultation){
+            return $this->getDataOrder([
+                'order_id' => $order_consultation['order_id'],
+                'order_consultation' => $order_consultation
+            ],'');
+        }
+
+        return $this->error('Order not found');
+
+    }
+
+    public function getDataOrder($data, $message):mixed
+    {
+        $id_order = $data['order_id'];
+        $id_order_consultation = $data['order_consultation']['id'];
+
+        $return = [];
+        DB::beginTransaction();
+        $order = Order::with(['order_products.product', 'order_consultations.shift', 'order_consultations.doctor'])->where('id', $id_order)
+        ->where('send_to_transaction', 0)
+        ->latest()
+        ->first();
+
+        if($order){
+            $ord_prod = [];
+            $ord_treat = [];
+            $ord_consul = [];
+            foreach($order['order_products'] ?? [] as $key => $ord_pro){
+
+                if($ord_pro['type'] == 'Product'){
+                    $ord_prod[] = [
+                        'order_product_id' => $ord_pro['id'],
+                        'product_id'       => $ord_pro['product']['id'],
+                        'product_name'     => $ord_pro['product']['product_name'],
+                        'qty'              => $ord_pro['qty'],
+                        'price_total'      => $ord_pro['order_product_grandtotal'],
+                    ];
+                }elseif($ord_pro['type'] == 'Treatment'){
+                    $ord_treat[] = [
+                        'order_product_id' => $ord_pro['id'],
+                        'product_id'       => $ord_pro['product']['id'],
+                        'product_name'     => $ord_pro['product']['product_name'],
+                        'schedule_date'    => date('d F Y', strtotime($ord_pro['schedule_date'])),
+                        'price_total'      => $ord_pro['order_product_grandtotal'],
+                        'queue'            => $ord_pro['queue_code'],
+                    ];
+                }
+            }
+
+            foreach($order['order_consultations'] ?? [] as $key => $ord_con){
+
+                $ord_consul[] = [
+                    'order_consultation_id' => $ord_con['id'],
+                    'doctor_id'             => $ord_con['doctor']['id'],
+                    'doctor_name'           => $ord_con['doctor']['name'],
+                    'schedule_date'         => date('d F Y', strtotime($ord_con['schedule_date'])),
+                    'time'                  => date('H:i', strtotime($ord_con['shift']['start'])).'-'.date('H:i', strtotime($ord_con['shift']['end'])),
+                    'price_total'           => $ord_con['order_consultation_grandtotal'],
+                    'queue'                 => $ord_con['queue_code'],
+                ];
+            }
+
+            $return = [
+                'order_id'            => $order['id'],
+                'order_code'          => $order['order_code'],
+                'order_products'      => $ord_prod,
+                'order_treatments'    => $ord_treat,
+                'order_consultations' => $ord_consul,
+                'order_precriptions'  => [],
+                'sumarry'             => [
+                    'subtotal'    => $order['order_subtotal'],
+                    'tax'         => (float)$order['order_tax'],
+                    'grand_total' => $order['order_grandtotal'],
+                ],
+            ];
+        }
+
+        $order_consultation = OrderConsultation::where('id', $id_order_consultation)->first();
+        $update = $order_consultation->update(['status' => 'On Progress']);
+        if(!$update){
+            DB::rollBack();
+            return $this->error('Failed to get data order');
+        }
+        $order_consultation_after = OrderConsultation::where('id', '<>', $order_consultation['id'])->where('doctor_id', $order_consultation['doctor_id'])->where('doctor_shift_id', $order_consultation['doctor_shift_id'])->whereDate('schedule_date', date('Y-m-d', strtotime($order_consultation['schedule_date'])))->where('status', 'Pending')->orderBy('queue', 'asc')->get();
+        $check_after = false;
+        if($order_consultation_after){
+            foreach($order_consultation_after ?? [] as $key => $after){
+                if($after['queue'] > $order_consultation['queue']){
+                    $queue_after = $after['id'];
+                    $check_after = true;
+                    break;
+                }
+            }
+            if($check_after){
+                $update_after = OrderConsultation::where('id', $queue_after)->update(['status' => 'Ready']);
+            }else{
+                $update_after = OrderConsultation::where('id', $order_consultation_after[0]['id'])->update(['status' => 'Ready']);
+            }
+            if(!$update_after){
+                DB::rollBack();
+                return $this->error('Failed to get data order');
+            }
+        }
+
+        DB::commit();
+
+        return $this->ok($message, $return);
+
+    }
+
+    public function getDoctor(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $cashier = $request->user();
