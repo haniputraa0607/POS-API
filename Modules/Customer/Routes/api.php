@@ -15,7 +15,7 @@ use Modules\Customer\Http\Controllers\CustomerController;
 |
 */
 
-header('Access-Control-Allow-Origin:  *');
+// header('Access-Control-Allow-Origin:  *');
 header('Access-Control-Allow-Methods:  POST, GET, OPTIONS, PUT, DELETE');
 header('Access-Control-Allow-Headers:  Content-Type, X-Auth-Token, Origin, Authorization');
 Route::middleware(['auth:api','scopes:pos'])->controller(CustomerController::class)->prefix('pos/customer')->group(function(){
