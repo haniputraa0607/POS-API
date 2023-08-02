@@ -19,64 +19,36 @@ class ProductController extends Controller
         date_default_timezone_set('Asia/Jakarta');
     }
 
-    public function create(Request $request):JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $post = $request->json()->all();
-
-        if(!$post || !isset($post['type']) || $post['type'] == ''){
-            return $this->error('Type cant be null');
-        }
-
-        if($post['type'] == 'Product' && (!isset($post['product_category_id']) || $post['product_category_id'] == '')){
-            return $this->error('Product Category name cant be null');
-        }
-
-        if(!isset($post['product_name']) || $post['product_name'] == ''){
-            return $this->error('Product name cant be null');
-        }
-
-        if(!isset($post['price'])){
-            return $this->error('Global Price cant be null');
-        }
-
-        $store = Product::create($post);
-        $globalPrice = [
-            'price' => $post['price'],
-        ];
-        $store->global_price()->create($globalPrice);
-        if(!$store){
-            return $this->error('Something Error');
-        }
-        return $this->ok('success', $store);
+        $product = $request->length ?  Product::paginate($request->length ?? 10) : Product::get();
+        return $this->ok("success get data all users", $product);
+    }
+    
+    public function show(Request $request, $id): JsonResponse
+    {
+        $product = Product::with('global_price')->find($id);
+        return $this->ok("success", $product);
     }
 
-    public function update(Request $request, $id):JsonResponse
+    public function store(ProductRequest $request):JsonResponse
     {
-        $post = $request->json()->all();
-        if(!$post || !isset($post['type']) || $post['type'] == ''){
-            return $this->error('Type cant be null');
-        }
-
-        if($post['type'] == 'Product' && (!isset($post['product_category_id']) || $post['product_category_id'] == '')){
-            return $this->error('Product Category name cant be null');
-        }
-
-        if(!isset($post['product_name']) || $post['product_name'] == ''){
-            return $this->error('Product name cant be null');
-        }
-
-        if(!isset($post['price'])){
-            return $this->error('Price cant be null');
-        }
-        $store = Product::find($id)->update($post);
+        $product = Product::create($request->all());
         $globalPrice = [
-            'price' => $post['price'],
+            'price' => $request->price,
         ];
-        $price = ProductGlobalPrice::where(['product_id' => $id])->update($globalPrice);
-        if(!$store){
-            return $this->error('Something Error');
-        }
-        return $this->ok('Success Update Produk', $store);
+        $product->global_price()->create($globalPrice);
+        return $this->ok("succes", $product);
+    }
+
+    public function update(ProductRequest $request, Product $product): JsonResponse
+    {
+        $product->update($request->all());
+        $globalPrice = [
+            'price' => $request->price,
+        ];
+        $product->global_price()->update($globalPrice);
+        return $this->ok("succes", $product);
     }
 
     public function list(Request $request):mixed
@@ -120,12 +92,12 @@ class ProductController extends Controller
         return $this->ok('success', $product);
     }
 
-    public function destroy(Product $product, $id):JsonResponse
+    public function destroy(Request $request, $id): JsonResponse
     {
-        $product->find($id)->delete();
-        return $this->ok("Success Delete Outlet", $product);
+        $global_price = ProductGlobalPrice::where(['product_id' => $id])->delete();
+        $product = Product::where(['id' => $id])->delete();
+        return $this->ok("succes", $product);
     }
-
 
     public function addLogProductStockLog($id, $qty, $stock_before, $stock_after, $source, $desc){
 
