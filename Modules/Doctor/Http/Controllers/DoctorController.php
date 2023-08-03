@@ -126,7 +126,8 @@ class DoctorController extends Controller
             $data['service'][] = [
                 'icon' => 'tes',
                 'icon_active' => 'tes',
-                'title' => $serv == 'consultation' ? 'Overview' : ($serv == 'prescription' ? 'Prescription' : ($serv == 'product' ? 'Product' : ($serv == 'treatment' ? 'Treatment' : '')))
+                'title' => $serv == 'consultation' ? 'Overview' : ($serv == 'prescription' ? 'Prescription' : ($serv == 'product' ? 'Product' : ($serv == 'treatment' ? 'Treatment' : ''))),
+                'key' => $serv == 'consultation' ? 1 : ($serv == 'prescription' ? 2 : ($serv == 'product' ? 3 : ($serv == 'treatment' ? 4 : 0)))
             ];
 
         }
@@ -264,10 +265,19 @@ class DoctorController extends Controller
                 'order_treatments'    => $ord_treat,
                 'order_consultations' => $ord_consul,
                 'order_precriptions'  => [],
-                'sumarry'             => [
-                    'subtotal'    => $order['order_subtotal'],
-                    'tax'         => (float)$order['order_tax'],
-                    'grand_total' => $order['order_grandtotal'],
+                'summary'             => [
+                    [
+                        'label' => 'Subtotal',
+                        'value' => $order['order_subtotal']
+                    ],
+                    [
+                        'label' => 'Tax',
+                        'value' => (float)$order['order_tax']
+                    ],
+                    [
+                        'label' => 'Payable Ammount',
+                        'value' => $order['order_grandtotal']
+                    ],
                 ],
             ];
         }

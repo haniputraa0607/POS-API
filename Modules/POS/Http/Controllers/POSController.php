@@ -88,7 +88,8 @@ class POSController extends Controller
             $data['service'][] = [
                 'icon' => 'tes',
                 'icon_active' => 'tes',
-                'title' => $serv == 'consultation' ? 'Overview' : ($serv == 'prescription' ? 'Prescription' : ($serv == 'product' ? 'Product' : ($serv == 'treatment' ? 'Treatment' : '')))
+                'title' => $serv == 'consultation' ? 'Consultation' : ($serv == 'prescription' ? 'Prescription' : ($serv == 'product' ? 'Product' : ($serv == 'treatment' ? 'Treatment' : ''))),
+                'key' => $serv == 'consultation' ? 1 : ($serv == 'product' ? 2 : ($serv == 'treatment' ? 3 : 0))
             ];
 
         }
@@ -172,10 +173,19 @@ class POSController extends Controller
                 'order_treatments'    => $ord_treat,
                 'order_consultations' => $ord_consul,
                 'order_precriptions'  => [],
-                'sumarry'             => [
-                    'subtotal'    => $order['order_subtotal'],
-                    'tax'         => (float)$order['order_tax'],
-                    'grand_total' => $order['order_grandtotal'],
+                'summary'             => [
+                    [
+                        'label' => 'Subtotal',
+                        'value' => $order['order_subtotal']
+                    ],
+                    [
+                        'label' => 'Tax',
+                        'value' => (float)$order['order_tax']
+                    ],
+                    [
+                        'label' => 'Payable Ammount',
+                        'value' => $order['order_grandtotal']
+                    ],
                 ],
             ];
         }
@@ -205,15 +215,16 @@ class POSController extends Controller
             if(!$order){
                 $last_code = Order::where('outlet_id', $outlet['id'])->latest('order_code')->first()['order_code']??'';
                 $last_code_outlet = explode('-',$outlet['outlet_code'])[1];
-                $last_code = explode('-',$last_code)[1];
+                $last_code = $last_code == '' ? 0 : explode('-',$last_code)[1];
                 $last_code = (int)$last_code + 1;
+                $order_code = 'ORD'.$last_code_outlet.'-'.sprintf("%05d", $last_code);
 
                 $order = Order::create([
                     'patient_id' => $post['id_customer'],
                     'outlet_id'  => $outlet['id'],
                     'cashier_id' => $cashier['id'],
                     'order_date' => date('Y-m-d H:i:s'),
-                    'order_code' => 'ORD-02',
+                    'order_code' => $order_code,
                     'notes'      => $post['notes'] ?? null
                 ]);
             }
