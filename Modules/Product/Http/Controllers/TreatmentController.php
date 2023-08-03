@@ -48,7 +48,7 @@ class TreatmentController extends Controller
 
         $products = $products->treatment()->get()->toArray();
         if(!$products){
-            return $this->error('Something Error');
+            return $this->error('Treatment is empty');
         }
 
         $products = array_map(function($value){
@@ -67,7 +67,7 @@ class TreatmentController extends Controller
                 'date' => date('d F Y'),
             ];
             return $data;
-        },$products);
+        },$products ?? []);
 
         $filter_date = array_search('date', array_column($post['search'], 'filter'));
         if($filter_date !== false){
