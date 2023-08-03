@@ -76,13 +76,14 @@ class ProductController extends Controller
         $product = array_map(function($value){
 
             if(isset($value['outlet_price'][0]['price']) ?? false){
-                $price = $value['outlet_price'][0]['price'];
+                $price = $value['outlet_price'][0]['price'] ?? null;
             }else{
-                $price = $value['global_price']['price'];
+                $price = $value['global_price']['price'] ?? null;
             }
             $data = [
                 'id' => $value['id'],
                 'product_name' => $value['product_name'],
+                "image_url" => null,
                 'price' => $price,
                 'stock' => $value['outlet_stock'][0]['stock'] ?? 0
             ];

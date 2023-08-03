@@ -26,3 +26,14 @@ Route::middleware('auth:api')->controller(DiagnosticController::class)->prefix('
     Route::patch($diagnostic, 'update')->name('diagnostic.update');
     Route::delete($diagnostic, 'destroy')->name('diagnostic.destroy');
 });
+
+Route::middleware(['auth:api','scopes:doctor'])->prefix('doctor')->group(function (){
+    Route::prefix('consul')->group(function () {
+        Route::prefix('diagnostic')->controller(DiagnosticController::class)->group(function () {
+            Route::post('', 'getOrderDiagnostic');
+            Route::get('list', 'show');
+            Route::post('add', 'addDiagnosticPatient');
+            Route::post('delete', 'deleteDiagnosticPatient');
+        });
+    });
+});

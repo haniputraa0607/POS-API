@@ -24,7 +24,7 @@ class DoctorController extends Controller
         date_default_timezone_set('Asia/Jakarta');
     }
 
-    public function home(Request $request):JsonResponse
+    public function home(Request $request):mixed
     {
 
         $doctor = $request->user();
@@ -57,6 +57,7 @@ class DoctorController extends Controller
         $timezone = $outlet->district->province['timezone'] ?? 7;
         $on_progress = false;
         $queue = null;
+        $id_order = null;
 
         if($status_outlet && $status_doctor && $shift){
             $order = OrderConsultation::whereHas('order', function($order) use($outlet){
@@ -75,6 +76,8 @@ class DoctorController extends Controller
                 if($ord['status'] == 'On Progress'){
                     $on_progress = true;
                     $queue = $ord['queue_code'];
+                    $id_order = $ord['order_id'];
+
                 }
                 if($ord['status'] == 'Ready'){
                     $ready = true;
@@ -82,7 +85,7 @@ class DoctorController extends Controller
 
             }
 
-            if(!$on_progress && !$ready){
+            if($order && !$on_progress && !$ready){
                 OrderConsultation::where('id', $order[0]['id'])->update(['status' => 'Ready']);
             }
         }
@@ -90,8 +93,9 @@ class DoctorController extends Controller
         $data = [
             'status_outlet' => $status_outlet,
             'status_doctor' => $status_doctor,
-            'clock' => MyHelper::adjustTimezone(date('H:i'), $timezone, 'H:i', true),
+            'clock' => $on_progress ? 15 * 60 : null,
             'status_queue' => count($order) > 0 ? ($on_progress ? $queue : count($order).' QUEUE') : 'VACANT',
+            'id_order' => $on_progress ? $id_order : null,
             'is_outline' => $on_progress ? false : true,
             'is_vacant' => count($order) > 0 ? false : true,
             'doctor' => [
@@ -157,9 +161,22 @@ class DoctorController extends Controller
         ->orderBy('queue', 'asc')
         ->first();
 
-        $order_consultation_after = OrderConsultation::where('doctor_id', $order_consultation['doctor_id'])->where('doctor_shift_id', $order_consultation['doctor_shift_id'])->whereDate('schedule_date', date('Y-m-d', strtotime($order_consultation['schedule_date'])))->where('status', '<>', 'Finished')->update(['status' => 'Pending']);
+        if(!$order_consultation){
+            $order_consultation = OrderConsultation::with(['order'])->whereHas('order', function($order) use($outlet){
+                $order->where('outlet_id', $outlet['id'])
+                ->where('is_submited', 1)
+                ->where('send_to_transaction', 0);
+            })
+            ->whereDate('schedule_date', date('Y-m-d'))
+            ->where('doctor_id', $doctor['id'])
+            ->where('doctor_shift_id', $shift['id'])
+            ->where('status', 'On Progress')
+            ->orderBy('queue', 'asc')
+            ->first();
+        }
 
         if($order_consultation){
+            $order_consultation_after = OrderConsultation::where('doctor_id', $order_consultation['doctor_id'])->where('doctor_shift_id', $order_consultation['doctor_shift_id'])->whereDate('schedule_date', date('Y-m-d', strtotime($order_consultation['schedule_date'])))->where('status', '<>', 'Finished')->update(['status' => 'Pending']);
             return $this->getDataOrder([
                 'order_id' => $order_consultation['order_id'],
                 'order_consultation' => $order_consultation
@@ -177,7 +194,7 @@ class DoctorController extends Controller
 
         $return = [];
         DB::beginTransaction();
-        $order = Order::with(['order_products.product', 'order_consultations.shift', 'order_consultations.doctor'])->where('id', $id_order)
+        $order = Order::with(['order_products.product', 'order_consultations.consultation.patient_diagnostic.diagnostic', 'order_consultations.consultation.patient_grievance.grievance', 'order_consultations.shift', 'order_consultations.doctor'])->where('id', $id_order)
         ->where('send_to_transaction', 0)
         ->latest()
         ->first();
@@ -210,6 +227,23 @@ class DoctorController extends Controller
 
             foreach($order['order_consultations'] ?? [] as $key => $ord_con){
 
+                $consul = [];
+                $is_submit = 0;
+                if($ord_con['consultation'] && $ord_con['consultation']['session_end'] == 1){
+                    $consul['queue_number']  = $ord_con['queue_code'];
+                    $consul['schedule_date'] = date('d F Y', strtotime($ord_con['schedule_date']));
+                    $consul['grievance'] = [];
+                    $consul['diagnostic'] = [];
+
+                    foreach($ord_con['consultation']['patient_grievance'] ?? [] as $grievance){
+                        $consul['grievance'][] = $grievance['grievance']['grievance_name'];
+                    }
+                    foreach($ord_con['consultation']['patient_diagnostic'] ?? [] as $diagnostic){
+                        $consul['diagnostic'][] = $diagnostic['diagnostic']['diagnostic_name'];
+                    }
+                    $is_submit = 1;
+
+                }
                 $ord_consul[] = [
                     'order_consultation_id' => $ord_con['id'],
                     'doctor_id'             => $ord_con['doctor']['id'],
@@ -218,6 +252,8 @@ class DoctorController extends Controller
                     'time'                  => date('H:i', strtotime($ord_con['shift']['start'])).'-'.date('H:i', strtotime($ord_con['shift']['end'])),
                     'price_total'           => $ord_con['order_consultation_grandtotal'],
                     'queue'                 => $ord_con['queue_code'],
+                    'is_submit'             => $is_submit,
+                    'consultation'          => $consul,
                 ];
             }
 
@@ -242,7 +278,7 @@ class DoctorController extends Controller
             DB::rollBack();
             return $this->error('Failed to get data order');
         }
-        $order_consultation_after = OrderConsultation::where('id', '<>', $order_consultation['id'])->where('doctor_id', $order_consultation['doctor_id'])->where('doctor_shift_id', $order_consultation['doctor_shift_id'])->whereDate('schedule_date', date('Y-m-d', strtotime($order_consultation['schedule_date'])))->where('status', 'Pending')->orderBy('queue', 'asc')->get();
+        $order_consultation_after = OrderConsultation::where('id', '<>', $order_consultation['id'])->where('doctor_id', $order_consultation['doctor_id'])->where('doctor_shift_id', $order_consultation['doctor_shift_id'])->whereDate('schedule_date', date('Y-m-d', strtotime($order_consultation['schedule_date'])))->where('status', 'Pending')->orderBy('queue', 'asc')->get()->toArray();
         $check_after = false;
         if($order_consultation_after){
             foreach($order_consultation_after ?? [] as $key => $after){
@@ -326,7 +362,7 @@ class DoctorController extends Controller
                     'id_doctor' => $doc['id'],
                     'name'      => $doc['name'],
                     'date'      => date('j F Y',strtotime($date)),
-                    'photo'     => $doc['photo'] ?? null,
+                    'iamge_url' => $doc['photo'] ?? null,
                     'shifts'    => $doc_shift
                 ];
             }

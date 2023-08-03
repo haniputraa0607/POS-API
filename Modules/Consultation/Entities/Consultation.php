@@ -5,10 +5,14 @@ namespace Modules\Consultation\Entities;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Consultation\Database\factories\ConsultationFactory;
 use Modules\Customer\Entities\Customer;
 use Modules\EmployeeSchedule\Entities\EmployeeSchedule;
 use Modules\Queue\Entities\Queue;
+use Modules\Order\Entities\OrderConsultation;
+use Modules\PatientGrievance\Entities\PatientGrievance;
+use Modules\PatientDiagnostic\Entities\PatientDiagnostic;
 
 class Consultation extends Model
 {
@@ -16,31 +20,23 @@ class Consultation extends Model
 
     protected $table ="consultations";
     protected $fillable = [
-        'customer_id',
-        'queue_id',
-        'employee_schedule_id',
-        'consultation_date',
+        'order_consultation_id',
         'treatment_recomendation',
         'session_end',
     ];
 
-    // public function customer() : BelongsTo {
-    //     return $this->belongsTo(Customer::class);
-    // }
-
-    public function customer(): BelongsTo
-    {
-        return $this->belongsTo(Customer::class);
+    public function order_consultation() : BelongsTo {
+        return $this->belongsTo(OrderConsultation::class);
     }
 
-    public function queue(): BelongsTo
+    public function patient_diagnostic(): HasMany
     {
-        return $this->belongsTo(Queue::class);
+        return $this->hasMany(PatientDiagnostic::class, 'consultation_id');
     }
 
-    public function schedule(): BelongsTo
+    public function patient_grievance(): HasMany
     {
-        return $this->belongsTo(EmployeeSchedule::class);
+        return $this->hasMany(PatientGrievance::class, 'consultation_id');
     }
 
     protected static function newFactory()

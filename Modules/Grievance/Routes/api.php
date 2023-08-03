@@ -25,3 +25,14 @@ Route::middleware(['auth:api'])->controller(GrievanceController::class)->prefix(
     Route::patch($grievance, 'update')->name('grievance.update');
     Route::delete($grievance, 'destroy')->name('grievance.destroy');
 });
+
+Route::middleware(['auth:api','scopes:doctor'])->prefix('doctor')->group(function (){
+    Route::prefix('consul')->group(function () {
+        Route::prefix('grievance')->controller(GrievanceController::class)->group(function () {
+            Route::post('', 'getOrderGrievance');
+            Route::get('list', 'show');
+            Route::post('add', 'addGrieevancePatient');
+            Route::post('delete', 'deleteGrieevancePatient');
+        });
+    });
+});

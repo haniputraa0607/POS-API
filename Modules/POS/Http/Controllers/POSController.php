@@ -203,6 +203,11 @@ class POSController extends Controller
 
             DB::beginTransaction();
             if(!$order){
+                $last_code = Order::where('outlet_id', $outlet['id'])->latest('order_code')->first()['order_code']??'';
+                $last_code_outlet = explode('-',$outlet['outlet_code'])[1];
+                $last_code = explode('-',$last_code)[1];
+                $last_code = (int)$last_code + 1;
+
                 $order = Order::create([
                     'patient_id' => $post['id_customer'],
                     'outlet_id'  => $outlet['id'],
@@ -344,7 +349,7 @@ class POSController extends Controller
                     return $this->error('Doctor not found');
                 }
 
-                $order_consultation = OrderConsultation::where('order_id', $order['id'])->where('doctor_id', $doctor['id'])->whereDate('schedule_date',$post['order']['date'])->first();
+                $order_consultation = OrderConsultation::where('order_id', $order['id'])->first();
                 if($order_consultation){
                     return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Consultation already exist in order');
                 }else{
@@ -386,8 +391,6 @@ class POSController extends Controller
                     return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Succes to add new order');
 
                 }
-
-            }elseif(($post['type']??false) == 'prescription'){
 
             }else{
                 return $this->error('Type is invalid');
@@ -508,8 +511,6 @@ class POSController extends Controller
             DB::commit();
             return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Succes to delete order');
 
-        }elseif(($type??false) == 'prescription'){
-
         }else{
             return $this->error('Type is invalid');
         }
@@ -621,12 +622,6 @@ class POSController extends Controller
 
                 DB::commit();
                 return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Succes to delete order');
-
-            }elseif(($post['type']??false) == 'treatment'){
-
-            }elseif(($post['type']??false) == 'consultation'){
-
-            }elseif(($post['type']??false) == 'prescription'){
 
             }else{
                 return $this->error('Type is invalid');

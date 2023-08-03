@@ -22,3 +22,9 @@ Route::middleware('auth:api')->controller(ConsultationController::class)->prefix
     Route::get('mine', 'mine')->name('consultation.mine');
     Route::get('mine-today', 'mineToday')->name('consultation.mine.today');
 });
+
+Route::middleware(['auth:api','scopes:doctor'])->prefix('doctor')->group(function (){
+    Route::prefix('consul')->controller(ConsultationController::class)->group(function () {
+        Route::post('submit', 'submit');
+    });
+});

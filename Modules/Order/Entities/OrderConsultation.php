@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Order\Entities\Order;
 use Modules\User\Entities\User;
 use Modules\Doctor\Entities\DoctorShift;
+use Modules\Consultation\Entities\Consultation;
 
 class OrderConsultation extends Model
 {
@@ -45,5 +46,10 @@ class OrderConsultation extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class, 'order_id', 'id');
+    }
+
+    public function consultation(): HasOne
+    {
+        return $this->hasOne(Consultation::class, 'order_consultation_id');
     }
 }
