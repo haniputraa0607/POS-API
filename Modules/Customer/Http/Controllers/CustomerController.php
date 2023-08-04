@@ -37,7 +37,7 @@ class CustomerController extends Controller
         return $this->ok('success', $data);
     }
 
-    public function update(Update $request): mixed
+    public function update(Update $request): JsonResponse
     {
         $customer = Customer::where('id', $request->id)->firstOrFail();
         $customer->update($request->all());

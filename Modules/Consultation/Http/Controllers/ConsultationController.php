@@ -59,7 +59,7 @@ class ConsultationController extends Controller
         return $this->ok('success', []);
     }
 
-    public function submit(Request $request): mixed
+    public function submit(Request $request): JsonResponse
     {
         $request->validate([
             'id_order' => 'required',

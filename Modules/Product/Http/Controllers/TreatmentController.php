@@ -19,7 +19,7 @@ class TreatmentController extends Controller
         date_default_timezone_set('Asia/Jakarta');
     }
 
-    public function list(Request $request):mixed
+    public function list(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $cashier = $request->user();

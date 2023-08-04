@@ -20,6 +20,7 @@ Route::middleware(['auth:api','scopes:be'])->prefix('be')->group(function (){
 
     Route::prefix('product')->controller(ProductController::class)->group(function () {
         Route::post('create', 'create');
+        Route::post('upload-image', 'uploadImage');
     });
 
 });

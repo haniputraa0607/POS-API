@@ -46,7 +46,7 @@ class GrievanceController extends Controller
         return $this->ok("success", $grievance);
     }
 
-    public function getOrderGrievance(Request $request): mixed
+    public function getOrderGrievance(Request $request): JsonResponse
     {
         $request->validate([
             'id_order' => 'required'
@@ -64,7 +64,7 @@ class GrievanceController extends Controller
 
     }
 
-    public function getGrievance($data, $message): mixed
+    public function getGrievance($data, $message): JsonResponse
     {
         $id_order = $data['id_order'];
 
@@ -90,7 +90,7 @@ class GrievanceController extends Controller
         return $this->ok("success", $grievance);
     }
 
-    public function addGrievancePatient(Request $request): mixed
+    public function addGrievancePatient(Request $request): JsonResponse
     {
         $request->validate([
             'id_order' => 'required',
@@ -133,7 +133,7 @@ class GrievanceController extends Controller
 
     }
 
-    public function deleteGrievancePatient(Request $request): mixed
+    public function deleteGrievancePatient(Request $request): JsonResponse
     {
         $request->validate([
             'id' => 'required',

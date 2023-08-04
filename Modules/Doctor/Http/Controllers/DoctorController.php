@@ -25,7 +25,7 @@ class DoctorController extends Controller
         date_default_timezone_set('Asia/Jakarta');
     }
 
-    public function home(Request $request):mixed
+    public function home(Request $request):JsonResponse
     {
 
         $doctor = $request->user();
@@ -138,7 +138,7 @@ class DoctorController extends Controller
 
     }
 
-    public function splash(Request $request):mixed
+    public function splash(Request $request):JsonResponse
     {
         $splash = Setting::where('key', '=', 'splash_doctor_apps')->first();
         $duration = Setting::where('key', '=', 'splash_doctor_apps_duration')->pluck('value')->first();
@@ -160,7 +160,7 @@ class DoctorController extends Controller
         return $result;
     }
 
-    public function nextQueue(Request $request):mixed
+    public function nextQueue(Request $request):JsonResponse
     {
         $doctor = $request->user();
         $outlet = $doctor->outlet;
@@ -212,7 +212,7 @@ class DoctorController extends Controller
 
     }
 
-    public function getDataOrder($data, $message):mixed
+    public function getDataOrder($data, $message):JsonResponse
     {
         $id_order = $data['order_id'];
         $id_order_consultation = $data['order_consultation']['id'];
@@ -396,7 +396,7 @@ class DoctorController extends Controller
                     'id_doctor' => $doc['id'],
                     'name'      => $doc['name'],
                     'date'      => date('j F Y',strtotime($date)),
-                    'iamge_url' => $doc['photo'] ?? null,
+                    'image_url' => isset($doc['image_url']) ? env('STORAGE_URL_API').$doc['image_url'] : null,
                     'shifts'    => $doc_shift
                 ];
             }

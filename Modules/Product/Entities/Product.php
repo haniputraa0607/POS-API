@@ -26,6 +26,7 @@ class Product extends Model
         'product_name',
         'type',
         'description',
+        'image',
         'is_active',
         'need_recipe_status',
     ];

@@ -10,9 +10,16 @@ use Modules\User\Entities\User;
 use Modules\User\Http\Requests\UserRequest;
 use App\Http\Models\Feature;
 use Modules\User\Entities\Admin;
+use App\Lib\MyHelper;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
+    public function __construct()
+    {
+        date_default_timezone_set('Asia/Jakarta');
+        $this->user_path = "img/user/";
+    }
     /**
      * Display a listing of the resource.
      */
@@ -48,7 +55,7 @@ class UserController extends Controller
         );
     }
 
-    public function detailUser(Request $request):mixed
+    public function detailUser(Request $request):JsonResponse
     {
         $data['user'] = Auth::user();
         $data['features'] = Auth::user()->get_features();
@@ -57,5 +64,39 @@ class UserController extends Controller
             "success get data user",
             $data
         );
+    }
+
+    public function uploadImage(Request $request):JsonResponse
+    {
+        $post = $request->all();
+
+        $doctor = User::where('id', $post['id_user'])->first();
+        DB::beginTransaction();
+        try{
+            $encode = base64_encode(fread(fopen($post['image'], "r"), filesize($post['image'])));
+        }catch(\Exception $e) {
+            DB::rollback();
+            return $this->error('Error');
+        }
+        $originalName = $post['image']->getClientOriginalName();
+        if($originalName == ''){
+            $ext = 'png';
+        }else{
+            $ext = pathinfo($originalName, PATHINFO_EXTENSION);
+        }
+        $name_image = str_replace(' ', '_',strtolower($doctor['name']??''));
+        $upload = MyHelper::uploadFile($encode, $this->user_path, $ext, $name_image);
+        if (isset($upload['status']) && $upload['status'] == "success") {
+            $upload = $doctor->update(['image_url' => $upload['path']]);
+        }else {
+            DB::rollback();
+            return response()->json([
+                'status'=>'fail',
+                'messages'=>['Gagal menyimpan file']
+            ]);
+        }
+        DB::commit();
+        return $this->ok('success', $upload);
+
     }
 }
