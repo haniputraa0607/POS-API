@@ -82,7 +82,6 @@ class POSController extends Controller
 
         $outlet_service = json_decode($outlet['activities'], true) ?? [];
         $data['service'] = [];
-
         $default_icon = config('default_icon') ?? [];
 
         foreach($outlet_service ?? [] as $key => $serv){
