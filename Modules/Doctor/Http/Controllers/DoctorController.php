@@ -120,12 +120,13 @@ class DoctorController extends Controller
 
         $outlet_service = json_decode($outlet['activities'], true) ?? [];
         $data['service'] = [];
+        $default_icon = config('default_icon') ?? [];
 
         foreach($outlet_service ?? [] as $key => $serv){
 
             $data['service'][] = [
-                'icon' => 'tes',
-                'icon_active' => 'tes',
+                'icon' => $default_icon[$serv]['icon_inactive'] ?? null,
+                'icon_active' => $default_icon[$serv]['icon_active'] ?? null,
                 'title' => $serv == 'consultation' ? 'Overview' : ($serv == 'prescription' ? 'Prescription' : ($serv == 'product' ? 'Product' : ($serv == 'treatment' ? 'Treatment' : ''))),
                 'key' => $serv == 'consultation' ? 1 : ($serv == 'prescription' ? 2 : ($serv == 'product' ? 3 : ($serv == 'treatment' ? 4 : 0)))
             ];
