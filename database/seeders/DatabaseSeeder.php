@@ -13,6 +13,7 @@ use Modules\Outlet\Database\Seeders\OutletDatabaseSeeder;
 use Modules\Queue\Database\Seeders\QueueDatabaseSeeder;
 use Modules\User\Database\Seeders\UserDatabaseSeeder;
 use Database\Seeders\FeaturesTableSeeder;
+use Database\Seeders\SettingTableSeeder;
 
 class DatabaseSeeder extends Seeder
 {

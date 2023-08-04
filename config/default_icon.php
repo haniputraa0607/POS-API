@@ -1,9 +1,13 @@
 <?php
 
 return [
-    'consultation' => [
+    'overview' => [
         'icon_active'    => env('STORAGE_URL_API').'default_image/ic_active_overview.png',
         'icon_inactive'  => env('STORAGE_URL_API').'default_image/ic_inactive_overview.png',
+    ],
+    'consultation' => [
+        'icon_active'    => env('STORAGE_URL_API').'default_image/ic_active_consultation.png',
+        'icon_inactive'  => env('STORAGE_URL_API').'default_image/ic_inactive_consultation.png',
     ],
     'prescription' => [
         'icon_active'    => env('STORAGE_URL_API').'default_image/ic_active_prescription.png',

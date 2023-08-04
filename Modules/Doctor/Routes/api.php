@@ -21,6 +21,7 @@ Route::middleware(['auth:api','scopes:doctor'])->controller(DoctorController::cl
     Route::get('home', 'home');
     Route::get('list-service', 'listService');
     Route::get('next', 'nextQueue');
+    Route::get('splash', 'splash');
 
 });
 
