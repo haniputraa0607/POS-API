@@ -121,48 +121,47 @@ class MyHelper
         return substr($input, 0, 1) . $leadingZeros . $number;
     }
 
-    public static function uploadFile($file, $path, $ext="apk", $name=null) {
-		// kalo ada file
-		$decoded = base64_decode($file);
+    public static function uploadFile($file, $path, $ext = "apk", $name = null)
+    {
+        // kalo ada file
+        $decoded = base64_decode($file);
 
-		// set picture name
-		if($name != null)
-			$pictName = $name.'.'.$ext;
-		else
-			$pictName = mt_rand(0, 1000).''.time().'.'.$ext;
+        // set picture name
+        if ($name != null) {
+            $pictName = $name . '.' . $ext;
+        } else {
+            $pictName = mt_rand(0, 1000) . '' . time() . '.' . $ext;
+        }
 
-		// path
-		$upload = $path.$pictName;
+        // path
+        $upload = $path . $pictName;
 
-		if(env('STORAGE')){
-			$save = Storage::disk(env('STORAGE'))->put($upload, $decoded, 'public');
-			if ($save) {
-					$result = [
-						'status' => 'success',
-						'path'  => $upload
-					];
-			}
-			else {
-				$result = [
-					'status' => 'fail'
-				];
-			}
-		}else{
-			$save = File::put($upload,$decoded);
-			if ($save) {
-					$result = [
-						'status' => 'success',
-						'path'  => $upload
-					];
-			}
-			else {
-				$result = [
-					'status' => 'fail'
-				];
-			}
-		}
+        if (env('STORAGE')) {
+            $save = Storage::disk(env('STORAGE'))->put($upload, $decoded, 'public');
+            if ($save) {
+                    $result = [
+                        'status' => 'success',
+                        'path'  => $upload
+                    ];
+            } else {
+                $result = [
+                    'status' => 'fail'
+                ];
+            }
+        } else {
+            $save = File::put($upload, $decoded);
+            if ($save) {
+                    $result = [
+                        'status' => 'success',
+                        'path'  => $upload
+                    ];
+            } else {
+                $result = [
+                    'status' => 'fail'
+                ];
+            }
+        }
 
-		return $result;
-	}
-
+        return $result;
+    }
 }
