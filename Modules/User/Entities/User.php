@@ -50,6 +50,7 @@ class User extends Authenticatable
         'address',
         'gender',
         'level',
+        'image_url'
     ];
 
     /**

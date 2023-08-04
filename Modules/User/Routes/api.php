@@ -37,8 +37,9 @@ Route::middleware('auth:api')->controller(UserController::class)->prefix('/user'
     Route::delete($user, 'destroy')->name('user.delete');
 });
 
-Route::middleware(['auth:api'])->controller(UserController::class)->prefix('be')->group(function (){
+Route::middleware(['auth:api','scopes:be'])->controller(UserController::class)->prefix('be')->group(function (){
     Route::get('user', 'detailUser');
     Route::get('list-service', 'listService');
+    Route::post('user/upload-image', 'uploadImage');
 
 });

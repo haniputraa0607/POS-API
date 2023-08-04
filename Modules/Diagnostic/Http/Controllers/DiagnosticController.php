@@ -53,7 +53,7 @@ class DiagnosticController extends Controller
         return $this->ok("success", $diagnostic);
     }
 
-    public function getOrderDiagnostic(Request $request): mixed
+    public function getOrderDiagnostic(Request $request): JsonResponse
     {
         $request->validate([
             'id_order' => 'required'
@@ -71,7 +71,7 @@ class DiagnosticController extends Controller
 
     }
 
-    public function getDiagnostic($data, $message): mixed
+    public function getDiagnostic($data, $message): JsonResponse
     {
         $id_order = $data['id_order'];
 
@@ -91,7 +91,7 @@ class DiagnosticController extends Controller
 
     }
 
-    public function addDiagnosticPatient(Request $request): mixed
+    public function addDiagnosticPatient(Request $request): JsonResponse
     {
         $request->validate([
             'id_order' => 'required',
@@ -134,7 +134,7 @@ class DiagnosticController extends Controller
 
     }
 
-    public function deleteDiagnosticPatient(Request $request): mixed
+    public function deleteDiagnosticPatient(Request $request): JsonResponse
     {
         $request->validate([
             'id' => 'required',

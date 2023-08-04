@@ -28,7 +28,7 @@ class POSController extends Controller
         date_default_timezone_set('Asia/Jakarta');
     }
 
-    public function home(Request $request):mixed
+    public function home(Request $request):JsonResponse
     {
         $cashier = $request->user();
         $outlet = $cashier->outlet;
@@ -72,7 +72,7 @@ class POSController extends Controller
 
     }
 
-    public function listService(Request $request):mixed
+    public function listService(Request $request):JsonResponse
     {
         $cashier = $request->user();
         $outlet = $cashier->outlet;
@@ -87,20 +87,21 @@ class POSController extends Controller
 
         foreach($outlet_service ?? [] as $key => $serv){
 
-            $data['service'][] = [
-                'icon' => $default_icon[$serv]['icon_inactive'] ?? null,
-                'icon_active' => $default_icon[$serv]['icon_active'] ?? null,
-                'title' => $serv == 'consultation' ? 'Consultation' : ($serv == 'prescription' ? 'Prescription' : ($serv == 'product' ? 'Product' : ($serv == 'treatment' ? 'Treatment' : ''))),
-                'key' => $serv == 'consultation' ? 1 : ($serv == 'product' ? 2 : ($serv == 'treatment' ? 3 : 0))
-            ];
-
+            if($serv != 'prescription'){
+                $data['service'][] = [
+                    'icon' => $default_icon[$serv]['icon_inactive'] ?? null,
+                    'icon_active' => $default_icon[$serv]['icon_active'] ?? null,
+                    'title' => $serv == 'consultation' ? 'Consultation' : ($serv == 'product' ? 'Product' : ($serv == 'treatment' ? 'Treatment' : '')),
+                    'key' => $serv == 'consultation' ? 1 : ($serv == 'product' ? 2 : ($serv == 'treatment' ? 3 : 0))
+                ];
+            }
         }
 
         return $this->ok('', $data);
 
     }
 
-    public function splash(Request $request):mixed
+    public function splash(Request $request):JsonResponse
     {
         $splash = Setting::where('key', '=', 'splash_pos_apps')->first();
         $duration = Setting::where('key', '=', 'splash_pos_apps_duration')->pluck('value')->first();
@@ -122,7 +123,7 @@ class POSController extends Controller
         return $result;
     }
 
-    public function getOrder(Request $request):mixed
+    public function getOrder(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $cashier = $request->user();
@@ -141,7 +142,7 @@ class POSController extends Controller
 
     }
 
-    public function getDataOrder($data, $message):mixed
+    public function getDataOrder($data, $message):JsonResponse
     {
         $id_customer = $data['id_customer'];
 
@@ -218,7 +219,7 @@ class POSController extends Controller
 
     }
 
-    public function addOrder(Request $request):mixed
+    public function addOrder(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $cashier = $request->user();
@@ -437,7 +438,7 @@ class POSController extends Controller
 
     }
 
-    public function deleteOrder(Request $request):mixed
+    public function deleteOrder(Request $request):JsonResponse
     {
 
         $post = $request->json()->all();
@@ -463,7 +464,7 @@ class POSController extends Controller
 
     }
 
-    public function deleteOrderData($data):mixed
+    public function deleteOrderData($data):JsonResponse
     {
         $outlet =  $data['outlet'];
         $type =  $data['type'];
@@ -551,7 +552,7 @@ class POSController extends Controller
         }
     }
 
-    public function editOrder(Request $request):mixed
+    public function editOrder(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $cashier = $request->user();

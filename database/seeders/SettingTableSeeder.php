@@ -18,8 +18,8 @@ class SettingTableSeeder extends Seeder
             0 =>
             array(
                 'id' => 1,
-                'key' => 'splash_pos_apps',
-                'value' => NULL,
+                'key' => 'splash_doctor_apps',
+                'value' => 'subtotal,service,discount,shipping,tax',
                 'value_text' => NULL,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),
@@ -27,26 +27,8 @@ class SettingTableSeeder extends Seeder
             1 =>
             array(
                 'id' => 2,
-                'key' => 'splash_pos_apps_duration',
-                'value' => 2,
-                'value_text' => NULL,
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ),
-            2 =>
-            array(
-                'id' => 3,
-                'key' => 'splash_doctor_apps',
-                'value' => NULL,
-                'value_text' => NULL,
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ),
-            3 =>
-            array(
-                'id' => 4,
-                'key' => 'splash_doctor_apps_duration',
-                'value' => 2,
+                'key' => 'default_splash_screen_outlet_apps_duration',
+                'value' => '( subtotal ) * value',
                 'value_text' => NULL,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s'),

@@ -3,6 +3,7 @@
 /public/build
 /public/hot
 /public/storage/splash
+/public/storage/img
 /storage/*.key
 /vendor
 .env
