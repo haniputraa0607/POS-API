@@ -18,9 +18,15 @@ return new class extends Migration
             $table->dropColumn('customer_id');
             $table->dropForeign('consultations_queue_id_foreign');
             $table->dropColumn('queue_id');
-            // $table->dropForeign('consultations_employee_schedule_id_foreign');
+            $table->dropForeign('consultations_employee_schedule_id_foreign');
             $table->dropColumn('employee_schedule_id');
             $table->dropColumn('consultation_date');
+
+            if (Schema::hasColumn('consultations', 'order_consultation_id')) {
+                $table->dropForeign('consultations_order_consultation_id_foreign');
+                $table->dropColumn('order_consultation_id');
+            }
+            
             $table->after('id', function (Blueprint $table) {
                 $table->foreignId('order_consultation_id')->constrained('order_consultations');
             });
