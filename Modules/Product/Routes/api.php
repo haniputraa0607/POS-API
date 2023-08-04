@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use Modules\Product\Http\Controllers\ProductController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,13 +18,28 @@ use Illuminate\Http\Request;
 Route::middleware(['auth:api','scopes:be'])->prefix('be')->group(function (){
     Route::prefix('product-category')->controller(ProductCategoryController::class)->group(function () {
         Route::post('create', 'create');
+        Route::get('list', 'list');
     });
 
     Route::prefix('product')->controller(ProductController::class)->group(function () {
         Route::post('create', 'create');
         Route::post('upload-image', 'uploadImage');
+
+    
+    Route::controller(ProductController::class)->prefix('/product')->group(function () {
+        $product = '{product}';
+        Route::get('', 'index')->name('product.list');
+        Route::post('', 'store')->name('product.create');
+        Route::get($product, 'show')->name('product.show');
+        Route::patch($product, 'update')->name('product.update');
+        Route::delete($product, 'destroy')->name('product.delete');
     });
 
+    Route::prefix('product')->controller(LandingPageController::class)->group(function () {
+        Route::post('detail', 'detail');
+        Route::post('datatable_list', 'datatable_list');
+        Route::post('table_list', 'table_list');
+    });
 });
 
 Route::middleware(['auth:api','scopes:pos'])->prefix('pos')->group(function (){
@@ -38,7 +55,13 @@ Route::middleware(['auth:api','scopes:pos'])->prefix('pos')->group(function (){
         Route::post('list', 'list');
         Route::post('customer-history', 'customerHistory');
     });
+});
 
+Route::middleware(['auth:api','scopes:be'])->prefix('landing-page')->group(function(){
+    Route::prefix('product')->controller(LandingPageController::class)->group(function(){
+        Route::post('list', 'list');
+        Route::post('detail', 'detail');
+    });
 });
 
 Route::middleware(['auth:api','scopes:doctor'])->prefix('doctor')->group(function (){

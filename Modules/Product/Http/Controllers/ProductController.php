@@ -7,8 +7,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Product\Entities\Product;
+use Modules\Product\Entities\ProductGlobalPrice;
 use Modules\Outlet\Http\Controllers\OutletController;
 use Modules\Product\Entities\ProductOutletStockLog;
+use Modules\Product\Http\Requests\ProductRequest;
 use App\Lib\MyHelper;
 use Illuminate\Support\Facades\DB;
 
@@ -21,27 +23,36 @@ class ProductController extends Controller
 
     }
 
-    public function create(Request $request):JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $post = $request->json()->all();
+        $product = $request->length ?  Product::paginate($request->length ?? 10) : Product::get();
+        return $this->ok("success get data all users", $product);
+    }
+    
+    public function show(Request $request, $id): JsonResponse
+    {
+        $product = Product::with('global_price')->find($id);
+        return $this->ok("success", $product);
+    }
 
-        if(!$post || !isset($post['type']) || $post['type'] == ''){
-            return $this->error('Type cant be null');
-        }
+    public function store(ProductRequest $request):JsonResponse
+    {
+        $product = Product::create($request->all());
+        $globalPrice = [
+            'price' => $request->price,
+        ];
+        $product->global_price()->create($globalPrice);
+        return $this->ok("succes", $product);
+    }
 
-        if($post['type'] == 'Product' && (!isset($post['product_category_id']) || $post['product_category_id'] == '')){
-            return $this->error('Product Category name cant be null');
-        }
-
-        if(!isset($post['product_name']) || $post['product_name'] == ''){
-            return $this->error('Product name cant be null');
-        }
-
-        $store = Product::create($post);
-        if(!$store){
-            return $this->error('Something Error');
-        }
-        return $this->ok('success', $store);
+    public function update(ProductRequest $request, Product $product): JsonResponse
+    {
+        $product->update($request->all());
+        $globalPrice = [
+            'price' => $request->price,
+        ];
+        $product->global_price()->update($globalPrice);
+        return $this->ok("succes", $product);
     }
 
     public function uploadImage(Request $request):JsonResponse
@@ -118,6 +129,13 @@ class ProductController extends Controller
         },$product);
 
         return $this->ok('success', $product);
+    }
+
+    public function destroy(Request $request, $id): JsonResponse
+    {
+        $global_price = ProductGlobalPrice::where(['product_id' => $id])->delete();
+        $product = Product::where(['id' => $id])->delete();
+        return $this->ok("succes", $product);
     }
 
     public function addLogProductStockLog($id, $qty, $stock_before, $stock_after, $source, $desc){
