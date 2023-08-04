@@ -71,7 +71,7 @@ class POSController extends Controller
 
     }
 
-    public function listService(Request $request):JsonResponse
+    public function listService(Request $request):mixed
     {
         $cashier = $request->user();
         $outlet = $cashier->outlet;
@@ -83,11 +83,13 @@ class POSController extends Controller
         $outlet_service = json_decode($outlet['activities'], true) ?? [];
         $data['service'] = [];
 
+        $default_icon = config('default_icon') ?? [];
+
         foreach($outlet_service ?? [] as $key => $serv){
 
             $data['service'][] = [
-                'icon' => 'tes',
-                'icon_active' => 'tes',
+                'icon' => $default_icon[$serv]['icon_inactive'] ?? null,
+                'icon_active' => $default_icon[$serv]['icon_active'] ?? null,
                 'title' => $serv == 'consultation' ? 'Consultation' : ($serv == 'prescription' ? 'Prescription' : ($serv == 'product' ? 'Product' : ($serv == 'treatment' ? 'Treatment' : ''))),
                 'key' => $serv == 'consultation' ? 1 : ($serv == 'product' ? 2 : ($serv == 'treatment' ? 3 : 0))
             ];

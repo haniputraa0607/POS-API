@@ -48,7 +48,7 @@ class OrderConsultation extends Model
         return $this->belongsTo(Order::class, 'order_id', 'id');
     }
 
-    public function consultation(): HasOne
+    public function consultation    (): HasOne
     {
         return $this->hasOne(Consultation::class, 'order_consultation_id');
     }
