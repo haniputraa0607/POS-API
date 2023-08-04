@@ -18,6 +18,7 @@ use Modules\Customer\Entities\TreatmentPatient;
 use App\Jobs\GenerateQueueOrder;
 use Modules\User\Entities\User;
 use Modules\Doctor\Entities\DoctorShift;
+use App\Http\Models\Setting;
 
 class POSController extends Controller
 {
@@ -97,6 +98,28 @@ class POSController extends Controller
 
         return $this->ok('', $data);
 
+    }
+
+    public function splash(Request $request):mixed
+    {
+        $splash = Setting::where('key', '=', 'splash_pos_apps')->first();
+        $duration = Setting::where('key', '=', 'splash_pos_apps_duration')->pluck('value')->first();
+
+        if(!empty($splash)){
+            $splash = env('STORAGE_URL_API').$splash['value'];
+        } else {
+            $splash = null;
+        }
+        $ext=explode('.', $splash);
+        $result = [
+            'status' => 'success',
+            'result' => [
+                'splash_screen_url' => $splash."?update=".time(),
+                'splash_screen_duration' => $duration??5,
+                'splash_screen_ext' => '.'.end($ext)
+            ]
+        ];
+        return $result;
     }
 
     public function getOrder(Request $request):mixed

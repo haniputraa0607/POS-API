@@ -18,6 +18,7 @@ use Modules\POS\Http\Controllers\POSController;
 Route::middleware(['auth:api','scopes:pos'])->controller(POSController::class)->prefix('pos')->group(function (){
     Route::get('home', 'home');
     Route::get('list-service', 'listService');
+    Route::get('splash', 'splash');
 
     Route::prefix('order')->controller(POSController::class)->group(function () {
         Route::post('/', 'getOrder');

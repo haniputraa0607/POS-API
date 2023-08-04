@@ -16,6 +16,7 @@ use Modules\Order\Entities\OrderConsultation;
 use Modules\Order\Entities\Order;
 use Modules\Order\Entities\OrderProduct;
 use Illuminate\Support\Facades\DB;
+use App\Http\Models\Setting;
 
 class DoctorController extends Controller
 {
@@ -125,8 +126,8 @@ class DoctorController extends Controller
         foreach($outlet_service ?? [] as $key => $serv){
 
             $data['service'][] = [
-                'icon' => $default_icon[$serv]['icon_inactive'] ?? null,
-                'icon_active' => $default_icon[$serv]['icon_active'] ?? null,
+                'icon' => $serv == 'consultation' ? ($default_icon['overview']['icon_inactive'] ?? null) : ($default_icon[$serv]['icon_inactive'] ?? null),
+                'icon_active' => $serv == 'consultation' ? ($default_icon['overview']['icon_active'] ?? null) : ($default_icon[$serv]['icon_active'] ?? null),
                 'title' => $serv == 'consultation' ? 'Overview' : ($serv == 'prescription' ? 'Prescription' : ($serv == 'product' ? 'Product' : ($serv == 'treatment' ? 'Treatment' : ''))),
                 'key' => $serv == 'consultation' ? 1 : ($serv == 'prescription' ? 2 : ($serv == 'product' ? 3 : ($serv == 'treatment' ? 4 : 0)))
             ];
@@ -135,6 +136,28 @@ class DoctorController extends Controller
 
         return $this->ok('', $data);
 
+    }
+
+    public function splash(Request $request):mixed
+    {
+        $splash = Setting::where('key', '=', 'splash_doctor_apps')->first();
+        $duration = Setting::where('key', '=', 'splash_doctor_apps_duration')->pluck('value')->first();
+
+        if(!empty($splash)){
+            $splash = env('STORAGE_URL_API').$splash['value'];
+        } else {
+            $splash = null;
+        }
+        $ext=explode('.', $splash);
+        $result = [
+            'status' => 'success',
+            'result' => [
+                'splash_screen_url' => $splash."?update=".time(),
+                'splash_screen_duration' => $duration??5,
+                'splash_screen_ext' => '.'.end($ext)
+            ]
+        ];
+        return $result;
     }
 
     public function nextQueue(Request $request):mixed
