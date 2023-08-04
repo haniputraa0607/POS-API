@@ -24,8 +24,8 @@ Route::middleware(['auth:api','scopes:be'])->prefix('be')->group(function (){
     Route::prefix('product')->controller(ProductController::class)->group(function () {
         Route::post('create', 'create');
         Route::post('upload-image', 'uploadImage');
+    });
 
-    
     Route::controller(ProductController::class)->prefix('/product')->group(function () {
         $product = '{product}';
         Route::get('', 'index')->name('product.list');
