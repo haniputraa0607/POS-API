@@ -113,14 +113,11 @@ class POSController extends Controller
         }
         $ext=explode('.', $splash);
         $result = [
-            'status' => 'success',
-            'result' => [
-                'splash_screen_url' => $splash."?update=".time(),
-                'splash_screen_duration' => $duration??5,
-                'splash_screen_ext' => '.'.end($ext)
-            ]
+            'splash_screen_url' => $splash."?update=".time(),
+            'splash_screen_duration' => $duration??5,
+            'splash_screen_ext' => '.'.end($ext)
         ];
-        return $result;
+        return $this->ok('', $result);
     }
 
     public function getOrder(Request $request):JsonResponse
