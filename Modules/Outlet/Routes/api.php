@@ -28,7 +28,6 @@ Route::middleware('auth:api')->controller(OutletController::class)->prefix('outl
     Route::patch($outlet, 'update')->name('outlet.update');
     Route::delete($outlet, 'destroy')->name('outlet.delete');
 });
-// Route::middleware('auth:api')->controller(PartnerController::class)->prefix('partner')->group(function () {
 Route::prefix('landing-page')->group(function(){
     Route::controller(PartnerController::class)->prefix('partner')->group(function () {
         $partner = '{partner}';
