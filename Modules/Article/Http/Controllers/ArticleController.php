@@ -16,7 +16,7 @@ class ArticleController extends Controller
     public function index(Request $request): JsonResponse
     {
         $article = $request->length ?  Article::paginate($request->length ?? 10) : Article::get();
-        return $this->ok("success get data all users", $article);
+        return $this->ok("success get data all article", $article);
         return response()->json($article);
     }
     

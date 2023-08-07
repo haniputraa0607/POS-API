@@ -61,7 +61,7 @@ class AccessTokenController extends PassportAccessTokenController
                     } else {
                         return response()->json(['status' => 'fail', 'messages' => 'Usermame atau pin tidak sesuai.']);
                     }
-                }else {
+                } else {
                     return response()->json(['status' => 'fail', 'messages' => 'Usermame atau pin tidak sesuai.']);
                 }
             }

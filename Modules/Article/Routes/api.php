@@ -14,7 +14,7 @@ use Modules\Article\Http\Controllers\ArticleController;
 |
 */
 
-Route::middleware(['auth:api','scopes:be'])->prefix('landing-page')->group(function(){
+Route::prefix('landing-page')->group(function(){
     Route::prefix('article')->controller(ArticleController::class)->group(function(){
         $article = '{article}';
         Route::get('', 'index');
