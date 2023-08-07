@@ -5,7 +5,9 @@ namespace Modules\Doctor\Entities;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Doctor\Database\factories\DoctorDayFactory;
+use Modules\Order\Entities\OrderConsultation;
 use Modules\User\Entities\User;
 
 class DoctorShift extends Model
@@ -31,5 +33,10 @@ class DoctorShift extends Model
     protected static function newFactory()
     {
         return DoctorDayFactory::new();
+    }
+
+    public function order_consultations(): HasMany
+    {
+        return $this->hasMany(OrderConsultation::class);
     }
 }

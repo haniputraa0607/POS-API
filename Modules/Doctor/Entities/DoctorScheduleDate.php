@@ -15,7 +15,6 @@ class DoctorScheduleDate extends Model
     protected $table = 'doctor_schedule_dates';
     protected $fillable = [
         'doctor_schedule_id',
-        'doctor_shift_id',
         'date'
     ];
 

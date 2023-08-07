@@ -14,8 +14,17 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Consultation\Http\Controllers\ConsultationController;
+// header('Access-Control-Allow-Origin:  *');
+header('Access-Control-Allow-Methods:  POST, GET, OPTIONS, PUT, DELETE');
+header('Access-Control-Allow-Headers:  Content-Type, X-Auth-Token, Origin, Authorization');
 
 Route::middleware('auth:api')->controller(ConsultationController::class)->prefix('consultation')->group(function () {
     Route::get('mine', 'mine')->name('consultation.mine');
     Route::get('mine-today', 'mineToday')->name('consultation.mine.today');
+});
+
+Route::middleware(['auth:api','scopes:doctor'])->prefix('doctor')->group(function (){
+    Route::prefix('consul')->controller(ConsultationController::class)->group(function () {
+        Route::post('submit', 'submit');
+    });
 });

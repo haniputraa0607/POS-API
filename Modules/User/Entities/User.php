@@ -18,6 +18,7 @@ use Modules\User\Database\factories\UserFactory;
 use Spatie\Permission\Traits\HasRoles;
 use Modules\User\Entities\Admin;
 use Modules\Doctor\Entities\DoctorSchedule;
+use Modules\Doctor\Entities\DoctorShift;
 
 class User extends Authenticatable
 {
@@ -41,6 +42,7 @@ class User extends Authenticatable
         'birthdate',
         'email_verified_at',
         'type',
+        'consultation_price',
         'outlet_id',
         'admin_id',
         'password',
@@ -48,6 +50,7 @@ class User extends Authenticatable
         'address',
         'gender',
         'level',
+        'image_url'
     ];
 
     /**
@@ -93,6 +96,11 @@ class User extends Authenticatable
     public function doctor_schedules(): HasMany
     {
         return $this->hasMany(DoctorSchedule::class);
+    }
+
+    public function doctor_shifts(): HasMany
+    {
+        return $this->hasMany(DoctorShift::class);
     }
 
     public function scopeDoctor(Builder $query): Builder

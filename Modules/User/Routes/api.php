@@ -16,6 +16,9 @@ use Modules\User\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
+// header('Access-Control-Allow-Origin:  *');
+header('Access-Control-Allow-Methods:  POST, GET, OPTIONS, PUT, DELETE');
+header('Access-Control-Allow-Headers:  Content-Type, X-Auth-Token, Origin, Authorization');
 Route::middleware('auth:api')->get('/banks', function () {
     return response()->json([
         'banks' => config('bank')
@@ -34,8 +37,9 @@ Route::middleware('auth:api')->controller(UserController::class)->prefix('/user'
     Route::delete($user, 'destroy')->name('user.delete');
 });
 
-Route::middleware(['auth:api'])->controller(UserController::class)->prefix('be')->group(function (){
+Route::middleware(['auth:api','scopes:be'])->controller(UserController::class)->prefix('be')->group(function (){
     Route::get('user', 'detailUser');
     Route::get('list-service', 'listService');
+    Route::post('user/upload-image', 'uploadImage');
 
 });

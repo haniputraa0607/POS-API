@@ -14,6 +14,9 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Diagnostic\Http\Controllers\DiagnosticController;
+// header('Access-Control-Allow-Origin:  *');
+header('Access-Control-Allow-Methods:  POST, GET, OPTIONS, PUT, DELETE');
+header('Access-Control-Allow-Headers:  Content-Type, X-Auth-Token, Origin, Authorization');
 
 Route::middleware('auth:api')->controller(DiagnosticController::class)->prefix('diagnostic')->group(function () {
     $diagnostic = '{diagnostic}';
@@ -22,4 +25,15 @@ Route::middleware('auth:api')->controller(DiagnosticController::class)->prefix('
     Route::get($diagnostic, 'show')->name('diagnostic.show');
     Route::patch($diagnostic, 'update')->name('diagnostic.update');
     Route::delete($diagnostic, 'destroy')->name('diagnostic.destroy');
+});
+
+Route::middleware(['auth:api','scopes:doctor'])->prefix('doctor')->group(function (){
+    Route::prefix('consul')->group(function () {
+        Route::prefix('diagnostic')->controller(DiagnosticController::class)->group(function () {
+            Route::post('', 'getOrderDiagnostic');
+            Route::get('list', 'show');
+            Route::post('add', 'addDiagnosticPatient');
+            Route::post('delete', 'deleteDiagnosticPatient');
+        });
+    });
 });

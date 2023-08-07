@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Order\Entities\OrderProduct;
+use Modules\Order\Entities\OrderConsultation;
+use Modules\Outlet\Entities\Outlet;
+use Modules\Customer\Entities\Customer;
 
 class Order extends Model
 {
@@ -28,10 +31,29 @@ class Order extends Model
         'order_tax',
         'order_grandtotal',
         'send_to_transaction',
+        'is_submited',
     ];
 
     public function order_products(): HasMany
     {
         return $this->hasMany(OrderProduct::class);
     }
+
+    public function order_consultations(): HasMany
+    {
+        return $this->hasMany(OrderConsultation::class);
+    }
+
+    public function outlet(): BelongsTo
+    {
+        return $this->belongsTo(Outlet::class, 'outlet_id', 'id');
+    }
+
+    public function patient(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'patient_id', 'id');
+    }
+
+
+
 }
