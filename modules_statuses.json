@@ -17,5 +17,6 @@
     "Grievance": true,
     "POS": true,
     "Doctor": true,
-    "Product": true
+    "Product": true,
+    "Setting": true
 }
