@@ -121,7 +121,7 @@ class POSController extends Controller
         return $this->ok('', $result);
     }
 
-    public function getOrder(Request $request):mixed
+    public function getOrder(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $cashier = $request->user();
@@ -140,7 +140,7 @@ class POSController extends Controller
 
     }
 
-    public function getDataOrder($data, $message):mixed
+    public function getDataOrder($data, $message):JsonResponse
     {
         $id_customer = $data['id_customer'];
 
@@ -479,7 +479,7 @@ class POSController extends Controller
 
     }
 
-    public function deleteOrder(Request $request):mixed
+    public function deleteOrder(Request $request):JsonResponse
     {
 
         $post = $request->json()->all();
@@ -505,7 +505,7 @@ class POSController extends Controller
 
     }
 
-    public function deleteOrderData($data):mixed
+    public function deleteOrderData($data):JsonResponse
     {
         $outlet =  $data['outlet'];
         $type =  $data['type'];

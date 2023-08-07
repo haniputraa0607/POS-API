@@ -41,10 +41,6 @@ Route::middleware(['auth:api','scopes:be'])->prefix('be')->group(function (){
         Route::post('table_list', 'table_list');
     });
 
-    Route::prefix('product')->controller(ProductController::class)->group(function () {
-        Route::post('create', 'create');
-        Route::post('upload-image', 'uploadImage');
-    });
 });
 
 Route::middleware(['auth:api','scopes:pos'])->prefix('pos')->group(function (){
