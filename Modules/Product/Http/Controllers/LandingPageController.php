@@ -20,12 +20,14 @@ class LandingPageController extends Controller
     }
 
     public function list(Request $request, $type):JsonResponse
+
     {
         $post = $request->json()->all();
         $category = $post['product_category_id'] ? $post['product_category_id'] : 'all';
         $sortBy = $post['order_by'] ? $post['order_by'] : 'asc';
         $products = Product::with(['global_price', 'product_category'])
         ->where('type', $type)
+
         ->when($category, function ($query) use ($category) {
             if($category != 'all'){
                 return $query->where('product_category_id', $category);

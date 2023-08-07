@@ -34,6 +34,7 @@ Route::middleware(['auth:api','scopes:be'])->prefix('be')->group(function (){
         Route::post('detail', 'detail');
         Route::post('datatable_list', 'datatable_list');
         Route::post('table_list', 'table_list');
+
     });
 
     Route::prefix('product')->controller(ProductController::class)->group(function () {
@@ -49,6 +50,7 @@ Route::middleware(['auth:api','scopes:be'])->prefix('be')->group(function (){
         Route::patch($product, 'update')->name('product.update');
         Route::delete($product, 'destroy')->name('product.delete');
     });
+
 
     Route::prefix('product')->controller(LandingPageController::class)->group(function () {
         Route::post('detail', 'detail');
