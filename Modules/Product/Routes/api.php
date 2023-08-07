@@ -57,6 +57,7 @@ Route::middleware(['auth:api','scopes:be'])->prefix('be')->group(function (){
         Route::post('datatable_list', 'datatable_list');
         Route::post('table_list', 'table_list');
     });
+
 });
 
 Route::middleware(['auth:api','scopes:pos'])->prefix('pos')->group(function (){

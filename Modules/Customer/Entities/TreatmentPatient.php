@@ -24,6 +24,8 @@ class TreatmentPatient extends Model
         'progress',
         'status',
         'start_date',
+        'timeframe',
+        'timeframe_type',
         'expired_date',
         'suggestion',
     ];

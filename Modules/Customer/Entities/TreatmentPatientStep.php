@@ -14,7 +14,8 @@ class TreatmentPatientStep extends Model
     protected $fillable = [
         'treatment_patient_id',
         'step',
-        'date'
+        'date',
+        'status',
     ];
 
 

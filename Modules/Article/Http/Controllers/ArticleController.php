@@ -19,7 +19,7 @@ class ArticleController extends Controller
         return $this->ok("success get data all article", $article);
         return response()->json($article);
     }
-    
+
     public function show(Article $article): JsonResponse
     {
         return $this->ok("success", $article);
