@@ -21,7 +21,6 @@ class LandingPageController extends Controller
 
     public function list(Request $request, $type):JsonResponse
     {
-        error_reporting(0);
         $post = $request->json()->all();
         $category = $post['product_category_id'] ? $post['product_category_id'] : 'all';
         $sortBy = $post['order_by'] ? $post['order_by'] : 'asc';
