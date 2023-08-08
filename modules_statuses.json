@@ -19,5 +19,6 @@
     "Doctor": true,
     "Product": true,
     "Setting": true,
-    "Article": true
+    "Article": true,
+    "Banner": true
 }
