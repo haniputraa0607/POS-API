@@ -15,9 +15,11 @@ class ArticleController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $article = $request->length ?  Article::paginate($request->length ?? 10) : Article::get();
+        $articles = $request->length ?  Article::paginate($request->length ?? 10) : Article::get();
+        foreach ($articles as $article) {
+            $article->image = 'https://be-daviena.belum.live/images/'.$article->image;
+        }
         return $this->ok("success get data all article", $article);
-        return response()->json($article);
     }
     
     public function show(Article $article): JsonResponse

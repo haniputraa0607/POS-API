@@ -19,22 +19,58 @@ class LandingPageController extends Controller
         date_default_timezone_set('Asia/Jakarta');
     }
 
-    public function list(Request $request, $type):JsonResponse
+    public function list(Request $request,):JsonResponse
     {
         $post = $request->json()->all();
         $category = $post['product_category_id'] ? $post['product_category_id'] : 'all';
+        $paginate = $post['perpage'] ? $post['perpage'] : 8;
+        $sort_by = $post['sort_by'] ? $post['sort_by'] : 1;
+        $productsQuery = Product::with(['global_price', 'product_category'])
+            ->where('type', 'Product')
+            ->when($category, function ($query) use ($category) {
+                if ($category != 'all') {
+                    return $query->where('product_category_id', $category);
+                }
+            });
+        switch ($sort_by) {
+            case 1:
+                $productsQuery->orderBy('product_name', 'asc');
+                break;
+            case 2:
+                $productsQuery->orderBy('product_name', 'desc');
+                break;
+            case 3:
+                $productsQuery->withCount('orders')->orderByDesc('orders_count');
+                break;
+            case 4: 
+                $productsQuery->orderBy('created_at', 'desc');
+                break;
+            default:
+                $productsQuery->orderBy('product_name', 'asc');
+        }
+        if($post['order_by']){
+            $productsQuery->orderBy('product_name', $post['order_by']);
+        }
+        $products = $productsQuery->paginate($paginate);
+        foreach ($products as $product) {
+            $product->image = 'https://api-daviena.belum.live/'.$product->image;
+        }
+        return $this->ok('success', $products);
+    }
+
+    public function treatment(Request $request):JsonResponse
+    {
+        $post = $request->json()->all();
         $sortBy = $post['order_by'] ? $post['order_by'] : 'asc';
         $products = Product::with(['global_price', 'product_category'])
-        ->where('type', $type)
-        ->when($category, function ($query) use ($category) {
-            if($category != 'all'){
-                return $query->where('product_category_id', $category);
-            }
-        })
+        ->where('type', 'Treatment')
         ->when($sortBy, function ($query, $sortBy) {
             return $query->orderBy('product_name', $sortBy);
         })
         ->paginate(10);
+        foreach ($products as $product) {
+            $product->image = 'https://api-daviena.belum.live/'.$product->image;
+        }
         return $this->ok('success', $products);
     }
 
@@ -46,60 +82,16 @@ class LandingPageController extends Controller
         return $this->ok("success", $products);
     }
 
-    public function table_list(Request $request):mixed
+    public function product_category(Request $request):JsonResponse
     {
         $post = $request->json()->all();
-        $category = empty($post['product_category_id']) ? 'all' : $post['product_category_id'];
-        $type = empty($post['type']) ? 'Product' : $post['type'];
-        $product = Product::with(['global_price', 'product_category'])
-        ->when($category, function ($query) use ($category) {
-            if($category != 'all'){
-                return $query->where('product_category_id', $category);
-            }
-        })
-        ->when($type, function ($query) use ($type) {
-            return $query->where('type', $type);
-        })
-        ->when($request->search, fn ($query, $search) => $query->where('product_name', 'like', '%' . $search . '%'))
-        ->paginate(10);
-        if(!$product){
+        $productCategories = ProductCategory::select('id','product_category_name')->get()->toArray();
+        if(!$productCategories){
             return $this->error('Something Error');
         }
-
-        return $this->ok('success', $product);
+        return $this->ok('success', $productCategories);
     }
 
-    public function datatable_list(Request $request)
-    {
-        $where[] = ['id', '',  '', 'NOTNULL'];
-        $column_order   = ['id', 'product_code', 'product_name', 'type'];
-        $column_search  = ['product_code', 'product_name', 'type'];
-        $order = ['id' => 'DESC'];
-        $list = DataTablesModel::getDatatable($request->post(), 'products', $column_order, $column_search, $order, $where);
-        // die;
-        $data = array();
-        $no = $request->post('start');
-        foreach ($list as $key) {
-            $no++;
-            $row = array();
-            $row[] = $no;
-            $row[] = $key->product_code;
-            $row[] = $key->product_name;
-            $row[] = $key->type;
-            $row[] = '
-                <a data-id="'.$key->id.'" data-name="'.$key->product_name.'" class="btn btn-sm blue" onclick="main.detail(this)"><i class="fa fa-search"></i></a>
-                <a class="btn btn-sm red sweetalert-delete btn-primary" data-id="'.$key->id.'" data-name="'.$key->product_name.'" onclick="main.delete(this)"><i class="fa fa-trash-o"></i></a>            
-            ';
-            $data[] = $row;
-        }
-        $output = array(
-            "draw" => $request->draw,
-            "recordsTotal" => DataTablesModel::countAll($request->post(), 'products', $where),
-            "recordsFiltered" => DataTablesModel::countFiltered($request->post(), 'products', $column_order, $column_search, $order, $where),
-            "data" => $data,
-        );
-        return response()->json($output);
-    }
 
 }
 
