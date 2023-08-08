@@ -15,6 +15,7 @@ use Modules\Product\Entities\ProductOutletStock;
 use Modules\Product\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\DB;
 use Modules\Customer\Entities\TreatmentPatient;
+use Modules\Customer\Entities\TreatmentPatientStep;
 use App\Jobs\GenerateQueueOrder;
 use Modules\User\Entities\User;
 use Modules\Doctor\Entities\DoctorShift;
@@ -120,7 +121,7 @@ class POSController extends Controller
         return $this->ok('', $result);
     }
 
-    public function getOrder(Request $request):JsonResponse
+    public function getOrder(Request $request):mixed
     {
         $post = $request->json()->all();
         $cashier = $request->user();
@@ -139,12 +140,19 @@ class POSController extends Controller
 
     }
 
-    public function getDataOrder($data, $message):JsonResponse
+    public function getDataOrder($data, $message):mixed
     {
         $id_customer = $data['id_customer'];
 
         $return = [];
-        $order = Order::with(['order_products.product', 'order_consultations.shift', 'order_consultations.doctor'])->where('patient_id', $id_customer)
+        $order = Order::with([
+            'order_products.product',
+            'order_products.treatment_patient.steps' => function($step) {
+                $step->where('status', 'Pending');
+            },
+            'order_consultations.shift',
+            'order_consultations.doctor'
+        ])->where('patient_id', $id_customer)
         ->where('send_to_transaction', 0)
         ->latest()
         ->first();
@@ -164,6 +172,14 @@ class POSController extends Controller
                         'price_total'      => $ord_pro['order_product_grandtotal'],
                     ];
                 }elseif($ord_pro['type'] == 'Treatment'){
+
+                    $progress = null;
+                    if($ord_pro['treatment_patient'] && isset($ord_pro['treatment_patient']['doctor_id']) && count($ord_pro['treatment_patient']['steps']) > 0){
+                        if($ord_pro['treatment_patient']['steps'][0]['step'] != 1 && $ord_pro['treatment_patient']['step'] != 1){
+                            $progress = $ord_pro['treatment_patient']['steps'][0]['step'].'/'.$ord_pro['treatment_patient']['step'];
+                        }
+                    }
+
                     $ord_treat[] = [
                         'order_product_id' => $ord_pro['id'],
                         'product_id'       => $ord_pro['product']['id'],
@@ -171,6 +187,7 @@ class POSController extends Controller
                         'schedule_date'    => date('d F Y', strtotime($ord_pro['schedule_date'])),
                         'price_total'      => $ord_pro['order_product_grandtotal'],
                         'queue'            => $ord_pro['queue_code'],
+                        'progress'         => $progress
                     ];
                 }
             }
@@ -321,6 +338,33 @@ class POSController extends Controller
                             ->where('treatment_id', $product['id'])
                             ->where('status', '<>', 'Finished')
                             ->first();
+
+                        }else{
+                            $customerPatient = TreatmentPatient::create([
+                                'treatment_id' => $product['id'],
+                                'patient_id' => $post['id_customer'],
+                                'step' => 1,
+                                'progress' => 0,
+                                'status' => 'On Progress',
+                                'start_date' => date('Y-m-d H:i:s'),
+                                'timeframe' => 1,
+                                'timeframe_type' => 'Day',
+                                'expired_date' => date('Y-m-d H:i:s', strtotime('+1 days')),
+                            ]);
+                        }
+
+                        if(!$customerPatient){
+                            return $this->error('Invalid Error');
+                        }
+
+                        $customerPatientStep = TreatmentPatientStep::create([
+                            'treatment_patient_id' => $customerPatient['id'],
+                            'step'                 => $customerPatient['progress'] + 1,
+                            'date'                 => date('Y-m-d H:i:s'),
+                        ]);
+
+                        if(!$customerPatientStep){
+                            return $this->error('Invalid Error');
                         }
 
                         $create_order_product = OrderProduct::create([
@@ -435,7 +479,7 @@ class POSController extends Controller
 
     }
 
-    public function deleteOrder(Request $request):JsonResponse
+    public function deleteOrder(Request $request):mixed
     {
 
         $post = $request->json()->all();
@@ -461,7 +505,7 @@ class POSController extends Controller
 
     }
 
-    public function deleteOrderData($data):JsonResponse
+    public function deleteOrderData($data):mixed
     {
         $outlet =  $data['outlet'];
         $type =  $data['type'];
@@ -509,7 +553,29 @@ class POSController extends Controller
                 }
             }
 
-            $order_product->delete();
+            $delete_order_product = $order_product->delete();
+
+            if($delete_order_product && ($type??false) == 'treatment'){
+                $delete_step =  TreatmentPatientStep::where('treatment_patient_id', $order_product['treatment_patient_id'])->where('status', 'Pending')->delete();
+                if($delete_step){
+                    $treatment_patient = TreatmentPatient::with(['steps'])->where('id', $order_product['treatment_patient_id'])->first();
+                    if($treatment_patient){
+                        if(count($treatment_patient['steps']) <= 0){
+                            $delete_treatment_patient = $treatment_patient->delete();
+                            if(!$delete_treatment_patient){
+                                DB::rollBack();
+                                return $this->error('Failed to delete treatment patient');
+                            }
+                        }
+                    }else{
+                        DB::rollBack();
+                        return $this->error('Failed to get treatment patient');
+                    }
+                }else{
+                    DB::rollBack();
+                    return $this->error('Failed to delete step');
+                }
+            }
 
             DB::commit();
             return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Succes to delete order');

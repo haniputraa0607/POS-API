@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Product\Entities\Product;
 use Modules\Order\Entities\Order;
+use Modules\Customer\Entities\TreatmentPatient;
 
 class OrderProduct extends Model
 {
@@ -40,5 +41,10 @@ class OrderProduct extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class, 'order_id', 'id');
+    }
+
+    public function treatment_patient(): BelongsTo
+    {
+        return $this->belongsTo(TreatmentPatient::class, 'treatment_patient_id', 'id');
     }
 }

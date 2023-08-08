@@ -22,9 +22,9 @@ class LandingPageController extends Controller
     public function list(Request $request,):JsonResponse
     {
         $post = $request->json()->all();
-        $category = $post['product_category_id'] ? $post['product_category_id'] : 'all';
-        $paginate = $post['perpage'] ? $post['perpage'] : 8;
-        $sort_by = $post['sort_by'] ? $post['sort_by'] : 1;
+        $category = empty($post['product_category_id']) ? 'all' : $post['product_category_id'];
+        $paginate = empty($post['pagination_total_row']) ? 8 : $post['pagination_total_row'];
+        $sort_by = empty($post['sort_by']) ? 1 : $post['sort_by'];
         $productsQuery = Product::with(['global_price', 'product_category'])
             ->where('type', 'Product')
             ->when($category, function ($query) use ($category) {
@@ -48,10 +48,10 @@ class LandingPageController extends Controller
             default:
                 $productsQuery->orderBy('product_name', 'asc');
         }
-        if($post['order_by']){
+        if(!empty($post['order_by'])){
             $productsQuery->orderBy('product_name', $post['order_by']);
         }
-        $products = $productsQuery->paginate($paginate);
+        $products = $productsQuery->paginate($paginate, ['*'], 'page', $post['page']);
         foreach ($products as $product) {
             $product->image = 'https://api-daviena.belum.live/'.$product->image;
         }
@@ -61,13 +61,13 @@ class LandingPageController extends Controller
     public function treatment(Request $request):JsonResponse
     {
         $post = $request->json()->all();
-        $sortBy = $post['order_by'] ? $post['order_by'] : 'asc';
+        $sortBy = empty($post['order_by']) ? 'asc' : $post['order_by'];
+        $paginate = empty($post['pagination_total_row']) ? 8 : $post['pagination_total_row'];
         $products = Product::with(['global_price', 'product_category'])
         ->where('type', 'Treatment')
         ->when($sortBy, function ($query, $sortBy) {
             return $query->orderBy('product_name', $sortBy);
-        })
-        ->paginate(10);
+        })->paginate($paginate, ['*'], 'page', $post['page']);
         foreach ($products as $product) {
             $product->image = 'https://api-daviena.belum.live/'.$product->image;
         }

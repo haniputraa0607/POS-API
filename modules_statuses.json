@@ -18,5 +18,6 @@
     "POS": true,
     "Doctor": true,
     "Product": true,
+    "Setting": true,
     "Article": true
 }
