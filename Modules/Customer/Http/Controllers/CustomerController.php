@@ -34,6 +34,10 @@ class CustomerController extends Controller
     public function showByPhone(Request $request): JsonResponse
     {
         $data = Customer::where('phone', (string)$request->phone)->firstOrFail();
+        $data['birth_date_text'] = date('d F Y', strtotime($data['birth_date']));
+        $data['birth_date_cencored'] = preg_replace("/[^ ]/", "x", $data['birth_date_text']);
+        $data['email_cencored'] = substr_replace($data['email'], str_repeat('x', (strlen($data['email']) - 6)), 3, (strlen($data['email']) - 6));
+        $data['phone_cencored'] = substr_replace($data['phone'], str_repeat('x', (strlen($data['phone']) - 7)), 4, (strlen($data['phone']) - 7));
         return $this->ok('success', $data);
     }
 
