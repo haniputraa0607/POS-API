@@ -20,7 +20,6 @@ class ProductController extends Controller
     {
         date_default_timezone_set('Asia/Jakarta');
         $this->product_path = "img/product/";
-
     }
 
     public function index(Request $request): JsonResponse

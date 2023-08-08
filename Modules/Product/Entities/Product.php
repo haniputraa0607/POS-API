@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Customer\Entities\TreatmentPatient;
+use Modules\Order\Entities\OrderProduct;
 
 class Product extends Model
 {
@@ -69,5 +70,10 @@ class Product extends Model
     public function treatment_patients(): HasMany
     {
         return $this->hasMany(TreatmentPatient::class, 'treatment_id', 'id');
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(OrderProduct::class);
     }
 }

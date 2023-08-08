@@ -17,7 +17,7 @@ use Modules\Article\Http\Controllers\ArticleController;
 Route::prefix('landing-page')->group(function(){
     Route::prefix('article')->controller(ArticleController::class)->group(function(){
         $article = '{article}';
-        Route::get('', 'index');
+        Route::post('', 'index');
         Route::get($article, 'show');
     });
 });
