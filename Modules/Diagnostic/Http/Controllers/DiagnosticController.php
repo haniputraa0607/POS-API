@@ -107,7 +107,10 @@ class DiagnosticController extends Controller
             return $this->error('Outlet not found');
         }
 
-        $order_consul = OrderConsultation::where('order_id', $post['id_order'])->firstOrFail();
+        $order_consul = OrderConsultation::where('order_id', $post['id_order'])->first();
+        if(!$order_consul){
+            return $this->error('Consultation not found');
+        }
 
         DB::beginTransaction();
         $consultation = Consultation::where('order_consultation_id', $order_consul['id'])->first();
@@ -152,7 +155,10 @@ class DiagnosticController extends Controller
 
         DB::beginTransaction();
 
-        $patient_diagnostic = PatientDiagnostic::with(['consultation.order_consultation'])->whereHas('consultation.order_consultation.order')->where('id', $post['id'])->firstOrfail();
+        $patient_diagnostic = PatientDiagnostic::with(['consultation.order_consultation'])->whereHas('consultation.order_consultation.order')->where('id', $post['id'])->first();
+        if(!$patient_diagnostic){
+            return $this->error('Diagnostic not found');
+        }
 
         $delete = $patient_diagnostic->delete();
         if(!$delete){

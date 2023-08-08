@@ -106,7 +106,10 @@ class GrievanceController extends Controller
             return $this->error('Outlet not found');
         }
 
-        $order_consul = OrderConsultation::where('order_id', $post['id_order'])->firstOrFail();
+        $order_consul = OrderConsultation::where('order_id', $post['id_order'])->first();
+        if(!$order_consul){
+            return $this->error('Consultation not found');
+        }
 
         DB::beginTransaction();
         $consultation = Consultation::where('order_consultation_id', $order_consul['id'])->first();
@@ -151,7 +154,10 @@ class GrievanceController extends Controller
 
         DB::beginTransaction();
 
-        $patient_grievance = PatientGrievance::with(['consultation.order_consultation'])->whereHas('consultation.order_consultation.order')->where('id', $post['id'])->firstOrfail();
+        $patient_grievance = PatientGrievance::with(['consultation.order_consultation'])->whereHas('consultation.order_consultation.order')->where('id', $post['id'])->first();
+        if(!$patient_grievance){
+            return $this->error('Grievance not found');
+        }
 
         $delete = $patient_grievance->delete();
         if(!$delete){

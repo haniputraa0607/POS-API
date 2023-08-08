@@ -225,7 +225,10 @@ class DoctorController extends Controller
 
         if($order){
 
-            $user = Customer::where('id', $order['patient_id'])->firstOrFail();
+            $user = Customer::where('id', $order['patient_id'])->first();
+            if(!$patient_diagnostic){
+                return $this->error('Customer not found');
+            }
 
             $ord_prod = [];
             $ord_treat = [];

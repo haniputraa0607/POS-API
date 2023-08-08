@@ -74,6 +74,6 @@ trait ApiResponse
             'message' => $message,
             'error' => '',
             'result' => []
-        ], 400);
+        ], 200);
     }
 }
