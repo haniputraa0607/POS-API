@@ -74,7 +74,11 @@ class ConsultationController extends Controller
             return $this->error('Outlet not found');
         }
 
-        $order_consul = OrderConsultation::whereHas('consultation')->where('order_id', $post['id_order'])->firstOrFail();
+        $order_consul = OrderConsultation::whereHas('consultation')->where('order_id', $post['id_order'])->first();
+
+        if(!$order_consul){
+            return $this->error('Consulatation not found');
+        }
 
         DB::beginTransaction();
 

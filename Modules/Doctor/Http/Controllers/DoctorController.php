@@ -17,6 +17,8 @@ use Modules\Order\Entities\Order;
 use Modules\Order\Entities\OrderProduct;
 use Illuminate\Support\Facades\DB;
 use App\Http\Models\Setting;
+use Modules\Customer\Entities\Customer;
+use DateTime;
 
 class DoctorController extends Controller
 {
@@ -157,7 +159,7 @@ class DoctorController extends Controller
         return $this->ok('', $result);
     }
 
-    public function nextQueue(Request $request):JsonResponse
+    public function nextQueue(Request $request):mixed
     {
         $doctor = $request->user();
         $outlet = $doctor->outlet;
@@ -209,7 +211,7 @@ class DoctorController extends Controller
 
     }
 
-    public function getDataOrder($data, $message):JsonResponse
+    public function getDataOrder($data, $message):mixed
     {
         $id_order = $data['order_id'];
         $id_order_consultation = $data['order_consultation']['id'];
@@ -222,6 +224,12 @@ class DoctorController extends Controller
         ->first();
 
         if($order){
+
+            $user = Customer::where('id', $order['patient_id'])->first();
+            if(!$patient_diagnostic){
+                return $this->error('Customer not found');
+            }
+
             $ord_prod = [];
             $ord_treat = [];
             $ord_consul = [];
@@ -279,7 +287,17 @@ class DoctorController extends Controller
                 ];
             }
 
+            $bithdayDate = new DateTime($user['birth_date']);
+            $now = new DateTime();
+            $interval = $now->diff($bithdayDate)->y;
+
             $return = [
+                'user'                => [
+                    'id'    => $user['id'],
+                    'name'  => $user['name'],
+                    'age'   => $interval.' years',
+                    'phone' => substr_replace($user['phone'], str_repeat('x', (strlen($user['phone']) - 7)), 4, (strlen($user['phone']) - 7)),
+                ],
                 'order_id'            => $order['id'],
                 'order_code'          => $order['order_code'],
                 'order_products'      => $ord_prod,
@@ -402,6 +420,43 @@ class DoctorController extends Controller
             'available' => count($list_doctors),
             'list_doctors' => $list_doctors,
         ];
+        return $this->ok('', $return);
+
+    }
+
+    public function getOrder(Request $request):mixed
+    {
+        $post = $request->json()->all();
+        $doctor = $request->user();
+        $outlet =  $doctor->outlet;
+
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+
+        if(isset($post['id_order'])){
+
+            $order_consultation = OrderConsultation::whereHas('order', function($order) use($outlet){
+                $order->where('outlet_id', $outlet['id'])
+                ->where('is_submited', 1)
+                ->where('send_to_transaction', 0);
+            })
+            ->where('order_id', $post['id_order'])
+            ->whereDate('schedule_date', date('Y-m-d'))
+            ->where('status', 'On Progress')
+            ->orderBy('queue', 'asc')
+            ->first();
+
+            if($order_consultation){
+                return $this->getDataOrder([
+                    'order_id' => $order_consultation['order_id'],
+                    'order_consultation' => $order_consultation
+                ],'');
+            }else{
+                return $this->error('Order not found');
+            }
+        }
+
         return $this->ok('', $return);
 
     }

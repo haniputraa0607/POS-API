@@ -555,7 +555,7 @@ class POSController extends Controller
 
             $delete_order_product = $order_product->delete();
 
-            if($delete_order_product && ($type??false) == 'treatment'){
+            if($delete_order_product && ($type??false) == 'treatment' && $order_product['treatment_patient_id']){
                 $delete_step =  TreatmentPatientStep::where('treatment_patient_id', $order_product['treatment_patient_id'])->where('status', 'Pending')->delete();
                 if($delete_step){
                     $treatment_patient = TreatmentPatient::with(['steps'])->where('id', $order_product['treatment_patient_id'])->first();

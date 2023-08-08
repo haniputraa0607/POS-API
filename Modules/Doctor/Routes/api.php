@@ -23,6 +23,13 @@ Route::middleware(['auth:api','scopes:doctor'])->controller(DoctorController::cl
     Route::get('next', 'nextQueue');
     Route::get('splash', 'splash');
 
+    Route::prefix('order')->controller(DoctorController::class)->group(function () {
+        Route::post('/', 'getOrder');
+        Route::post('add', 'addOrder');
+        Route::post('delete', 'deleteOrder');
+        Route::post('edit', 'editOrder');
+    });
+
 });
 
 Route::middleware(['auth:api','scopes:pos'])->controller(DoctorController::class)->prefix('pos/consultation')->group(function(){
