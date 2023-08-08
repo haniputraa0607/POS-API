@@ -12,7 +12,9 @@ class PartnerController extends Controller
 {
     public function index(Request $request):JsonResponse
     {
-        $partner = $request->length ? Partner::paginate($request->length ?? 10) : Partner::get();
+        $post = $request->json()->all();
+        $paginate = empty($post['pagination_total_row']) ? 8 : $post['pagination_total_row'];
+        $partner = Partner::paginate($paginate, ['*'], 'page', $post['page']);
         return $this->ok('', $partner);
     }
 
