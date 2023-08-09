@@ -1,1 +1,1 @@
-<?php return ['Product', 'Treatment'];
+<?php return ['Product', 'Treatment', 'Package'];

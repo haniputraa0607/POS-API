@@ -13,6 +13,7 @@ use Modules\Product\Entities\ProductOutletStockLog;
 use Modules\Product\Http\Requests\ProductRequest;
 use App\Lib\MyHelper;
 use Illuminate\Support\Facades\DB;
+use Modules\Product\Entities\ProductCategory;
 
 class ProductController extends Controller
 {
@@ -147,6 +148,89 @@ class ProductController extends Controller
             'source'                  => $source,
             'description'             => $desc ?? null,
         ]);
+    }
 
+    public function webHookCreate(Request $request)
+    {
+        $post = $request->json()->all();
+        switch($post['item_type']){
+            case "1":
+                $type = "Product";
+                break;
+            case "3":
+                $type = "Package";
+                break;
+            case "4":
+                $type = "Treatment";
+                break;
+            default:
+                $type = "Product";
+        }
+        $payload = [
+            'equal_id' => $post['id_item'],
+            'equal_name' => $post['item_name'],
+            'product_code' => $post['item_code'],
+            'product_name' => $post['item_name'],
+            'type' => $type,
+            'description' => $post['description'],
+            'image' => json_encode($post['item_photos']),
+            'product_groups' => json_encode($post['item_groups']),
+            'is_active' => 1,
+            'need_recipe_status' => 1,
+        ];
+        if($post['id_item_category']){
+            $payload['equal_id_category'] = $post['id_item_category'];
+            $category_db = ProductCategory::where(['equal_id' => $post['id_item_category']])->first();
+            if($category_db)
+                $payload['product_category_id'] = $category_db->id;
+        }
+        $product = Product::create($payload);
+        return $this->ok("succes", $product);
+    } 
+
+    public function webHookUpdate(Request $request)
+    {
+        
+        $post = $request->json()->all();
+        switch($post['item_type']){
+            case "1":
+                $type = "Product";
+                break;
+            case "3":
+                $type = "Package";
+                break;
+            case "4":
+                $type = "Treatment";
+                break;
+            default:
+                $type = "Product";
+        }
+        $payload = [
+            'equal_id' => $post['id_item'],
+            'equal_name' => $post['item_name'],
+            'product_code' => $post['item_code'],
+            'product_name' => $post['item_name'],
+            'type' => $type,
+            'description' => $post['description'],
+            'image' => json_encode($post['item_photos']),
+            'product_groups' => json_encode($post['item_groups']),
+            'is_active' => 1,
+            'need_recipe_status' => 1,
+        ];
+        if($post['id_item_category']){
+            $payload['equal_id_category'] = $post['id_item_category'];
+            $category_db = ProductCategory::where(['equal_id' => $post['id_item_category']])->first();
+            if($category_db)
+                $payload['product_category_id'] = $category_db->id;
+        }
+        $product = Product::where(['equal_id' => $post['id_item']])->update($payload);
+        return $this->ok("succes", $payload);
+    }
+
+    public function webHookDelete(Request $request)
+    {    
+        $post = $request->json()->all();
+        $product = Product::where(['equal_id' => $post['id_item']])->delete();
+        return $this->ok("success","");
     }
 }
