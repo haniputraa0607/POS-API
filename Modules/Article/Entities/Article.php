@@ -4,6 +4,7 @@ namespace Modules\Article\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Modules\Article\Database\factories\ArticleFactory;
 
 class Article extends Model
 {
@@ -17,4 +18,9 @@ class Article extends Model
         'release_date',
         'description',
     ];
+
+    protected static function newFactory()
+    {
+        return ArticleFactory::new();
+    }
 }
