@@ -18,7 +18,7 @@ class BannerController extends Controller
 
     public function show($id): JsonResponse
     {
-        $data = Banner::with(['product:id,product_name,description,product_category_id', 'product.product_category:id,product_category_name'])->firstOrFail($id);
+        $data = Banner::with(['product:id,product_name,description,product_category_id', 'product.product_category:id,product_category_name'])->findOrFail($id);
         return $this->ok('Banner Show', $data);
     }
 
