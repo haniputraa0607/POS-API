@@ -14,8 +14,12 @@ return new class extends Migration
     public function up()
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->integer('equal_id')->nullable()->unique()->default(null)->after('id');
-            $table->string('equal_name')->nullable()->default(null)->after('equal_id');
+            $table->after('equal_name', function (Blueprint $table) {
+                $table->json('equal_id_category')->nullable();
+            });
+            $table->after('image', function (Blueprint $table) {
+                $table->json('product_groups')->nullable();
+            });
         });
     }
 
@@ -27,8 +31,8 @@ return new class extends Migration
     public function down()
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->dropColumn('equal_id');
-            $table->dropColumn('equal_name');
+            $table->dropColumn('equal_id_category');
+            $table->dropColumn('product_groups');
         });
     }
 };

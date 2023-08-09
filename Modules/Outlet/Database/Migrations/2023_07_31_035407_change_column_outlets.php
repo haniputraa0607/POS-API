@@ -16,9 +16,9 @@ return new class extends Migration
     {
         Schema::table('outlets', function (Blueprint $table) {
             //commant for mysql
-            // $table->enum('status',["Active","Inactive"])->nullback(false)->change(); 
+            $table->enum('status',["Active","Inactive"])->default('Active')->nullback(false)->change(); 
             //commant for pgsql
-            DB::statement('ALTER TABLE "outlets" ALTER COLUMN "status" SET DEFAULT \'Active\'');
+            // DB::statement('ALTER TABLE "outlets" ALTER COLUMN "status" SET DEFAULT \'Active\'');
         });
     }
 

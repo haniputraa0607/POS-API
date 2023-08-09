@@ -20,5 +20,7 @@
     "Product": true,
     "Setting": true,
     "Article": true,
-    "Banner": true
+    "Banner": true,
+    "Mitra": true,
+    "Partner": true
 }

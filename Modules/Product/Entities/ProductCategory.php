@@ -13,8 +13,13 @@ class ProductCategory extends Model
 
     protected $table = 'product_categories';
     protected $fillable = [
+        'equal_id',
+        'equal_name',
+        'equal_code',
+        'equal_parent_id',
         'product_category_name',
         'description',
+        'product_category_photo'
     ];
 
     public function products(): HasMany
