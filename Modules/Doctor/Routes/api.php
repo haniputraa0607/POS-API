@@ -35,5 +35,6 @@ Route::middleware(['auth:api','scopes:doctor'])->controller(DoctorController::cl
 Route::middleware(['auth:api','scopes:pos'])->controller(DoctorController::class)->prefix('pos/consultation')->group(function(){
     Route::prefix('doctor')->group(function () {
         Route::post('/', 'getDoctor');
+        Route::post('list-date', 'getDoctorDate');
     });
 });

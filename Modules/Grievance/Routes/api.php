@@ -31,8 +31,8 @@ Route::middleware(['auth:api','scopes:doctor'])->prefix('doctor')->group(functio
         Route::prefix('grievance')->controller(GrievanceController::class)->group(function () {
             Route::post('', 'getOrderGrievance');
             Route::get('list', 'show');
-            Route::post('add', 'addGrieevancePatient');
-            Route::post('delete', 'deleteGrieevancePatient');
+            Route::post('add', 'addGrievancePatient');
+            Route::post('delete', 'deleteGrievancePatient');
         });
     });
 });

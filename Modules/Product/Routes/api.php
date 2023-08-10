@@ -20,7 +20,7 @@ Route::middleware(['auth:api','scopes:be'])->prefix('be')->group(function (){
         Route::post('create', 'create');
         Route::get('list', 'list');
     });
-    
+
     Route::controller(ProductController::class)->prefix('/product')->group(function () {
         $product = '{product}';
         Route::get('', 'index')->name('product.list');
@@ -71,6 +71,7 @@ Route::middleware(['auth:api','scopes:pos'])->prefix('pos')->group(function (){
 
     Route::prefix('treatment')->controller(TreatmentController::class)->group(function () {
         Route::post('list', 'list');
+        Route::post('list-date', 'listDate');
         Route::post('customer-history', 'customerHistory');
     });
 });

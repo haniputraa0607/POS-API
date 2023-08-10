@@ -72,8 +72,7 @@ trait ApiResponse
         return response()->json([
             'status' => "fail",
             'message' => $message,
-            'error' => '',
-            'result' => []
+            'error' => ''
         ], 200);
     }
 }
