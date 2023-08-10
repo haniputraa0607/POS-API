@@ -144,7 +144,23 @@ class POSController extends Controller
     {
         $id_customer = $data['id_customer'];
 
-        $return = [];
+        $return = [
+            'summary' => [
+                [
+                    'label' => 'Subtotal',
+                    'value' => 0
+                ],
+                [
+                    'label' => 'Tax',
+                    'value' => 0
+                ],
+                [
+                    'label' => 'Payable Ammount',
+                    'value' => 0
+                ],
+            ],
+        ];
+
         $order = Order::with([
             'order_products.product',
             'order_products.treatment_patient.steps' => function($step) {
@@ -668,7 +684,7 @@ class POSController extends Controller
                     $order = Order::where('id', $order_product['order_id'])->update([
                         'order_subtotal'   => $order_product['order']['order_subtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_subtotal']),
                         'order_gross'      => $order_product['order']['order_gross'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_subtotal']),
-                        'order_grandtotal' => $order_product['order']['order_grandtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_grand_total']),
+                        'order_grandtotal' => $order_product['order']['order_grandtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_grandtotal']),
                     ]);
 
                 }elseif($post['qty']<$order_product['qty']){
@@ -683,7 +699,7 @@ class POSController extends Controller
                     $order = Order::where('id', $order_product['order_id'])->update([
                         'order_subtotal'   => $order_product['order']['order_subtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_subtotal']),
                         'order_gross'      => $order_product['order']['order_gross'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_subtotal']),
-                        'order_grandtotal' => $order_product['order']['order_grandtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_grand_total']),
+                        'order_grandtotal' => $order_product['order']['order_grandtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_grandtotal']),
                     ]);
 
                 }else{

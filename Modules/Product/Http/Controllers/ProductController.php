@@ -121,7 +121,7 @@ class ProductController extends Controller
             $data = [
                 'id'           => $value['id'],
                 'product_name' => $value['product_name'],
-                'image_url'    => isset($value['image']) ? env('STORAGE_URL_API').$value['image'] : null,
+                'image_url'    => isset($value['image']) ? env('STORAGE_URL_API').$value['image'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
                 'price'        => $price,
                 'stock'        => $value['outlet_stock'][0]['stock'] ?? 0
             ];

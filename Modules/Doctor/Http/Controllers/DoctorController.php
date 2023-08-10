@@ -19,6 +19,10 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Models\Setting;
 use Modules\Customer\Entities\Customer;
 use DateTime;
+use Modules\Product\Entities\Product;
+use Modules\Product\Entities\ProductOutletStock;
+use Modules\Product\Http\Controllers\ProductController;
+use App\Jobs\GenerateQueueOrder;
 
 class DoctorController extends Controller
 {
@@ -216,7 +220,23 @@ class DoctorController extends Controller
         $id_order = $data['order_id'];
         $id_order_consultation = $data['order_consultation']['id'];
 
-        $return = [];
+        $return = [
+            'summary' => [
+                [
+                    'label' => 'Subtotal',
+                    'value' => 0
+                ],
+                [
+                    'label' => 'Tax',
+                    'value' => 0
+                ],
+                [
+                    'label' => 'Payable Ammount',
+                    'value' => 0
+                ],
+            ],
+        ];
+
         DB::beginTransaction();
         $order = Order::with(['order_products.product', 'order_consultations.consultation.patient_diagnostic.diagnostic', 'order_consultations.consultation.patient_grievance.grievance', 'order_consultations.shift', 'order_consultations.doctor'])->where('id', $id_order)
         ->where('send_to_transaction', 0)
@@ -226,7 +246,7 @@ class DoctorController extends Controller
         if($order){
 
             $user = Customer::where('id', $order['patient_id'])->first();
-            if(!$patient_diagnostic){
+            if(!$user){
                 return $this->error('Customer not found');
             }
 
@@ -354,7 +374,7 @@ class DoctorController extends Controller
 
     }
 
-    public function getDoctor(Request $request):JsonResponse
+    public function getDoctor(Request $request):mixed
     {
         $post = $request->json()->all();
         $cashier = $request->user();
@@ -368,20 +388,26 @@ class DoctorController extends Controller
             return $this->error('Filter cant be null');
         }
 
-        $date = date('Y-m-d');
+        $date = false;
         if($post['search']['filter'] == 'date'){
             $date = date('Y-m-d', strtotime($post['search']['value']));
         }
 
-        $doctors = User::with(['doctor_schedules.schedule_dates' => function($query) use($date){
-            $query->where('doctor_schedule_dates.date', $date);
-        }])
-        ->whereHas('doctor_schedules.schedule_dates',function($query) use($date){
-            $query->where('schedule_month', date('m', strtotime($date)));
-            $query->where('schedule_year', date('Y', strtotime($date)));
-            $query->where('doctor_schedule_dates.date', $date);
-        })
-        ->where('outlet_id', $outlet['id']);
+        $doctors = User::where('outlet_id', $outlet['id']);
+        if($date){
+            $doctor = $doctors->with(['doctor_schedules.schedule_dates' => function($query) use($date){
+                if($date){
+                    $query->where('doctor_schedule_dates.date', $date);
+                }
+            }])
+            ->whereHas('doctor_schedules.schedule_dates',function($query) use($date){
+                if($date){
+                    $query->where('schedule_month', date('m', strtotime($date)));
+                    $query->where('schedule_year', date('Y', strtotime($date)));
+                    $query->where('doctor_schedule_dates.date', $date);
+                }
+            });
+        }
 
         if($post['search']['filter'] == 'name'){
             $doctors = $doctors->where('name', 'like', '%'.$post['search']['value'].'%');
@@ -392,12 +418,86 @@ class DoctorController extends Controller
         $list_doctors = [];
         foreach($doctors ?? [] as $key => $doc){
 
-            $day = date('l', strtotime($date));
-            $shifts = DoctorShift::with(['order_consultations' => function($order_consultation) use($date){
-                $order_consultation->whereDate('schedule_date', $date);
-            }])->where('user_id', $doc['id'])->where('day',$day)->get()->toArray();
+            $doc_shift = [];
+            if($date){
+                $day = date('l', strtotime($date));
+                $shifts = DoctorShift::with(['order_consultations' => function($order_consultation) use($date){
+                    $order_consultation->whereDate('schedule_date', $date);
+                }])->where('user_id', $doc['id'])->where('day',$day)->get()->toArray();
+                foreach($shifts ?? [] as $key_2 =>$shift){
+                    $doc_shift[] = [
+                        'id_doctor_shift' => $shift['id'],
+                        'time'            => date('H:i',strtotime($shift['start'])).' - '.date('H:i',strtotime($shift['end'])),
+                        'price'           => $shift['price'],
+                        'quote'           => $shift['quota'] - count($shift['order_consultations'])
+                    ];
+                }
+
+                if(isset($doc['doctor_schedules']) && !empty($doc_shift)){
+                    $list_doctors[] = [
+                        'id_doctor' => $doc['id'],
+                        'name'      => $doc['name'],
+                        'image_url' => isset($doc['image_url']) ? env('STORAGE_URL_API').$doc['image_url'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_doctor.png',
+                        'shifts'    => $doc_shift
+                    ];
+                }
+            }else{
+                $list_doctors[] = [
+                    'id_doctor' => $doc['id'],
+                    'name'      => $doc['name'],
+                    'image_url' => isset($doc['image_url']) ? env('STORAGE_URL_API').$doc['image_url'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_doctor.png',
+                    'shifts'    => $doc_shift
+                ];
+            }
+
+        }
+        $return = [
+            'available'    => count($list_doctors),
+            'list_doctors' => $list_doctors,
+        ];
+        return $this->ok('', $return);
+
+    }
+
+    public function getDoctorDate(Request $request):mixed
+    {
+        $post = $request->json()->all();
+        $cashier = $request->user();
+        $outlet =  $cashier->outlet;
+
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+
+        $date_now = date('Y-m-d');
+        $dates = MyHelper::getListDate(date('d'),date('m'),date('Y'));
+
+        $doctors = User::with(['doctor_schedules' => function($query) use($date_now, $dates){
+            $query->where('schedule_month', date('m', strtotime($date_now)));
+            $query->where('schedule_year', date('Y', strtotime($date_now)));
+            $query->with(['schedule_dates' => function($query2) use($date_now, $dates){
+                $query2->where('date', '>=' ,$dates['start']);
+                $query2->where('date', '<=' ,$dates['end']);
+            }]);
+        }])
+        ->whereHas('doctor_schedules.schedule_dates',function($query) use($date_now, $dates){
+            $query->where('schedule_month', date('m', strtotime($date_now)));
+            $query->where('schedule_year', date('Y', strtotime($date_now)));
+            $query->where('date', '>=' ,$dates);
+            $query->where('date', '<=' ,$dates);
+        })->where('outlet_id', $outlet['id'])
+        ->where('id', $post['id'])->doctor()->first();
+
+        $list_doctors = [];
+        $list_dates = [];
+        foreach($doctors['doctor_schedules'][0]['schedule_dates'] ?? [] as $key => $schedule_dates){
 
             $doc_shift = [];
+            $day = date('l', strtotime($schedule_dates['date']));
+            $shifts = DoctorShift::with(['order_consultations' => function($order_consultation) use($schedule_dates){
+                $order_consultation->whereDate('schedule_date', $schedule_dates['date']);
+            }])->where('user_id', $doctors['id'])->where('day',$day)->get()->toArray();
+
             foreach($shifts ?? [] as $key_2 =>$shift){
                 $doc_shift[] = [
                     'id_doctor_shift' => $shift['id'],
@@ -405,20 +505,22 @@ class DoctorController extends Controller
                     'quote'           => $shift['quota'] - count($shift['order_consultations'])
                 ];
             }
-
-            if(isset($doc['doctor_schedules']) && !empty($doc_shift)){
+            if(isset($doctors['doctor_schedules']) && !empty($doc_shift)){
                 $list_doctors[] = [
-                    'id_doctor' => $doc['id'],
-                    'name'      => $doc['name'],
-                    'date'      => date('j F Y',strtotime($date)),
-                    'image_url' => isset($doc['image_url']) ? env('STORAGE_URL_API').$doc['image_url'] : null,
+                    'id_doctor' => $doctors['id'],
+                    'name'      => $doctors['name'],
+                    'date'      => date('d F Y', strtotime($schedule_dates['date'])),
+                    'image_url' => isset($doctors['image_url']) ? env('STORAGE_URL_API').$doctors['image_url'] : null,
                     'shifts'    => $doc_shift
                 ];
+                $list_dates[] = date('Y-m-d', strtotime($schedule_dates['date']));
             }
+
         }
         $return = [
-            'available' => count($list_doctors),
+            'available'    => count($list_doctors),
             'list_doctors' => $list_doctors,
+            'list_dates'   => $list_dates,
         ];
         return $this->ok('', $return);
 
@@ -459,5 +561,503 @@ class DoctorController extends Controller
 
         return $this->ok('', $return);
 
+    }
+
+    public function addOrder(Request $request):mixed
+    {
+        $post = $request->json()->all();
+        $cashier = $request->user();
+        $outlet =  $cashier->outlet;
+
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+
+        if(isset($post['id_order'])){
+
+            $order = Order::with(['order_consultations'])->where('id', $post['id_order'])
+            ->where('send_to_transaction', 0)
+            ->latest()
+            ->first();
+
+            DB::beginTransaction();
+            if(!$order){
+                return $this->error('Order not found');
+            }
+
+            if(($post['type']??false) == 'product' || ($post['type']??false) == 'treatment'){
+                $product = Product::with(['global_price','outlet_price' => function($outlet_price) use ($outlet){$outlet_price->where('outlet_id',$outlet['id']);}])
+                ->where('id', $post['order']['id'])->first();
+
+                if(!$product){
+                    DB::rollBack();
+                    return $this->error('Product not found');
+                }
+
+                $price = $product['outlet_price'][0]['price'] ?? $product['global_price']['price'];
+
+                if(($post['type']??false) == 'product'){
+                    $order_product = OrderProduct::where('order_id', $order['id'])->where('product_id', $product['id'])->first();
+                    if($order_product){
+                        $order_product->update([
+                            'qty'                      => $order_product['qty'] + $post['order']['qty'],
+                            'order_product_price'      => $price,
+                            'order_product_subtotal'   => $order_product['order_product_subtotal'] + ($post['order']['qty']*$price),
+                            'order_product_grandtotal' => $order_product['order_product_grandtotal'] + ($post['order']['qty']*$price),
+                        ]);
+                    }else{
+                        $order_product = OrderProduct::create([
+                            'order_id'                 => $order['id'],
+                            'product_id'               => $product['id'],
+                            'type'                     => $product['type'],
+                            'qty'                      => $post['order']['qty'],
+                            'order_product_price'      => $price,
+                            'order_product_subtotal'   => $post['order']['qty']*$price,
+                            'order_product_grandtotal' => $post['order']['qty']*$price,
+                        ]);
+                    }
+
+                    $price_to_order = ($post['order']['qty']*$price);
+                    if(!$order_product){
+                        DB::rollBack();
+                        return $this->error('Product not found');
+                    }
+
+                    $stock = ProductOutletStock::where('product_id', $product['id'])->where('outlet_id', $outlet['id'])->first();
+                    if($stock){
+                        $old_stock = clone $stock;
+                        $stock->update([
+                            'stock' =>  $stock['stock']-$post['order']['qty']
+                        ]);
+
+                        if(!$stock){
+                            DB::rollBack();
+                            return $this->error('Failed to update stock');
+                        }
+
+                        (new ProductController)->addLogProductStockLog($old_stock['id'], -$post['order']['qty'], $old_stock['stock'], $stock['stock'], 'Booking Order', null);
+                    }
+
+                    $send = [
+                        'order_id'          => $order['id'],
+                        'order_product_id'  => $order_product['id'],
+                        'outlet_id'         => $outlet['id'],
+                        'type'              => 'product',
+                    ];
+                }else{
+                    $order_product = OrderProduct::where('order_id', $order['id'])->where('product_id', $product['id'])->whereDate('schedule_date',$post['order']['date'])->first();
+                    if($order_product){
+                        return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Treatment already exist in order');
+                    }else{
+
+                        if(($post['order']['continue']??false) == 1){
+                            $customerPatient = TreatmentPatient::where('patient_id', $post['id_customer'])
+                            ->where('treatment_id', $product['id'])
+                            ->where('status', '<>', 'Finished')
+                            ->first();
+
+                        }else{
+                            $customerPatient = TreatmentPatient::create([
+                                'treatment_id' => $product['id'],
+                                'patient_id' => $post['id_customer'],
+                                'step' => 1,
+                                'progress' => 0,
+                                'status' => 'On Progress',
+                                'start_date' => date('Y-m-d H:i:s'),
+                                'timeframe' => 1,
+                                'timeframe_type' => 'Day',
+                                'expired_date' => date('Y-m-d H:i:s', strtotime('+1 days')),
+                            ]);
+                        }
+
+                        if(!$customerPatient){
+                            return $this->error('Invalid Error');
+                        }
+
+                        $customerPatientStep = TreatmentPatientStep::create([
+                            'treatment_patient_id' => $customerPatient['id'],
+                            'step'                 => $customerPatient['progress'] + 1,
+                            'date'                 => date('Y-m-d H:i:s'),
+                        ]);
+
+                        if(!$customerPatientStep){
+                            return $this->error('Invalid Error');
+                        }
+
+                        $create_order_product = OrderProduct::create([
+                            'order_id'                 => $order['id'],
+                            'product_id'               => $product['id'],
+                            'type'                     => $product['type'],
+                            'schedule_date'            => $post['order']['date'],
+                            'treatment_patient_id'     => $customerPatient['id'] ?? null,
+                            'qty'                      => 1,
+                            'order_product_price'      => $price,
+                            'order_product_subtotal'   => $price,
+                            'order_product_grandtotal' => $price,
+                        ]);
+
+                        if(!$create_order_product){
+                            DB::rollBack();
+                            return $this->error('Treatment not found');
+                        }
+
+                        $price_to_order = $price;
+                        $send = [
+                            'order_id'          => $order['id'],
+                            'order_product_id'  => $create_order_product['id'],
+                            'outlet_id'         => $outlet['id'],
+                            'type'              => 'treatment',
+                            'schedule_date'     => date('Y-m-d', strtotime($create_order_product['schedule_date']))
+                        ];
+                    }
+                }
+
+                $order->update([
+                    'order_subtotal'   => $order['order_subtotal'] + $price_to_order,
+                    'order_gross'      => $order['order_gross'] + $price_to_order,
+                    'order_grandtotal' => $order['order_grandtotal'] + $price_to_order,
+                ]);
+
+                DB::commit();
+
+                $generate = GenerateQueueOrder::dispatch($send)->onConnection('generatequeueorder');
+                return $this->getDataOrder([
+                    'order_id' => $order['id'],
+                    'order_consultation' => $order['order_consultations'][0]
+                ],'Succes to add new order');
+
+            }elseif(($post['type']??false) == 'consultation'){
+
+                $doctor = User::with(['doctor_shifts' => function($query) use($post){
+                    $query->where('id', $post['order']['id_shift']);
+                }])
+                ->whereHas('doctor_shifts',function($query) use($post){
+                    $query->where('id', $post['order']['id_shift']);
+                })
+                ->whereHas('doctor_schedules.schedule_dates',function($query) use($post){
+                    $query->where('schedule_month', date('m', strtotime($post['order']['date'])));
+                    $query->where('schedule_year', date('Y', strtotime($post['order']['date'])));
+                    $query->where('doctor_schedule_dates.date', date('Y-m-d', strtotime($post['order']['date'])));
+                })
+                ->where('id', $post['order']['id'])->first();
+
+                if(!$doctor){
+                    DB::rollBack();
+                    return $this->error('Doctor not found');
+                }
+
+                $order_consultation = OrderConsultation::where('order_id', $order['id'])->first();
+                if($order_consultation){
+                    return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Consultation already exist in order');
+                }else{
+
+                    $price = $doctor['doctor_shifts'][0]['price'] ?? $doctor['consultation_price'] ?? $outlet['consultation_price'];
+                    $create_order_consultation = OrderConsultation::create([
+                        'order_id'                 => $order['id'],
+                        'doctor_id'                => $doctor['id'],
+                        'schedule_date'            => $post['order']['date'],
+                        'doctor_shift_id'          => $post['order']['id_shift'],
+                        'order_consultation_price'      => $price,
+                        'order_consultation_subtotal'   => $price,
+                        'order_consultation_grandtotal' => $price,
+                    ]);
+
+                    if(!$create_order_consultation){
+                        DB::rollBack();
+                        return $this->error('Treatment not found');
+                    }
+
+                    $send = [
+                        'order_id'          => $order['id'],
+                        'order_product_id'  => $create_order_consultation['id'],
+                        'outlet_id'         => $outlet['id'],
+                        'type'              => 'consultation',
+                        'schedule_date'     => date('Y-m-d', strtotime($create_order_consultation['schedule_date'])),
+                        'doctor_id'         => $doctor['id']
+                    ];
+
+                    $order->update([
+                        'order_subtotal'   => $order['order_subtotal'] + $price,
+                        'order_gross'      => $order['order_gross'] + $price,
+                        'order_grandtotal' => $order['order_grandtotal'] + $price,
+                    ]);
+
+                    DB::commit();
+
+                    $generate = GenerateQueueOrder::dispatch($send)->onConnection('generatequeueorder');
+                    return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Succes to add new order');
+
+                }
+
+            }else{
+                return $this->error('Type is invalid');
+            }
+
+        }else{
+            return $this->error('Customer not found');
+        }
+
+    }
+
+    public function editOrder(Request $request):mixed
+    {
+        $post = $request->json()->all();
+        $cashier = $request->user();
+        $outlet =  $cashier->outlet;
+
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+
+        if(!isset($post['id_order'])){
+            return $this->error('Order not found');
+        }
+
+        if(($post['qty']??false) == 0){
+
+            return $this->deleteOrderData([
+                'outlet' => $outlet,
+                'type' => $post['type'] ?? null,
+                'post' => [
+                    'id_order' => $post['id_order'],
+                    'id' => $post['id']
+                ]
+            ]);
+
+        }elseif(($post['qty']??false) >= 1){
+
+            if(($post['type']??false) == 'product'){
+
+                DB::beginTransaction();
+                $order_product = OrderProduct::with(['order.order_consultations'])->whereHas('order', function($order) use($post){
+                    $order->where('id', $post['id_order']);
+                    $order->where('send_to_transaction', 0);
+                })->whereHas('product')
+                ->where('id', $post['id'])->first();
+
+                if(!$order_product){
+                    DB::rollBack();
+                    return $this->error('Order not found');
+                }
+
+                if($post['qty']>$order_product['qty']){
+
+                    $old_order_product = clone $order_product;
+                    $order_product->update([
+                        'qty'                      => $post['qty'],
+                        'order_product_subtotal'   => ($post['qty']*$order_product['order_product_price']),
+                        'order_product_grandtotal' => ($post['qty']*$order_product['order_product_price']),
+                    ]);
+
+                    $order = Order::where('id', $order_product['order_id'])->update([
+                        'order_subtotal'   => $order_product['order']['order_subtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_subtotal']),
+                        'order_gross'      => $order_product['order']['order_gross'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_subtotal']),
+                        'order_grandtotal' => $order_product['order']['order_grandtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_grandtotal']),
+                    ]);
+
+                }elseif($post['qty']<$order_product['qty']){
+
+                    $old_order_product = clone $order_product;
+                    $order_product->update([
+                        'qty'                      => $post['qty'],
+                        'order_product_subtotal'   => ($post['qty']*$order_product['order_product_price']),
+                        'order_product_grandtotal' => ($post['qty']*$order_product['order_product_price']),
+                    ]);
+
+                    $order = Order::where('id', $order_product['order_id'])->update([
+                        'order_subtotal'   => $order_product['order']['order_subtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_subtotal']),
+                        'order_gross'      => $order_product['order']['order_gross'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_subtotal']),
+                        'order_grandtotal' => $order_product['order']['order_grandtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_grandtotal']),
+                    ]);
+
+                }else{
+                    return $this->getDataOrder([
+                        'order_id' => $order_product['order_id'],
+                        'order_consultation' => $order_product['order']['order_consultations'][0]
+                    ],'Succes to add new order');
+                }
+
+                if(!$order){
+                    DB::rollBack();
+                    return $this->error('Order not found');
+                }
+
+                $stock = ProductOutletStock::where('product_id', $order_product['product_id'])->where('outlet_id', $outlet['id'])->first();
+                if($stock){
+                    $old_stock = clone $stock;
+                    if($post['qty']>$old_order_product['qty']){
+                        $qty = $post['qty'] - $old_order_product['qty'];
+                        $qty_log = -$qty;
+                        $stock->update([
+                            'stock' =>  $stock['stock']-$qty
+                        ]);
+                    }elseif($post['qty']<$old_order_product['qty']){
+                        $qty = $old_order_product['qty'] - $post['qty'];
+                        $qty_log = $qty;
+                        $stock->update([
+                            'stock' =>  $stock['stock']+$qty
+                        ]);
+                    }
+
+                    if(!$stock){
+                        DB::rollBack();
+                        return $this->error('Failed to update stock');
+                    }
+                    (new ProductController)->addLogProductStockLog($old_stock['id'], $qty_log, $old_stock['stock'], $stock['stock'], 'Update Booking Order', null);
+                }
+
+                DB::commit();
+                return $this->getDataOrder([
+                    'order_id' => $order_product['order_id'],
+                    'order_consultation' => $order_product['order']['order_consultations'][0]
+                ],'Succes to add new order');
+
+            }else{
+                return $this->error('Type is invalid');
+            }
+
+        }else{
+            return $this->error('Qty can be null');
+        }
+
+    }
+
+    public function deleteOrder(Request $request):mixed
+    {
+
+        $post = $request->json()->all();
+        $cashier = $request->user();
+        $outlet =  $cashier->outlet;
+
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+
+        if(!isset($post['id_order'])){
+            return $this->error('Order not found');
+        }
+
+        return $this->deleteOrderData([
+            'outlet' => $outlet,
+            'type' => $post['type'] ?? null,
+            'post' => [
+                'id_order' => $post['id_order'],
+                'id' => $post['id']
+            ]
+        ]);
+
+    }
+
+    public function deleteOrderData($data):mixed
+    {
+        $outlet =  $data['outlet'];
+        $type =  $data['type'];
+        $post =  $data['post'];
+
+
+        if(($type??false) == 'product' || ($type??false) == 'treatment'){
+
+            DB::beginTransaction();
+            $order_product = OrderProduct::with(['order.order_consultations'])->whereHas('order', function($order) use($post){
+                $order->where('order_id', $post['id_order']);
+                $order->where('send_to_transaction', 0);
+            })->whereHas('product')
+            ->where('id', $post['id'])->first();
+
+            if(!$order_product){
+                DB::rollBack();
+                return $this->error('Order not found');
+            }
+
+            $order = Order::where('id', $order_product['order_id'])->update([
+                'order_subtotal'   => $order_product['order']['order_subtotal'] - $order_product['order_product_subtotal'],
+                'order_gross'      => $order_product['order']['order_gross'] - $order_product['order_product_subtotal'],
+                'order_grandtotal' => $order_product['order']['order_grandtotal'] - $order_product['order_product_grandtotal'],
+            ]);
+
+            if(!$order){
+                DB::rollBack();
+                return $this->error('Order not found');
+            }
+
+            if(($type??false) == 'product'){
+                $stock = ProductOutletStock::where('product_id', $order_product['product_id'])->where('outlet_id', $outlet['id'])->first();
+                if($stock){
+                    $old_stock = clone $stock;
+                    $stock->update([
+                        'stock' =>  $stock['stock']+$order_product['qty']
+                    ]);
+
+                    if(!$stock){
+                        DB::rollBack();
+                        return $this->error('Failed to update stock');
+                    }
+                    (new ProductController)->addLogProductStockLog($old_stock['id'], $order_product['qty'], $old_stock['stock'], $stock['stock'], 'Cancel Booking Order', null);
+                }
+            }
+
+            $delete_order_product = $order_product->delete();
+
+            if($delete_order_product && ($type??false) == 'treatment' && $order_product['treatment_patient_id']){
+                $delete_step =  TreatmentPatientStep::where('treatment_patient_id', $order_product['treatment_patient_id'])->where('status', 'Pending')->delete();
+                if($delete_step){
+                    $treatment_patient = TreatmentPatient::with(['steps'])->where('id', $order_product['treatment_patient_id'])->first();
+                    if($treatment_patient){
+                        if(count($treatment_patient['steps']) <= 0){
+                            $delete_treatment_patient = $treatment_patient->delete();
+                            if(!$delete_treatment_patient){
+                                DB::rollBack();
+                                return $this->error('Failed to delete treatment patient');
+                            }
+                        }
+                    }else{
+                        DB::rollBack();
+                        return $this->error('Failed to get treatment patient');
+                    }
+                }else{
+                    DB::rollBack();
+                    return $this->error('Failed to delete step');
+                }
+            }
+
+            DB::commit();
+            return $this->getDataOrder([
+                'order_id' => $order_product['order']['id'],
+                'order_consultation' => $order_product['order']['order_consultations'][0]
+            ],'Succes to add new order');
+
+        }elseif(($type??false) == 'consultation'){
+
+            DB::beginTransaction();
+            $order_consultation = OrderConsultation::with(['order'])->whereHas('order', function($order) use($post){
+                $order->where('patient_id', $post['id_customer']);
+                $order->where('send_to_transaction', 0);
+            })->whereHas('doctor')
+            ->where('id', $post['id'])->first();
+
+            if(!$order_consultation){
+                DB::rollBack();
+                return $this->error('Order not found');
+            }
+
+            $order = Order::where('id', $order_consultation['order_id'])->update([
+                'order_subtotal'   => $order_consultation['order']['order_subtotal'] - $order_consultation['order_consultation_subtotal'],
+                'order_gross'      => $order_consultation['order']['order_gross'] - $order_consultation['order_consultation_subtotal'],
+                'order_grandtotal' => $order_consultation['order']['order_grandtotal'] - $order_consultation['order_consultation_grandtotal'],
+            ]);
+
+            if(!$order){
+                DB::rollBack();
+                return $this->error('Order not found');
+            }
+
+            $order_consultation->delete();
+
+            DB::commit();
+            return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Succes to delete order');
+
+        }else{
+            return $this->error('Type is invalid');
+        }
     }
 }

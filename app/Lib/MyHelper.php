@@ -164,4 +164,27 @@ class MyHelper
 
         return $result;
     }
+
+    public static function getListDate($day = null, $month = null, $year = null)
+    {
+        $thisMonth = $month ?? date('n');
+        $thisYear  = $year  ?? date('Y');
+        $thidDay   = $day ?? '01';
+        $date = $thisYear . '-' . $thisMonth . '-' . $thidDay;
+        $start = $date;
+        $end  = $thisYear . '-' . $thisMonth . '-' . date('t', strtotime($date));
+
+        $listDate = [];
+        while (strtotime($date) <= strtotime($end)) {
+            $listDate[] = date('Y-m-d', strtotime($date));
+
+            $date = date("Y-m-d", strtotime("+1 day", strtotime($date)));
+        }
+
+        return [
+            'start' => $start,
+            'end' => $end,
+            'list' => $listDate,
+        ];
+    }
 }
