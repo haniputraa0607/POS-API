@@ -121,7 +121,7 @@ class POSController extends Controller
         return $this->ok('', $result);
     }
 
-    public function getOrder(Request $request):mixed
+    public function getOrder(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $cashier = $request->user();
@@ -140,7 +140,7 @@ class POSController extends Controller
 
     }
 
-    public function getDataOrder($data, $message):mixed
+    public function getDataOrder($data, $message):JsonResponse
     {
         $id_customer = $data['id_customer'];
 
@@ -170,6 +170,7 @@ class POSController extends Controller
             'order_consultations.doctor'
         ])->where('patient_id', $id_customer)
         ->where('send_to_transaction', 0)
+        ->where('is_submit', 0)
         ->latest()
         ->first();
 
@@ -263,6 +264,7 @@ class POSController extends Controller
 
             $order = Order::where('patient_id', $post['id_customer'])
             ->where('send_to_transaction', 0)
+            ->where('is_submit', 0)
             ->latest()
             ->first();
 
@@ -495,7 +497,7 @@ class POSController extends Controller
 
     }
 
-    public function deleteOrder(Request $request):mixed
+    public function deleteOrder(Request $request):JsonResponse
     {
 
         $post = $request->json()->all();
@@ -521,7 +523,7 @@ class POSController extends Controller
 
     }
 
-    public function deleteOrderData($data):mixed
+    public function deleteOrderData($data):JsonResponse
     {
         $outlet =  $data['outlet'];
         $type =  $data['type'];
@@ -534,6 +536,7 @@ class POSController extends Controller
             $order_product = OrderProduct::with(['order'])->whereHas('order', function($order) use($post){
                 $order->where('patient_id', $post['id_customer']);
                 $order->where('send_to_transaction', 0);
+                $order->where('is_submit', 0);
             })->whereHas('product')
             ->where('id', $post['id'])->first();
 
@@ -602,6 +605,7 @@ class POSController extends Controller
             $order_consultation = OrderConsultation::with(['order'])->whereHas('order', function($order) use($post){
                 $order->where('patient_id', $post['id_customer']);
                 $order->where('send_to_transaction', 0);
+                $order->where('is_submit', 0);
             })->whereHas('doctor')
             ->where('id', $post['id'])->first();
 
@@ -664,6 +668,7 @@ class POSController extends Controller
                 $order_product = OrderProduct::with(['order'])->whereHas('order', function($order) use($post){
                     $order->where('patient_id', $post['id_customer']);
                     $order->where('send_to_transaction', 0);
+                    $order->where('is_submit', 0);
                 })->whereHas('product')
                 ->where('id', $post['id'])->first();
 
@@ -746,7 +751,46 @@ class POSController extends Controller
             return $this->error('Qty can be null');
         }
 
+    }
 
+    public function submitOrder(Request $request): JsonResponse
+    {
+        $request->validate([
+            'id_customer' => 'required',
+        ]);
+
+        $cashier = $request->user();
+        $outlet = $cashier->outlet;
+        $post = $request->json()->all();
+
+
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+
+        $order = Order::where('patient_id', $post['id_customer'])
+            ->where('send_to_transaction', 0)
+            ->where('is_submit', 0)
+            ->latest()
+            ->first();
+
+        if(!$order){
+            return $this->error('Order not found');
+        }
+
+        DB::beginTransaction();
+
+        $update = $order->update([
+            'is_submit' => 1,
+        ]);
+
+        if(!$update){
+            DB::rollBack();
+            return $this->error('Failed to submit order');
+        }
+
+        DB::commit();
+        return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Succes to submit order');
 
     }
 }
