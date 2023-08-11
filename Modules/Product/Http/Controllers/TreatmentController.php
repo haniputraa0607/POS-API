@@ -76,6 +76,7 @@ class TreatmentController extends Controller
                 'treatment_name' => $value['product_name'],
                 'price' => $price,
                 'can_continue' => false,
+                'can_new' => true,
                 'record_history' => []
             ];
             return $data;
@@ -171,6 +172,7 @@ class TreatmentController extends Controller
             'treatment_name' => $products['product_name'],
             'price' => $price,
             'can_continue' => false,
+            'can_new' => true,
             'record_history' => []
         ];
 
@@ -194,6 +196,7 @@ class TreatmentController extends Controller
                 'treatment_name' => $data['treatment_name'],
                 'price' => $data['price'],
                 'can_continue' => $data['can_continue'],
+                'can_new' => $data['can_new'],
                 'date' => date('d F Y', strtotime($date)),
                 'record_history' => []
             ];
@@ -241,6 +244,7 @@ class TreatmentController extends Controller
                 foreach($customerPatient ?? [] as $cp){
                     if($value['id'] == $cp['treatment_id']){
                         $value['can_continue'] = true;
+                        $value['can_new'] = false;
                         $value['record_history'] = [
                             'from' => $cp['progress'].'/'.$cp['step'],
                             'to' => ($cp['progress']+1).'/'.$cp['step'],

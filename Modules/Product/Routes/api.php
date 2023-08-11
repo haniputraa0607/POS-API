@@ -114,6 +114,7 @@ Route::middleware(['auth:api','scopes:doctor'])->prefix('doctor')->group(functio
 
     Route::prefix('treatment')->controller(TreatmentController::class)->group(function () {
         Route::post('list', 'list');
+        Route::post('list-date', 'listDate');
         Route::post('customer-history', 'customerHistory');
     });
 
