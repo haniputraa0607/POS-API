@@ -56,7 +56,11 @@ class TreatmentController extends Controller
         });
 
         if($post['search']['filter'] == 'name'){
-            $products = $products->where('product_name', 'like', '%'.$post['search']['value'].'%');
+            if($post['search']['value'] == ''){
+                $products = $products->where('product_name', '');
+            }else{
+                $products = $products->where('product_name', 'like', '%'.$post['search']['value'].'%');
+            }
         }
 
         $products = $products->treatment()->get()->toArray();

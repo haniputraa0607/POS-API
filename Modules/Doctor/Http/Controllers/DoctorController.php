@@ -393,7 +393,7 @@ class DoctorController extends Controller
 
     }
 
-    public function getDoctor(Request $request):JsonResponse
+    public function getDoctor(Request $request):mixed
     {
         $post = $request->json()->all();
         $doctor = $request->user();
@@ -429,7 +429,11 @@ class DoctorController extends Controller
         }
 
         if($post['search']['filter'] == 'name'){
-            $doctors = $doctors->where('name', 'like', '%'.$post['search']['value'].'%');
+            if($post['search']['value'] == ''){
+                $doctors = $doctors->where('name', '');
+            }else{
+                $doctors = $doctors->where('name', 'like', '%'.$post['search']['value'].'%');
+            }
         }
 
         $doctors = $doctors->doctor()->get()->toArray();
