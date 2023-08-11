@@ -525,7 +525,7 @@ class DoctorController extends Controller
                 $doc_shift[] = [
                     'id_doctor_shift' => $shift['id'],
                     'time'            => date('H:i',strtotime($shift['start'])).' - '.date('H:i',strtotime($shift['end'])),
-                    'quote'           => $shift['quota'] - count($shift['order_consultations'])
+                    'quote'           => count($shift['order_consultations'])
                 ];
             }
             if(isset($doctors['doctor_schedules']) && !empty($doc_shift)){
@@ -533,7 +533,7 @@ class DoctorController extends Controller
                     'id_doctor' => $doctors['id'],
                     'name'      => $doctors['name'],
                     'date'      => date('d F Y', strtotime($schedule_dates['date'])),
-                    'image_url' => isset($doctors['image_url']) ? env('STORAGE_URL_API').$doctors['image_url'] : null,
+                    'image_url' => isset($doctors['image_url']) ? env('STORAGE_URL_API').$doctors['image_url'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_doctor.png',
                     'shifts'    => $doc_shift
                 ];
                 $list_dates[] = date('Y-m-d', strtotime($schedule_dates['date']));
