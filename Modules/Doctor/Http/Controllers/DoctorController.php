@@ -165,7 +165,7 @@ class DoctorController extends Controller
         return $this->ok('', $result);
     }
 
-    public function nextQueue(Request $request):mixed
+    public function nextQueue(Request $request):JsonResponse
     {
         $doctor = $request->user();
         $outlet = $doctor->outlet;
@@ -217,7 +217,7 @@ class DoctorController extends Controller
 
     }
 
-    public function getDataOrder($data, $message):mixed
+    public function getDataOrder($data, $message):JsonResponse
     {
         $id_order = $data['order_id'];
         $id_order_consultation = $data['order_consultation']['id'];
@@ -251,6 +251,7 @@ class DoctorController extends Controller
             },
         ])->where('id', $id_order)
         ->where('send_to_transaction', 0)
+        ->where('is_submited', 1)
         ->latest()
         ->first();
 
@@ -392,7 +393,7 @@ class DoctorController extends Controller
 
     }
 
-    public function getDoctor(Request $request):mixed
+    public function getDoctor(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $doctor = $request->user();
@@ -477,7 +478,7 @@ class DoctorController extends Controller
 
     }
 
-    public function getDoctorDate(Request $request):mixed
+    public function getDoctorDate(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $doctor = $request->user();
@@ -544,7 +545,7 @@ class DoctorController extends Controller
 
     }
 
-    public function getOrder(Request $request):mixed
+    public function getOrder(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $doctor = $request->user();
@@ -581,7 +582,7 @@ class DoctorController extends Controller
 
     }
 
-    public function addOrder(Request $request):mixed
+    public function addOrder(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $doctor = $request->user();
@@ -595,6 +596,7 @@ class DoctorController extends Controller
 
             $order = Order::with(['order_consultations'])->where('id', $post['id_order'])
             ->where('send_to_transaction', 0)
+            ->where('is_submited', 1)
             ->latest()
             ->first();
 
@@ -766,7 +768,7 @@ class DoctorController extends Controller
 
     }
 
-    public function editOrder(Request $request):mixed
+    public function editOrder(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $doctor = $request->user();
@@ -799,6 +801,7 @@ class DoctorController extends Controller
                 $order_product = OrderProduct::with(['order.order_consultations'])->whereHas('order', function($order) use($post){
                     $order->where('id', $post['id_order']);
                     $order->where('send_to_transaction', 0);
+                    $order->where('is_submited', 1);
                 })->whereHas('product')
                 ->where('id', $post['id'])->first();
 
@@ -889,7 +892,7 @@ class DoctorController extends Controller
 
     }
 
-    public function deleteOrder(Request $request):mixed
+    public function deleteOrder(Request $request):JsonResponse
     {
 
         $post = $request->json()->all();
@@ -915,7 +918,7 @@ class DoctorController extends Controller
 
     }
 
-    public function deleteOrderData($data):mixed
+    public function deleteOrderData($data):JsonResponse
     {
         $outlet =  $data['outlet'];
         $type =  $data['type'];
@@ -928,6 +931,7 @@ class DoctorController extends Controller
             $order_product = OrderProduct::with(['order.order_consultations'])->whereHas('order', function($order) use($post){
                 $order->where('order_id', $post['id_order']);
                 $order->where('send_to_transaction', 0);
+                $order->where('is_submited', 1);
             })->whereHas('product')
             ->where('id', $post['id'])->first();
 
@@ -999,6 +1003,7 @@ class DoctorController extends Controller
             $order_consultation = OrderConsultation::with(['order'])->whereHas('order', function($order) use($post){
                 $order->where('patient_id', $post['id_customer']);
                 $order->where('send_to_transaction', 0);
+                $order->where('is_submited', 1);
             })->whereHas('doctor')
             ->where('id', $post['id'])->first();
 

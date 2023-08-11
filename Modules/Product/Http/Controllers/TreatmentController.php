@@ -135,7 +135,7 @@ class TreatmentController extends Controller
         return $this->ok('success', $return);
     }
 
-    public function listDate(Request $request):mixed
+    public function listDate(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $cashier = $request->user();

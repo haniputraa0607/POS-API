@@ -17,7 +17,7 @@ class SettingController extends Controller
         $this->splash_path = "splash/";
     }
 
-    public function uploadImage(Request $request):mixed
+    public function uploadImage(Request $request):JsonResponse
     {
         $post = $request->all();
 
