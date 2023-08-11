@@ -170,7 +170,7 @@ class POSController extends Controller
             'order_consultations.doctor'
         ])->where('patient_id', $id_customer)
         ->where('send_to_transaction', 0)
-        ->where('is_submit', 0)
+        ->where('is_submited', 0)
         ->latest()
         ->first();
 
@@ -264,7 +264,7 @@ class POSController extends Controller
 
             $order = Order::where('patient_id', $post['id_customer'])
             ->where('send_to_transaction', 0)
-            ->where('is_submit', 0)
+            ->where('is_submited', 0)
             ->latest()
             ->first();
 
@@ -536,7 +536,7 @@ class POSController extends Controller
             $order_product = OrderProduct::with(['order'])->whereHas('order', function($order) use($post){
                 $order->where('patient_id', $post['id_customer']);
                 $order->where('send_to_transaction', 0);
-                $order->where('is_submit', 0);
+                $order->where('is_submited', 0);
             })->whereHas('product')
             ->where('id', $post['id'])->first();
 
@@ -605,7 +605,7 @@ class POSController extends Controller
             $order_consultation = OrderConsultation::with(['order'])->whereHas('order', function($order) use($post){
                 $order->where('patient_id', $post['id_customer']);
                 $order->where('send_to_transaction', 0);
-                $order->where('is_submit', 0);
+                $order->where('is_submited', 0);
             })->whereHas('doctor')
             ->where('id', $post['id'])->first();
 
@@ -668,7 +668,7 @@ class POSController extends Controller
                 $order_product = OrderProduct::with(['order'])->whereHas('order', function($order) use($post){
                     $order->where('patient_id', $post['id_customer']);
                     $order->where('send_to_transaction', 0);
-                    $order->where('is_submit', 0);
+                    $order->where('is_submited', 0);
                 })->whereHas('product')
                 ->where('id', $post['id'])->first();
 
@@ -770,7 +770,7 @@ class POSController extends Controller
 
         $order = Order::where('patient_id', $post['id_customer'])
             ->where('send_to_transaction', 0)
-            ->where('is_submit', 0)
+            ->where('is_submited', 0)
             ->latest()
             ->first();
 
@@ -781,7 +781,7 @@ class POSController extends Controller
         DB::beginTransaction();
 
         $update = $order->update([
-            'is_submit' => 1,
+            'is_submited' => 1,
         ]);
 
         if(!$update){
