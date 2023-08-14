@@ -99,11 +99,18 @@ class ProductController extends Controller
             return $this->error('Outlet not found');
         }
 
-        $product = Product::with(['global_price','outlet_price' => function($outlet_price) use ($outlet){
-            $outlet_price->where('outlet_id',$outlet['id']);
-        }, 'outlet_stock' => function($outlet_stock) use ($outlet){
+        $product = Product::with([
+            'global_price',
+            'outlet_price' => function($outlet_price) use ($outlet){
+                $outlet_price->where('outlet_id',$outlet['id']);
+            }, 'outlet_stock' => function($outlet_stock) use ($outlet){
+                $outlet_stock->where('outlet_id',$outlet['id']);
+            }
+        ])->whereHas('outlet_stock', function($outlet_stock) use ($outlet){
             $outlet_stock->where('outlet_id',$outlet['id']);
-        }])->where('product_category_id', $post['id']);
+            $outlet_stock->where('stock', '>', 0);
+        })
+        ->where('product_category_id', $post['id']);
 
         if(isset($post['search']) && !empty($post['search'])){
             $product = $product->where('product_name', 'like', '%'.$post['search'].'%');

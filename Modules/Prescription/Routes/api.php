@@ -13,6 +13,9 @@ use Illuminate\Http\Request;
 |
 */
 
-Route::middleware('auth:api')->get('/prescription', function (Request $request) {
-    return $request->user();
+Route::middleware(['auth:api','scopes:doctor'])->prefix('doctor')->group(function (){
+
+    Route::prefix('prescription')->controller(PrescriptionController::class)->group(function () {
+        Route::post('list', 'list');
+    });
 });
