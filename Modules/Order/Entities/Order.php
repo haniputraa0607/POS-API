@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Order\Entities\OrderProduct;
 use Modules\Order\Entities\OrderConsultation;
+use Modules\Order\Entities\OrderPrescription;
 use Modules\Outlet\Entities\Outlet;
 use Modules\Customer\Entities\Customer;
 
@@ -42,6 +43,11 @@ class Order extends Model
     public function order_consultations(): HasMany
     {
         return $this->hasMany(OrderConsultation::class);
+    }
+
+    public function order_prescriptions(): HasMany
+    {
+        return $this->hasMany(OrderPrescription::class);
     }
 
     public function outlet(): BelongsTo

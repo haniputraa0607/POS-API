@@ -89,7 +89,7 @@ class ProductController extends Controller
 
     }
 
-    public function list(Request $request):JsonResponse
+    public function list(Request $request):mixed
     {
         $post = $request->json()->all();
         $cashier = $request->user();
@@ -99,14 +99,25 @@ class ProductController extends Controller
             return $this->error('Outlet not found');
         }
 
-        $product = Product::with(['global_price','outlet_price' => function($outlet_price) use ($outlet){
-            $outlet_price->where('outlet_id',$outlet['id']);
-        }, 'outlet_stock' => function($outlet_stock) use ($outlet){
+        $product = Product::with([
+            'global_price',
+            'outlet_price' => function($outlet_price) use ($outlet){
+                $outlet_price->where('outlet_id',$outlet['id']);
+            }, 'outlet_stock' => function($outlet_stock) use ($outlet){
+                $outlet_stock->where('outlet_id',$outlet['id']);
+            }
+        ])->whereHas('outlet_stock', function($outlet_stock) use ($outlet){
             $outlet_stock->where('outlet_id',$outlet['id']);
-        }])->where('product_category_id', $post['id'])
-        ->select('id','product_name', 'image')
-        ->product()
-        ->get()->toArray();
+            $outlet_stock->where('stock', '>', 0);
+        })
+        ->where('product_category_id', $post['id']);
+
+        if(isset($post['search']) && !empty($post['search'])){
+            $product = $product->where('product_name', 'like', '%'.$post['search'].'%');
+        }
+
+        $product = $product->select('id','product_name', 'image')
+        ->product()->get()->toArray();
         if(!$product){
             return $this->error('Something Error');
         }
@@ -186,11 +197,11 @@ class ProductController extends Controller
         }
         $product = Product::create($payload);
         return $this->ok("succes", $product);
-    } 
+    }
 
     public function webHookUpdate(Request $request)
     {
-        
+
         $post = $request->json()->all();
         switch($post['item_type']){
             case "1":
@@ -228,7 +239,7 @@ class ProductController extends Controller
     }
 
     public function webHookDelete(Request $request)
-    {    
+    {
         $post = $request->json()->all();
         $product = Product::where(['equal_id' => $post['id_item']])->delete();
         return $this->ok("success","");

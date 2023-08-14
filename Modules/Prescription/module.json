@@ -1,0 +1,11 @@
+{
+    "name": "Prescription",
+    "alias": "prescription",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Prescription\\Providers\\PrescriptionServiceProvider"
+    ],
+    "files": []
+}

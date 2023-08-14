@@ -22,5 +22,6 @@
     "Article": true,
     "Banner": true,
     "Mitra": true,
-    "Partner": true
+    "Partner": true,
+    "Prescription": true
 }

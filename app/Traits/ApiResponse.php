@@ -67,12 +67,13 @@ trait ApiResponse
         ], 422);
     }
 
-    protected function error($message)
+    protected function error($message, $data = [])
     {
         return response()->json([
             'status' => "fail",
             'message' => $message,
-            'error' => ''
+            'error' => '',
+            'result' => $data
         ], 200);
     }
 }

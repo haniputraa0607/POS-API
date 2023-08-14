@@ -133,14 +133,14 @@ class POSController extends Controller
 
         if(isset($post['id_customer'])){
 
-            return $this->getDataOrder(['id_customer' => $post['id_customer']],'');
+            return $this->getDataOrder(true, ['id_customer' => $post['id_customer']],'');
         }
 
         return $this->ok('', $return);
 
     }
 
-    public function getDataOrder($data, $message):JsonResponse
+    public function getDataOrder($status = true, $data, $message, $submit = false):JsonResponse
     {
         $id_customer = $data['id_customer'];
 
@@ -169,10 +169,13 @@ class POSController extends Controller
             'order_consultations.shift',
             'order_consultations.doctor'
         ])->where('patient_id', $id_customer)
-        ->where('send_to_transaction', 0)
-        ->where('is_submited', 0)
-        ->latest()
-        ->first();
+        ->where('send_to_transaction', 0);
+
+        if($submit){
+            $order = $order->where('is_submited', 1);
+        }
+
+        $order = $order->latest()->first();
 
         if($order){
             $ord_prod = [];
@@ -246,7 +249,11 @@ class POSController extends Controller
             ];
         }
 
-        return $this->ok($message, $return);
+        if($status){
+            return $this->ok($message, $return);
+        }else{
+            return $this->error($message, $return);
+        }
 
     }
 
@@ -348,7 +355,7 @@ class POSController extends Controller
                 }else{
                     $order_product = OrderProduct::where('order_id', $order['id'])->where('product_id', $product['id'])->whereDate('schedule_date',$post['order']['date'])->first();
                     if($order_product){
-                        return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Treatment already exist in order');
+                        return $this->getDataOrder(false, ['id_customer' => $post['id_customer']], 'Treatment already exist in order');
                     }else{
 
                         if(($post['order']['continue']??false) == 1){
@@ -422,7 +429,7 @@ class POSController extends Controller
                 DB::commit();
 
                 $generate = GenerateQueueOrder::dispatch($send)->onConnection('generatequeueorder');
-                return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Succes to add new order');
+                return $this->getDataOrder(true, ['id_customer' => $post['id_customer']], 'Succes to add new order');
 
             }elseif(($post['type']??false) == 'consultation'){
 
@@ -446,7 +453,7 @@ class POSController extends Controller
 
                 $order_consultation = OrderConsultation::where('order_id', $order['id'])->first();
                 if($order_consultation){
-                    return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Consultation already exist in order');
+                    return $this->getDataOrder(false, ['id_customer' => $post['id_customer']], 'Consultation already exist in order');
                 }else{
 
                     $price = $doctor['doctor_shifts'][0]['price'] ?? $doctor['consultation_price'] ?? $outlet['consultation_price'];
@@ -483,7 +490,7 @@ class POSController extends Controller
                     DB::commit();
 
                     $generate = GenerateQueueOrder::dispatch($send)->onConnection('generatequeueorder');
-                    return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Succes to add new order');
+                    return $this->getDataOrder(true, ['id_customer' => $post['id_customer']], 'Succes to add new order');
 
                 }
 
@@ -597,7 +604,7 @@ class POSController extends Controller
             }
 
             DB::commit();
-            return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Succes to delete order');
+            return $this->getDataOrder(true, ['id_customer' => $post['id_customer']], 'Succes to delete order');
 
         }elseif(($type??false) == 'consultation'){
 
@@ -628,7 +635,7 @@ class POSController extends Controller
             $order_consultation->delete();
 
             DB::commit();
-            return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Succes to delete order');
+            return $this->getDataOrder(true, ['id_customer' => $post['id_customer']], 'Succes to delete order');
 
         }else{
             return $this->error('Type is invalid');
@@ -708,7 +715,7 @@ class POSController extends Controller
                     ]);
 
                 }else{
-                    return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Succes to update order');
+                    return $this->getDataOrder(true, ['id_customer' => $post['id_customer']], 'Succes to update order');
                 }
 
                 if(!$order){
@@ -741,7 +748,7 @@ class POSController extends Controller
                 }
 
                 DB::commit();
-                return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Succes to delete order');
+                return $this->getDataOrder(true, ['id_customer' => $post['id_customer']], 'Succes to delete order');
 
             }else{
                 return $this->error('Type is invalid');
@@ -790,7 +797,7 @@ class POSController extends Controller
         }
 
         DB::commit();
-        return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Succes to submit order');
+        return $this->getDataOrder(true, ['id_customer' => $post['id_customer']], 'Succes to submit order', true);
 
     }
 }

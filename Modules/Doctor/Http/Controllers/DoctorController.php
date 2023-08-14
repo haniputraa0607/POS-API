@@ -15,6 +15,7 @@ use Modules\Doctor\Entities\DoctorScheduleDate;
 use Modules\Order\Entities\OrderConsultation;
 use Modules\Order\Entities\Order;
 use Modules\Order\Entities\OrderProduct;
+use Modules\Order\Entities\OrderPrescription;
 use Illuminate\Support\Facades\DB;
 use App\Http\Models\Setting;
 use Modules\Customer\Entities\Customer;
@@ -25,6 +26,9 @@ use Modules\Product\Http\Controllers\ProductController;
 use App\Jobs\GenerateQueueOrder;
 use Modules\Customer\Entities\TreatmentPatient;
 use Modules\Customer\Entities\TreatmentPatientStep;
+use Modules\Prescription\Entities\Prescription;
+use Modules\Prescription\Entities\PrescriptionOutlet;
+use Modules\Prescription\Entities\PrescriptionOutletLog;
 
 class DoctorController extends Controller
 {
@@ -207,7 +211,7 @@ class DoctorController extends Controller
 
         if($order_consultation){
             $order_consultation_after = OrderConsultation::where('doctor_id', $order_consultation['doctor_id'])->where('doctor_shift_id', $order_consultation['doctor_shift_id'])->whereDate('schedule_date', date('Y-m-d', strtotime($order_consultation['schedule_date'])))->where('status', '<>', 'Finished')->update(['status' => 'Pending']);
-            return $this->getDataOrder([
+            return $this->getDataOrder(true, [
                 'order_id' => $order_consultation['order_id'],
                 'order_consultation' => $order_consultation
             ],'');
@@ -217,7 +221,7 @@ class DoctorController extends Controller
 
     }
 
-    public function getDataOrder($data, $message):JsonResponse
+    public function getDataOrder($status = true, $data, $message):JsonResponse
     {
         $id_order = $data['order_id'];
         $id_order_consultation = $data['order_consultation']['id'];
@@ -393,7 +397,7 @@ class DoctorController extends Controller
 
     }
 
-    public function getDoctor(Request $request):mixed
+    public function getDoctor(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $doctor = $request->user();
@@ -460,6 +464,8 @@ class DoctorController extends Controller
                     $list_doctors[] = [
                         'id_doctor' => $doc['id'],
                         'name'      => $doc['name'],
+                        'date_text' => date('d F Y', strtotime($date)),
+                        'date'      => date('Y-m-d', strtotime($date)),
                         'image_url' => isset($doc['image_url']) ? env('STORAGE_URL_API').$doc['image_url'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_doctor.png',
                         'shifts'    => $doc_shift
                     ];
@@ -525,15 +531,16 @@ class DoctorController extends Controller
                 $doc_shift[] = [
                     'id_doctor_shift' => $shift['id'],
                     'time'            => date('H:i',strtotime($shift['start'])).' - '.date('H:i',strtotime($shift['end'])),
-                    'quote'           => $shift['quota'] - count($shift['order_consultations'])
+                    'quote'           => count($shift['order_consultations'])
                 ];
             }
             if(isset($doctors['doctor_schedules']) && !empty($doc_shift)){
                 $list_doctors[] = [
                     'id_doctor' => $doctors['id'],
                     'name'      => $doctors['name'],
-                    'date'      => date('d F Y', strtotime($schedule_dates['date'])),
-                    'image_url' => isset($doctors['image_url']) ? env('STORAGE_URL_API').$doctors['image_url'] : null,
+                    'date_text' => date('d F Y', strtotime($schedule_dates['date'])),
+                    'date'      => date('Y-m-d', strtotime($schedule_dates['date'])),
+                    'image_url' => isset($doctors['image_url']) ? env('STORAGE_URL_API').$doctors['image_url'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_doctor.png',
                     'shifts'    => $doc_shift
                 ];
                 $list_dates[] = date('Y-m-d', strtotime($schedule_dates['date']));
@@ -573,7 +580,7 @@ class DoctorController extends Controller
             ->first();
 
             if($order_consultation){
-                return $this->getDataOrder([
+                return $this->getDataOrder(true, [
                     'order_id' => $order_consultation['order_id'],
                     'order_consultation' => $order_consultation
                 ],'');
@@ -586,7 +593,7 @@ class DoctorController extends Controller
 
     }
 
-    public function addOrder(Request $request):JsonResponse
+    public function addOrder(Request $request):mixed
     {
         $post = $request->json()->all();
         $doctor = $request->user();
@@ -671,7 +678,7 @@ class DoctorController extends Controller
                 }else{
                     $order_product = OrderProduct::where('order_id', $order['id'])->where('product_id', $product['id'])->whereDate('schedule_date',$post['order']['date'])->first();
                     if($order_product){
-                        return $this->getDataOrder([
+                        return $this->getDataOrder(false, [
                             'order_id' => $order['id'],
                             'order_consultation' => $order['order_consultations'][0]
                         ],'Treatment already exist in order');
@@ -685,7 +692,7 @@ class DoctorController extends Controller
 
                         }else{
                             if(!isset($post['order']['record'])){
-                                return $this->getDataOrder([
+                                return $this->getDataOrder(false, [
                                     'order_id' => $order['id'],
                                     'order_consultation' => $order['order_consultations'][0]
                                 ],'Record not found');
@@ -757,10 +764,28 @@ class DoctorController extends Controller
                 DB::commit();
 
                 $generate = GenerateQueueOrder::dispatch($send)->onConnection('generatequeueorder');
-                return $this->getDataOrder([
+                return $this->getDataOrder(true, [
                     'order_id' => $order['id'],
                     'order_consultation' => $order['order_consultations'][0]
                 ],'Succes to add new order');
+
+            }elseif(($post['type']??false) == 'prescription'){
+                $prescription = Prescription::with(['prescription_outlets' => function($outlet_price) use ($outlet){$outlet_price->where('outlet_id',$outlet['id']);}])
+                ->whereHas('prescription_outlets', function($prescription_outlets) use ($outlet, $post){
+                    $prescription_outlets->where('outlet_id',$outlet['id']);
+                    $prescription_outlets->where('stock', '>=', $post['order']['qty']);
+                })
+                ->where('id', $post['order']['id'])->first();
+
+                if(!$prescription){
+                    DB::rollBack();
+                    return $this->error('Prescription not found');
+                }
+
+                $price = $prescription['prescription_outlets'][0]['price'] ?? $prescription['price'] ?? 0;
+
+                return $order_prescription = OrderPrescription::where('order_id', $order['id'])->where('prescription_id', $prescription['id'])->first();
+
 
             }else{
                 return $this->error('Type is invalid');
@@ -845,7 +870,7 @@ class DoctorController extends Controller
                     ]);
 
                 }else{
-                    return $this->getDataOrder([
+                    return $this->getDataOrder(true, [
                         'order_id' => $order_product['order_id'],
                         'order_consultation' => $order_product['order']['order_consultations'][0]
                     ],'Succes to add new order');
@@ -881,7 +906,7 @@ class DoctorController extends Controller
                 }
 
                 DB::commit();
-                return $this->getDataOrder([
+                return $this->getDataOrder(true, [
                     'order_id' => $order_product['order_id'],
                     'order_consultation' => $order_product['order']['order_consultations'][0]
                 ],'Succes to add new order');
@@ -996,7 +1021,7 @@ class DoctorController extends Controller
             }
 
             DB::commit();
-            return $this->getDataOrder([
+            return $this->getDataOrder(true, [
                 'order_id' => $order_product['order']['id'],
                 'order_consultation' => $order_product['order']['order_consultations'][0]
             ],'Succes to add new order');
@@ -1030,7 +1055,7 @@ class DoctorController extends Controller
             $order_consultation->delete();
 
             DB::commit();
-            return $this->getDataOrder(['id_customer' => $post['id_customer']], 'Succes to delete order');
+            return $this->getDataOrder(true, ['id_customer' => $post['id_customer']], 'Succes to delete order');
 
         }else{
             return $this->error('Type is invalid');

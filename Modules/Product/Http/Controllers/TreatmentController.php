@@ -68,7 +68,7 @@ class TreatmentController extends Controller
             return $this->error('Treatment is empty');
         }
 
-        $products = array_map(function($value){
+        $products = array_map(function($value) use($post){
 
             if(isset($value['outlet_price'][0]['price']) ?? false){
                 $price = $value['outlet_price'][0]['price'];
@@ -83,6 +83,9 @@ class TreatmentController extends Controller
                 'can_new' => true,
                 'record_history' => []
             ];
+            if($post['search']['filter'] == 'date'){
+                $data['date'] = date('Y-m-d', strtotime($post['search']['value']));
+            }
             return $data;
         },$products ?? []);
 
@@ -201,7 +204,8 @@ class TreatmentController extends Controller
                 'price' => $data['price'],
                 'can_continue' => $data['can_continue'],
                 'can_new' => $data['can_new'],
-                'date' => date('d F Y', strtotime($date)),
+                'date_text' => date('d F Y', strtotime($date)),
+                'date_' => date('Y-m-d', strtotime($date)),
                 'record_history' => []
             ];
             $list_dates[] = $date;
