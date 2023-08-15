@@ -67,4 +67,16 @@ class PrescriptionController extends Controller
         return $this->ok('success', $prescriptions);
     }
 
+    public function addLogPrescriptionStockLog($id, $qty, $stock_before, $stock_after, $source, $desc){
+
+        $stock_log = PrescriptionOutletLog::create([
+            'prescription_outlet_id'  => $id,
+            'qty'                     => $qty,
+            'stock_before'            => $stock_before,
+            'stock_after'             => $stock_after,
+            'source'                  => $source,
+            'description'             => $desc ?? null,
+        ]);
+    }
+
 }

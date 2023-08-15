@@ -99,7 +99,7 @@ class ConsultationController extends Controller
         }
 
         DB::commit();
-        return (new DoctorController)->getDataOrder([
+        return (new DoctorController)->getDataOrder(true, [
             'order_id' => $post['id_order'],
             'order_consultation' => $order_consul
         ],'Success to submit consultation');
