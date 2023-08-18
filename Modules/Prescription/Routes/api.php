@@ -17,5 +17,9 @@ Route::middleware(['auth:api','scopes:doctor'])->prefix('doctor')->group(functio
 
     Route::prefix('prescription')->controller(PrescriptionController::class)->group(function () {
         Route::post('list', 'list');
+
+        Route::prefix('custom')->group(function () {
+            Route::get('categories', 'categoriesCustom');
+        });
     });
 });

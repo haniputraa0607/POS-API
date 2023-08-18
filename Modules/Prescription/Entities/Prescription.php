@@ -24,6 +24,7 @@ class Prescription extends Model
         'price',
         'is_custom',
         'patient_id',
+        'prescription_custom_category_id',
         'description',
         'is_active'
     ];

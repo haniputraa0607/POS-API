@@ -14,6 +14,7 @@ use Modules\Product\Http\Requests\ProductRequest;
 use App\Lib\MyHelper;
 use Illuminate\Support\Facades\DB;
 use Modules\Product\Entities\ProductCategory;
+use Modules\Order\Entities\Order;
 
 class ProductController extends Controller
 {
@@ -89,7 +90,7 @@ class ProductController extends Controller
 
     }
 
-    public function list(Request $request):mixed
+    public function list(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $cashier = $request->user();
@@ -108,7 +109,6 @@ class ProductController extends Controller
             }
         ])->whereHas('outlet_stock', function($outlet_stock) use ($outlet){
             $outlet_stock->where('outlet_id',$outlet['id']);
-            $outlet_stock->where('stock', '>', 0);
         })
         ->where('product_category_id', $post['id']);
 
@@ -122,7 +122,19 @@ class ProductController extends Controller
             return $this->error('Something Error');
         }
 
-        $product = array_map(function($value){
+        $order_products = [];
+        if(isset($post['id_customer'])){
+            $order = Order::with([
+                'order_products'
+            ])->where('patient_id', $post['id_customer'])
+            ->where('send_to_transaction', 0)->latest()->first();
+
+            foreach($order['order_products'] ?? [] as $ord_pro){
+                $order_products[$ord_pro['product_id']] = $ord_pro['qty'];
+            }
+        }
+
+        $product = array_map(function($value) use($order_products){
 
             if(isset($value['outlet_price'][0]['price']) ?? false){
                 $price = $value['outlet_price'][0]['price'] ?? null;
@@ -134,7 +146,7 @@ class ProductController extends Controller
                 'product_name' => $value['product_name'],
                 'image_url'    => isset($value['image']) ? env('STORAGE_URL_API').$value['image'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
                 'price'        => $price,
-                'stock'        => $value['outlet_stock'][0]['stock'] ?? 0
+                'stock'        => ($value['outlet_stock'][0]['stock'] ?? 0) + ($order_products[$value['id']] ?? 0)
             ];
             return $data;
         },$product);

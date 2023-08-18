@@ -62,11 +62,11 @@ class ProductCategoryController extends Controller
         ];
         $product = ProductCategory::create($payload);
         return $this->ok("succes", $product);
-    } 
+    }
 
     public function webHookUpdate(Request $request)
     {
-        
+
         $post = $request->json()->all();
         $payload = [
             'equal_id' => $post['id_item_category'],
@@ -81,7 +81,7 @@ class ProductCategoryController extends Controller
     }
 
     public function webHookDelete(Request $request)
-    {    
+    {
         $post = $request->json()->all();
         $product = ProductCategory::where(['equal_id' => $post['id_item_category']])->delete();
         return $this->ok("success","");
