@@ -20,6 +20,8 @@ Route::middleware(['auth:api','scopes:doctor'])->prefix('doctor')->group(functio
 
         Route::prefix('custom')->group(function () {
             Route::get('categories', 'categoriesCustom');
+            Route::post('create', 'createCustom');
+            Route::post('list-container', 'listContainer');
         });
     });
 });

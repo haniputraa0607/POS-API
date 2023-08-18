@@ -5,11 +5,11 @@ namespace Modules\Prescription\Entities;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class PrescriptionCustomCategory extends Model
+class PrescriptionCategory extends Model
 {
     use HasFactory;
 
-    protected $table = 'prescription_custom_categories';
+    protected $table = 'prescription_categories';
     protected $fillable = [
         'category_name',
     ];

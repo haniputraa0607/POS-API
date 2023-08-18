@@ -295,6 +295,7 @@ class DoctorController extends Controller
                         'product_name'     => $ord_pro['product']['product_name'],
                         'image_url'        => isset($ord_pro['product']['image']) ? env('STORAGE_URL_API').$ord_pro['product']['image'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
                         'qty'              => $ord_pro['qty'],
+                        'current_qty'      => $ord_pro['qty'],
                         'stock'            => ($ord_pro['product']['outlet_stock'][0]['stock'] ?? 0) + $ord_pro['qty'],
                         'price'            => $price,
                         'price_total'      => $ord_pro['order_product_grandtotal'],
