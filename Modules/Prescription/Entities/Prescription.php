@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Modules\Prescription\Entities\PrescriptionCategory;
 
 class Prescription extends Model
 {
@@ -24,7 +25,7 @@ class Prescription extends Model
         'price',
         'is_custom',
         'patient_id',
-        'prescription_custom_category_id',
+        'prescription_category_id',
         'description',
         'is_active'
     ];
@@ -47,5 +48,10 @@ class Prescription extends Model
     public function scopeCustom(Builder $query): Builder
     {
         return $query->whereNotNull('patient_id')->where('is_custom', 1);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(PrescriptionCategory::class, 'prescription_category_id');
     }
 }

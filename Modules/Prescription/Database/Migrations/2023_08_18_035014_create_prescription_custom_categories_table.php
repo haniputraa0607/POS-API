@@ -34,5 +34,10 @@ return new class extends Migration
     public function down()
     {
         Schema::dropIfExists('prescription_custom_categories');
+
+        Schema::table('prescriptions', function (Blueprint $table) {
+            $table->dropForeign('prescriptions_prescription_custom_category_id_foreign');
+            $table->dropColumn('prescription_custom_category_id');
+        });
     }
 };
