@@ -137,7 +137,7 @@ class POSController extends Controller
 
         if(isset($post['id_customer'])){
 
-            return $this->getDataOrder(true, ['id_customer' => $post['id_customer']],'');
+            return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']],'');
         }
 
         return $this->ok('', $return);
@@ -147,6 +147,7 @@ class POSController extends Controller
     public function getDataOrder($status = true, $data, $message, $submit = false):JsonResponse
     {
         $id_customer = $data['id_customer'];
+        $id_outlet = $data['id_outlet'];
 
         $return = [
             'summary' => [
@@ -166,7 +167,13 @@ class POSController extends Controller
         ];
 
         $order = Order::with([
-            'order_products.product',
+            'order_products.product.global_price',
+            'order_products.product.outlet_price' => function($outlet_price) use($id_outlet){
+                $outlet_price->where('product_outlet_prices.outlet_id',$id_outlet);
+            },
+            'order_products.product.outlet_stock' => function($outlet_stock) use($id_outlet){
+                $outlet_stock->where('product_outlet_stocks.outlet_id',$id_outlet);
+            },
             'order_products.treatment_patient.steps' => function($step) {
                 $step->where('status', 'Pending');
             },
@@ -177,6 +184,8 @@ class POSController extends Controller
 
         if($submit){
             $order = $order->where('is_submited', 1);
+        }else{
+            $order = $order->where('is_submited', 0);
         }
 
         $order = $order->latest()->first();
@@ -188,11 +197,20 @@ class POSController extends Controller
             foreach($order['order_products'] ?? [] as $key => $ord_pro){
 
                 if($ord_pro['type'] == 'Product'){
+                    if(isset($ord_pro['product']['outlet_price'][0]['price']) ?? false){
+                        $price = $ord_pro['product']['outlet_price'][0]['price'] ?? null;
+                    }else{
+                        $price = $ord_pro['product']['global_price']['price'] ?? null;
+                    }
+
                     $ord_prod[] = [
                         'order_product_id' => $ord_pro['id'],
                         'product_id'       => $ord_pro['product']['id'],
                         'product_name'     => $ord_pro['product']['product_name'],
+                        'image_url'        => isset($ord_pro['product']['image']) ? env('STORAGE_URL_API').$ord_pro['product']['image'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
                         'qty'              => $ord_pro['qty'],
+                        'stock'            => ($ord_pro['product']['outlet_stock'][0]['stock'] ?? 0) + $ord_pro['qty'],
+                        'price'            => $price,
                         'price_total'      => $ord_pro['order_product_grandtotal'],
                     ];
                 }elseif($ord_pro['type'] == 'Treatment'){
@@ -261,7 +279,7 @@ class POSController extends Controller
 
     }
 
-    public function addOrder(Request $request):mixed
+    public function addOrder(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $cashier = $request->user();
@@ -356,7 +374,7 @@ class POSController extends Controller
                                 ]);
 
                             }else{
-                                return $this->getDataOrder(true, ['id_customer' => $post['id_customer']], 'Succes to update order');
+                                return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Succes to update order');
                             }
 
                             if(!$update_order){
@@ -389,7 +407,7 @@ class POSController extends Controller
                             }
 
                             DB::commit();
-                            return $this->getDataOrder(true, ['id_customer' => $post['id_customer']], 'Succes to delete order');
+                            return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Succes to delete order');
 
                         }
 
@@ -435,7 +453,7 @@ class POSController extends Controller
                 }else{
                     $order_product = OrderProduct::where('order_id', $order['id'])->where('product_id', $product['id'])->whereDate('schedule_date',$post['order']['date'])->first();
                     if($order_product){
-                        return $this->getDataOrder(false, ['id_customer' => $post['id_customer']], 'Treatment already exist in order');
+                        return $this->getDataOrder(false, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Treatment already exist in order');
                     }else{
 
                         if(($post['order']['continue']??false) == 1){
@@ -509,7 +527,7 @@ class POSController extends Controller
                 DB::commit();
 
                 $generate = GenerateQueueOrder::dispatch($send)->onConnection('generatequeueorder');
-                return $this->getDataOrder(true, ['id_customer' => $post['id_customer']], 'Succes to add new order');
+                return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Succes to add new order');
 
             }elseif(($post['type']??false) == 'consultation'){
 
@@ -533,7 +551,7 @@ class POSController extends Controller
 
                 $order_consultation = OrderConsultation::where('order_id', $order['id'])->first();
                 if($order_consultation){
-                    return $this->getDataOrder(false, ['id_customer' => $post['id_customer']], 'Consultation already exist in order');
+                    return $this->getDataOrder(false, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Consultation already exist in order');
                 }else{
 
                     $price = $doctor['doctor_shifts'][0]['price'] ?? $doctor['consultation_price'] ?? $outlet['consultation_price'];
@@ -598,7 +616,7 @@ class POSController extends Controller
                     DB::commit();
 
                     $generate = GenerateQueueOrder::dispatch($send)->onConnection('generatequeueorder');
-                    return $this->getDataOrder(true, ['id_customer' => $post['id_customer']], 'Succes to add new order');
+                    return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Succes to add new order');
 
                 }
 
@@ -713,7 +731,7 @@ class POSController extends Controller
             }
 
             DB::commit();
-            return $this->getDataOrder(true, ['id_customer' => $post['id_customer']], 'Succes to delete order');
+            return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Succes to delete order');
 
         }elseif(($type??false) == 'consultation'){
 
@@ -758,7 +776,7 @@ class POSController extends Controller
             $order_consultation->delete();
 
             DB::commit();
-            return $this->getDataOrder(true, ['id_customer' => $post['id_customer']], 'Succes to delete order');
+            return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Succes to delete order');
 
         }else{
             return $this->error('Type is invalid');
@@ -802,7 +820,7 @@ class POSController extends Controller
         }
 
         DB::commit();
-        return $this->getDataOrder(true, ['id_customer' => $post['id_customer']], 'Succes to submit order', true);
+        return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Succes to submit order', true);
 
     }
 }

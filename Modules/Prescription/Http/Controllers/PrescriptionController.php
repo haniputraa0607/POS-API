@@ -11,6 +11,7 @@ use App\Lib\MyHelper;
 use Modules\Prescription\Entities\Prescription;
 use Modules\Prescription\Entities\PrescriptionOutlet;
 use Modules\Prescription\Entities\PrescriptionOutletLog;
+use Modules\Prescription\Entities\PrescriptionCustomCategory;
 
 class PrescriptionController extends Controller
 {
@@ -21,7 +22,7 @@ class PrescriptionController extends Controller
         $this->product_path = "img/product/";
     }
 
-    public function list(Request $request):mixed
+    public function list(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $doctor = $request->user();
@@ -77,6 +78,22 @@ class PrescriptionController extends Controller
             'source'                  => $source,
             'description'             => $desc ?? null,
         ]);
+    }
+
+    public function categoriesCustom(Request $request):JsonResponse
+    {
+        $doctor = $request->user();
+        $outlet =  $doctor->outlet;
+
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+
+        $prescriptionCategories = PrescriptionCustomCategory::select('id','category_name')->get()->toArray();
+        if(!$prescriptionCategories){
+            return $this->error('Category not found');
+        }
+        return $this->ok('success', $prescriptionCategories);
     }
 
 }

@@ -214,6 +214,7 @@ class DoctorController extends Controller
             $order_consultation_after = OrderConsultation::where('doctor_id', $order_consultation['doctor_id'])->where('doctor_shift_id', $order_consultation['doctor_shift_id'])->whereDate('schedule_date', date('Y-m-d', strtotime($order_consultation['schedule_date'])))->where('status', '<>', 'Finished')->update(['status' => 'Pending']);
             return $this->getDataOrder(true, [
                 'order_id' => $order_consultation['order_id'],
+                'outlet_id' => $outlet['id'],
                 'order_consultation' => $order_consultation
             ],'');
         }
@@ -222,10 +223,11 @@ class DoctorController extends Controller
 
     }
 
-    public function getDataOrder($status = true, $data, $message):mixed
+    public function getDataOrder($status = true, $data, $message):JsonResponse
     {
         $id_order = $data['order_id'];
         $id_order_consultation = $data['order_consultation']['id'];
+        $id_outlet = $data['outlet_id'];
 
         $return = [
             'summary' => [
@@ -246,7 +248,13 @@ class DoctorController extends Controller
 
         DB::beginTransaction();
         $order = Order::with([
-            'order_products.product',
+            'order_products.product.global_price',
+            'order_products.product.outlet_price' => function($outlet_price) use($id_outlet){
+                $outlet_price->where('product_outlet_prices.outlet_id',$id_outlet);
+            },
+            'order_products.product.outlet_stock' => function($outlet_stock) use($id_outlet){
+                $outlet_stock->where('product_outlet_stocks.outlet_id',$id_outlet);
+            },
             'order_prescriptions.prescription',
             'order_consultations.consultation.patient_diagnostic.diagnostic',
             'order_consultations.consultation.patient_grievance.grievance',
@@ -275,11 +283,20 @@ class DoctorController extends Controller
             foreach($order['order_products'] ?? [] as $key => $ord_pro){
 
                 if($ord_pro['type'] == 'Product'){
+                    if(isset($ord_pro['product']['outlet_price'][0]['price']) ?? false){
+                        $price = $ord_pro['product']['outlet_price'][0]['price'] ?? null;
+                    }else{
+                        $price = $ord_pro['product']['global_price']['price'] ?? null;
+                    }
+
                     $ord_prod[] = [
                         'order_product_id' => $ord_pro['id'],
                         'product_id'       => $ord_pro['product']['id'],
                         'product_name'     => $ord_pro['product']['product_name'],
+                        'image_url'        => isset($ord_pro['product']['image']) ? env('STORAGE_URL_API').$ord_pro['product']['image'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
                         'qty'              => $ord_pro['qty'],
+                        'stock'            => ($ord_pro['product']['outlet_stock'][0]['stock'] ?? 0) + $ord_pro['qty'],
+                        'price'            => $price,
                         'price_total'      => $ord_pro['order_product_grandtotal'],
                     ];
                 }elseif($ord_pro['type'] == 'Treatment'){
@@ -576,7 +593,7 @@ class DoctorController extends Controller
 
     }
 
-    public function getOrder(Request $request):mixed
+    public function getOrder(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $doctor = $request->user();
@@ -602,6 +619,7 @@ class DoctorController extends Controller
             if($order_consultation){
                 return $this->getDataOrder(true, [
                     'order_id' => $order_consultation['order_id'],
+                    'outlet_id' => $outlet['id'],
                     'order_consultation' => $order_consultation
                 ],'');
             }else{
@@ -613,7 +631,7 @@ class DoctorController extends Controller
 
     }
 
-    public function addOrder(Request $request):mixed
+    public function addOrder(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $doctor = $request->user();
@@ -697,6 +715,7 @@ class DoctorController extends Controller
                             }else{
                                 return $this->getDataOrder(true, [
                                     'order_id' => $order['id'],
+                                    'outlet_id' => $outlet['id'],
                                     'order_consultation' => $order['order_consultations'][0]
                                 ],'Succes to add new order');
                             }
@@ -734,6 +753,7 @@ class DoctorController extends Controller
                             DB::commit();
                             return $this->getDataOrder(true, [
                                 'order_id' => $order['id'],
+                                'outlet_id' => $outlet['id'],
                                 'order_consultation' => $order['order_consultations'][0]
                             ],'Succes to add new order');
                         }
@@ -782,6 +802,7 @@ class DoctorController extends Controller
                     if($order_product){
                         return $this->getDataOrder(false, [
                             'order_id' => $order['id'],
+                            'outlet_id' => $outlet['id'],
                             'order_consultation' => $order['order_consultations'][0]
                         ],'Treatment already exist in order');
                     }else{
@@ -796,6 +817,7 @@ class DoctorController extends Controller
                             if(!isset($post['order']['record'])){
                                 return $this->getDataOrder(false, [
                                     'order_id' => $order['id'],
+                                    'outlet_id' => $outlet['id'],
                                     'order_consultation' => $order['order_consultations'][0]
                                 ],'Record not found');
                             }
@@ -868,6 +890,7 @@ class DoctorController extends Controller
                 $generate = GenerateQueueOrder::dispatch($send)->onConnection('generatequeueorder');
                 return $this->getDataOrder(true, [
                     'order_id' => $order['id'],
+                    'outlet_id' => $outlet['id'],
                     'order_consultation' => $order['order_consultations'][0]
                 ],'Succes to add new order');
 
@@ -935,6 +958,7 @@ class DoctorController extends Controller
                         }else{
                             return $this->getDataOrder(true, [
                                 'order_id' => $order['id'],
+                                'outlet_id' => $outlet['id'],
                                 'order_consultation' => $order['order_consultations'][0]
                             ],'Succes to add new order');
                         }
@@ -987,6 +1011,7 @@ class DoctorController extends Controller
                 DB::commit();
                 return $this->getDataOrder(true, [
                     'order_id' => $order['id'],
+                    'outlet_id' => $outlet['id'],
                     'order_consultation' => $order['order_consultations'][0]
                 ],'Succes to add new order');
 
@@ -1000,7 +1025,7 @@ class DoctorController extends Controller
 
     }
 
-    public function deleteOrder(Request $request):mixed
+    public function deleteOrder(Request $request):JsonResponse
     {
 
         $post = $request->json()->all();
@@ -1028,7 +1053,7 @@ class DoctorController extends Controller
 
     }
 
-    public function deleteOrderData($data):mixed
+    public function deleteOrderData($data):JsonResponse
     {
         $outlet =  $data['outlet'];
         $type =  $data['type'];
@@ -1103,38 +1128,9 @@ class DoctorController extends Controller
             DB::commit();
             return $this->getDataOrder(true, [
                 'order_id' => $order_product['order']['id'],
+                'outlet_id' => $outlet['id'],
                 'order_consultation' => $order_product['order']['order_consultations'][0]
             ],'Succes to delete order');
-
-        }elseif(($type??false) == 'consultation'){
-
-            $order_consultation = OrderConsultation::with(['order'])->whereHas('order', function($order) use($post){
-                $order->where('patient_id', $post['id_customer']);
-                $order->where('send_to_transaction', 0);
-                $order->where('is_submited', 1);
-            })->whereHas('doctor')
-            ->where('id', $post['id'])->first();
-
-            if(!$order_consultation){
-                DB::rollBack();
-                return $this->error('Order not found');
-            }
-
-            $order = Order::where('id', $order_consultation['order_id'])->update([
-                'order_subtotal'   => $order_consultation['order']['order_subtotal'] - $order_consultation['order_consultation_subtotal'],
-                'order_gross'      => $order_consultation['order']['order_gross'] - $order_consultation['order_consultation_subtotal'],
-                'order_grandtotal' => $order_consultation['order']['order_grandtotal'] - $order_consultation['order_consultation_grandtotal'],
-            ]);
-
-            if(!$order){
-                DB::rollBack();
-                return $this->error('Order not found');
-            }
-
-            $order_consultation->delete();
-
-            DB::commit();
-            return $this->getDataOrder(true, ['id_customer' => $post['id_customer']], 'Succes to delete order');
 
         }elseif(($type??false) == 'prescription'){
 
@@ -1182,6 +1178,7 @@ class DoctorController extends Controller
             DB::commit();
             return $this->getDataOrder(true, [
                 'order_id' => $order_prescription['order']['id'],
+                'outlet_id' => $outlet['id'],
                 'order_consultation' => $order_prescription['order']['order_consultations'][0]
             ],'Succes to delete order');
 
