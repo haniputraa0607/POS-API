@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Prescription\Entities\PrescriptionCategory;
+use Modules\Prescription\Entities\PrescriptionContainer;
+use Modules\Prescription\Entities\PrescriptionSubstance;
 
 class Prescription extends Model
 {
@@ -53,5 +55,15 @@ class Prescription extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(PrescriptionCategory::class, 'prescription_category_id');
+    }
+
+    public function prescription_container(): HasOne
+    {
+        return $this->hasOne(PrescriptionContainer::class);
+    }
+
+    public function prescription_substances(): HasMany
+    {
+        return $this->hasMany(PrescriptionSubstance::class);
     }
 }
