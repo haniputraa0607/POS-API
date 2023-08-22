@@ -134,22 +134,27 @@ class ProductController extends Controller
             }
         }
 
-        $product = array_map(function($value) use($order_products){
+        $data_pro = [];
+        foreach($product ?? [] as $value){
 
             if(isset($value['outlet_price'][0]['price']) ?? false){
                 $price = $value['outlet_price'][0]['price'] ?? null;
             }else{
                 $price = $value['global_price']['price'] ?? null;
             }
-            $data = [
-                'id'           => $value['id'],
-                'product_name' => $value['product_name'],
-                'image_url'    => isset($value['image']) ? env('STORAGE_URL_API').$value['image'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
-                'price'        => $price,
-                'stock'        => ($value['outlet_stock'][0]['stock'] ?? 0) + ($order_products[$value['id']] ?? 0)
-            ];
-            return $data;
-        },$product);
+
+            $stock = ($value['outlet_stock'][0]['stock'] ?? 0) + ($order_products[$value['id']] ?? 0);
+            if($stock > 0){
+                $data_pro[] = [
+                    'id'           => $value['id'],
+                    'product_name' => $value['product_name'],
+                    'image_url'    => isset($value['image']) ? env('STORAGE_URL_API').$value['image'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
+                    'price'        => $price,
+                    'stock'        => $stock
+                ];
+            }
+        }
+        $product = $data_pro;
 
         return $this->ok('success', $product);
     }

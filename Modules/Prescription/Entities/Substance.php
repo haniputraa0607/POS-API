@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Prescription\Entities\SubstanceOutletPrice;
 use Modules\Prescription\Entities\CategorySubstance;
+use Modules\Prescription\Entities\SubstanceStock;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -31,5 +32,10 @@ class Substance extends Model
     public function categories(): HasMany
     {
         return $this->hasMany(CategorySubstance::class);
+    }
+
+    public function stocks(): HasMany
+    {
+        return $this->hasMany(SubstanceStock::class);
     }
 }

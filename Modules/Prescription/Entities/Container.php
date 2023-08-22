@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Prescription\Entities\ContainerOutletPrice;
 use Modules\Prescription\Entities\CategoryContainer;
+use Modules\Prescription\Entities\ContainerStock;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -31,5 +32,10 @@ class Container extends Model
     public function categories(): HasMany
     {
         return $this->hasMany(CategoryContainer::class);
+    }
+
+    public function stocks(): HasMany
+    {
+        return $this->hasMany(ContainerStock::class);
     }
 }

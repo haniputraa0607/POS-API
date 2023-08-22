@@ -30,6 +30,8 @@ use Modules\Customer\Entities\TreatmentPatientStep;
 use Modules\Prescription\Entities\Prescription;
 use Modules\Prescription\Entities\PrescriptionOutlet;
 use Modules\Prescription\Entities\PrescriptionOutletLog;
+use Modules\Prescription\Entities\ContainerStock;
+use Modules\Prescription\Entities\SubstanceStock;
 
 class DoctorController extends Controller
 {
@@ -632,7 +634,7 @@ class DoctorController extends Controller
 
     }
 
-    public function addOrder(Request $request):JsonResponse
+    public function addOrder(Request $request):mixed
     {
         $post = $request->json()->all();
         $doctor = $request->user();
@@ -901,7 +903,7 @@ class DoctorController extends Controller
                     $prescription_outlets->where('outlet_id',$outlet['id']);
                     $prescription_outlets->where('stock', '>=', $post['order']['qty']);
                 })
-                ->where('id', $post['order']['id'])->first();
+                ->where('id', $post['order']['id'])->original()->first();
 
                 if(!$prescription){
                     DB::rollBack();
@@ -926,34 +928,34 @@ class DoctorController extends Controller
 
                     }elseif(($post['order']['qty']??false) >= 1){
 
-                        if($post['order']['qty']>$order_product['qty']){
+                        if($post['order']['qty']>$order_prescription['qty']){
 
-                            $old_order_product = clone $order_product;
-                            $order_product->update([
+                            $old_order_prescription = clone $order_prescription;
+                            $order_prescription->update([
                                 'qty'                      => $post['order']['qty'],
-                                'order_product_subtotal'   => ($post['order']['qty']*$order_product['order_product_price']),
-                                'order_product_grandtotal' => ($post['order']['qty']*$order_product['order_product_price']),
+                                'order_prescription_subtotal'   => ($post['order']['qty']*$order_prescription['order_prescription_price']),
+                                'order_prescription_grandtotal' => ($post['order']['qty']*$order_prescription['order_prescription_price']),
                             ]);
 
                             $update_order = $order->update([
-                                'order_subtotal'   => $order_product['order']['order_subtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_subtotal']),
-                                'order_gross'      => $order_product['order']['order_gross'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_subtotal']),
-                                'order_grandtotal' => $order_product['order']['order_grandtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_grandtotal']),
+                                'order_subtotal'   => $order_prescription['order']['order_subtotal'] - $old_order_prescription['order_prescription_subtotal'] + ($order_prescription['order_prescription_subtotal']),
+                                'order_gross'      => $order_prescription['order']['order_gross'] - $old_order_prescription['order_prescription_subtotal'] + ($order_prescription['order_prescription_subtotal']),
+                                'order_grandtotal' => $order_prescription['order']['order_grandtotal'] - $old_order_prescription['order_prescription_subtotal'] + ($order_prescription['order_prescription_grandtotal']),
                             ]);
 
-                        }elseif($post['order']['qty']<$order_product['qty']){
+                        }elseif($post['order']['qty']<$order_prescription['qty']){
 
-                            $old_order_product = clone $order_product;
-                            $order_product->update([
+                            $old_order_prescription = clone $order_prescription;
+                            $order_prescription->update([
                                 'qty'                      => $post['order']['qty'],
-                                'order_product_subtotal'   => ($post['order']['qty']*$order_product['order_product_price']),
-                                'order_product_grandtotal' => ($post['order']['qty']*$order_product['order_product_price']),
+                                'order_prescription_subtotal'   => ($post['order']['qty']*$order_prescription['order_prescription_price']),
+                                'order_prescription_grandtotal' => ($post['order']['qty']*$order_prescription['order_prescription_price']),
                             ]);
 
                             $update_order = $order->update([
-                                'order_subtotal'   => $order_product['order']['order_subtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_subtotal']),
-                                'order_gross'      => $order_product['order']['order_gross'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_subtotal']),
-                                'order_grandtotal' => $order_product['order']['order_grandtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_grandtotal']),
+                                'order_subtotal'   => $order_prescription['order']['order_subtotal'] - $old_order_prescription['order_prescription_subtotal'] + ($order_prescription['order_prescription_subtotal']),
+                                'order_gross'      => $order_prescription['order']['order_gross'] - $old_order_prescription['order_prescription_subtotal'] + ($order_prescription['order_prescription_subtotal']),
+                                'order_grandtotal' => $order_prescription['order']['order_grandtotal'] - $old_order_prescription['order_prescription_subtotal'] + ($order_prescription['order_prescription_grandtotal']),
                             ]);
 
                         }else{
@@ -969,6 +971,37 @@ class DoctorController extends Controller
                             return $this->error('Order not found');
                         }
 
+                        $stock = PrescriptionOutlet::where('prescription_id', $prescription['id'])->where('outlet_id', $outlet['id'])->first();
+
+                        if($stock){
+                            $old_stock = clone $stock;
+                            if($post['order']['qty']>$old_order_prescription['qty']){
+                                $qty = $post['order']['qty'] - $old_order_prescription['qty'];
+                                $qty_log = -$qty;
+                                $stock->update([
+                                    'stock' =>  $stock['stock']-$qty
+                                ]);
+                            }elseif($post['order']['qty']<$old_order_prescription['qty']){
+                                $qty = $old_order_prescription['qty'] - $post['order']['qty'];
+                                $qty_log = $qty;
+                                $stock->update([
+                                    'stock' =>  $stock['stock']+$qty
+                                ]);
+                            }
+
+                            if(!$stock){
+                                DB::rollBack();
+                                return $this->error('Failed to update stock');
+                            }
+                            (new PrescriptionController)->addLogPrescriptionStockLog($old_stock['id'], $qty_log, $old_stock['stock'], $stock['stock'], 'Update Booking Order', null);
+                        }
+
+                        DB::commit();
+                        return $this->getDataOrder(true, [
+                            'order_id' => $order['id'],
+                            'outlet_id' => $outlet['id'],
+                            'order_consultation' => $order['order_consultations'][0]
+                        ],'Succes to add new order');
                     }
 
                 }else{
@@ -1009,6 +1042,101 @@ class DoctorController extends Controller
                     'order_grandtotal' => $order['order_grandtotal'] + $price_to_order,
                 ]);
 
+                DB::commit();
+                return $this->getDataOrder(true, [
+                    'order_id' => $order['id'],
+                    'outlet_id' => $outlet['id'],
+                    'order_consultation' => $order['order_consultations'][0]
+                ],'Succes to add new order');
+
+            }elseif(($post['type']??false) == 'prescription_custom'){
+                $prescription = Prescription::with([
+                    'prescription_container.container.outlet_price' => function($container) use ($outlet){
+                        $container->where('outlet_id', $outlet['id']);
+                    },
+                    'prescription_substances.substance.outlet_price' => function($substance) use ($outlet){
+                        $substance->where('outlet_id', $outlet['id']);
+                    },
+                    'category'
+                ])->where('id', $post['order']['id'])
+                ->where('is_active', 1)
+                ->whereHas('prescription_container')
+                ->whereHas('prescription_substances')
+                ->whereHas('category')
+                ->custom()
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+                if(!$prescription){
+                    DB::rollBack();
+                    return $this->error('Prescription not found');
+                }
+
+                $price = 0;
+                if($prescription['prescription_container'] ?? false){
+
+                    $price += ($prescription['prescription_container']['container']['outlet_price'][0]['price'] ?? $prescription['prescription_container']['container']['price']) ?? 0;
+
+                    $stock = ContainerStock::where('container_id', $prescription['prescription_container']['container']['id'])->where('outlet_id', $outlet['id'])->first();
+
+                    if($stock){
+                        $old_stock = clone $stock;
+                        $stock->update([
+                            'qty' =>  $stock['qty']-$post['order']['qty']
+                        ]);
+
+                        if(!$stock){
+                            DB::rollBack();
+                            return $this->error('Failed to update stock');
+                        }
+
+                        (new PrescriptionController)->addLogContainerStockLog($old_stock['id'], -$post['order']['qty'], $old_stock['qty'], $stock['qty'], 'Booking Order', null);
+                    }
+
+                }
+
+                foreach($prescription['prescription_substances'] ?? [] as $key_sub => $sub){
+
+                    $price += (($sub['substance']['outlet_price'][0]['price'] ?? $sub['substance']['price']) ?? 0) * $sub['qty'];
+
+                    // $this_qty_subs = floor(($sub['substance']['stocks'][0]['qty'] ?? 0) / $sub['qty']);
+                    // if($key_sub == 0){
+                    //     $qty_substance = $this_qty_subs;
+                    // }else{
+                    //     if($qty_substance > $this_qty_subs){
+                    //         $qty_substance = $this_qty_subs;
+                    //     }
+                    // }
+
+                }
+
+                $order_prescription = OrderPrescription::where('order_id', $order['id'])->where('prescription_id', $prescription['id'])->first();
+                if($order_prescription){
+
+                }else{
+                    $order_prescription = OrderPrescription::create([
+                        'order_id'                      => $order['id'],
+                        'prescription_id'               => $prescription['id'],
+                        'qty'                           => $post['order']['qty'],
+                        'order_prescription_price'      => $price,
+                        'order_prescription_subtotal'   => $post['order']['qty']*$price,
+                        'order_prescription_grandtotal' => $post['order']['qty']*$price,
+                    ]);
+
+                }
+
+                if(!$order_prescription){
+                    DB::rollBack();
+                    return $this->error('Product not found');
+                }
+
+                $price_to_order = ($post['order']['qty']*$price);
+
+                $order->update([
+                    'order_subtotal'   => $order['order_subtotal'] + $price_to_order,
+                    'order_gross'      => $order['order_gross'] + $price_to_order,
+                    'order_grandtotal' => $order['order_grandtotal'] + $price_to_order,
+                ]);
                 DB::commit();
                 return $this->getDataOrder(true, [
                     'order_id' => $order['id'],

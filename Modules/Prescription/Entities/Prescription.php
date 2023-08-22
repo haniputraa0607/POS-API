@@ -29,7 +29,8 @@ class Prescription extends Model
         'patient_id',
         'prescription_category_id',
         'description',
-        'is_active'
+        'is_active',
+        'active_date'
     ];
 
     public function prescription_outlets(): HasMany
