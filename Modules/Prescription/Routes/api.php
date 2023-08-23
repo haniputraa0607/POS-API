@@ -19,9 +19,14 @@ Route::middleware(['auth:api','scopes:doctor'])->prefix('doctor')->group(functio
         Route::post('list', 'list');
 
         Route::prefix('custom')->group(function () {
+            Route::post('/', 'getCustom');
+            Route::post('add', 'addCustom');
+            Route::post('submit', 'submitCustom');
+            Route::post('list', 'listCustom');
             Route::get('categories', 'categoriesCustom');
             Route::post('create', 'createCustom');
             Route::post('list-container', 'listContainer');
+            Route::post('list-substance', 'listSubstance');
         });
     });
 });

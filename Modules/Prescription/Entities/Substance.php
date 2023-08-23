@@ -4,21 +4,21 @@ namespace Modules\Prescription\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Modules\Prescription\Entities\ContainerOutletPrice;
-use Modules\Prescription\Entities\CategoryContainer;
-use Modules\Prescription\Entities\ContainerStock;
+use Modules\Prescription\Entities\SubstanceOutletPrice;
+use Modules\Prescription\Entities\CategorySubstance;
+use Modules\Prescription\Entities\SubstanceStock;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class Container extends Model
+class Substance extends Model
 {
     use HasFactory;
 
-    protected $table = 'containers';
+    protected $table = 'substances';
     protected $fillable = [
-        'container_name',
+        'substance_name',
         'type',
         'unit',
         'price',
@@ -26,16 +26,16 @@ class Container extends Model
 
     public function outlet_price(): HasMany
     {
-        return $this->hasMany(ContainerOutletPrice::class);
+        return $this->hasMany(SubstanceOutletPrice::class);
     }
 
     public function categories(): HasMany
     {
-        return $this->hasMany(CategoryContainer::class);
+        return $this->hasMany(CategorySubstance::class);
     }
 
     public function stocks(): HasMany
     {
-        return $this->hasMany(ContainerStock::class);
+        return $this->hasMany(SubstanceStock::class);
     }
 }

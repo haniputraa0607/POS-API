@@ -26,7 +26,7 @@ return new class extends Migration
                 $table->dropForeign('consultations_order_consultation_id_foreign');
                 $table->dropColumn('order_consultation_id');
             }
-            
+
             $table->after('id', function (Blueprint $table) {
                 $table->foreignId('order_consultation_id')->constrained('order_consultations');
             });
@@ -41,12 +41,12 @@ return new class extends Migration
     public function down()
     {
         Schema::table('consultations', function (Blueprint $table) {
-            // $table->after('id', function (Blueprint $table) {
-            //     $table->foreignId('customer_id')->constrained('customers');
-            //     $table->foreignId('queue_id')->constrained('queues');
-            //     $table->foreignId('employee_schedule_id')->constrained('employee_schedules');
-            //     $table->date('consultation_date');
-            // });
+            $table->after('id', function (Blueprint $table) {
+                $table->foreignId('customer_id')->constrained('customers');
+                $table->foreignId('queue_id')->constrained('queues');
+                $table->foreignId('employee_schedule_id')->constrained('employee_schedules');
+                $table->date('consultation_date');
+            });
             $table->dropForeign('consultations_order_consultation_id_foreign');
             $table->dropColumn('order_consultation_id');
         });

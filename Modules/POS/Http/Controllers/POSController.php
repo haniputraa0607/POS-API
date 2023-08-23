@@ -180,6 +180,7 @@ class POSController extends Controller
             'order_consultations.shift',
             'order_consultations.doctor'
         ])->where('patient_id', $id_customer)
+        ->where('outlet_id', $id_outlet)
         ->where('send_to_transaction', 0);
 
         if($submit){
@@ -254,7 +255,6 @@ class POSController extends Controller
                 'order_products'      => $ord_prod,
                 'order_treatments'    => $ord_treat,
                 'order_consultations' => $ord_consul,
-                'order_precriptions'  => [],
                 'summary'             => [
                     [
                         'label' => 'Subtotal',
@@ -293,6 +293,7 @@ class POSController extends Controller
         if(isset($post['id_customer'])){
 
             $order = Order::where('patient_id', $post['id_customer'])
+            ->where('outlet_id', $outlet['id'])
             ->where('send_to_transaction', 0)
             ->where('is_submited', 0)
             ->latest()
@@ -800,6 +801,7 @@ class POSController extends Controller
         }
 
         $order = Order::where('patient_id', $post['id_customer'])
+            ->where('outlet_id', $outlet['id'])
             ->where('send_to_transaction', 0)
             ->where('is_submited', 0)
             ->latest()
