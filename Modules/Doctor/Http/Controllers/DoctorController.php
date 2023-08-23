@@ -325,19 +325,27 @@ class DoctorController extends Controller
 
                 $consul = [];
                 $is_submit = 0;
-                if($ord_con['consultation'] && $ord_con['consultation']['session_end'] == 1){
+                if($ord_con['consultation']){
                     $consul['queue_number']  = $ord_con['queue_code'];
                     $consul['schedule_date'] = date('d F Y', strtotime($ord_con['schedule_date']));
                     $consul['grievance'] = [];
                     $consul['diagnostic'] = [];
+                    if($ord_con['consultation']['session_end'] == 1){
+                        foreach($ord_con['consultation']['patient_grievance'] ?? [] as $grievance){
+                            $consul['grievance'][] = $grievance['grievance']['grievance_name'];
+                        }
+                        foreach($ord_con['consultation']['patient_diagnostic'] ?? [] as $diagnostic){
+                            $consul['diagnostic'][] = $diagnostic['diagnostic']['diagnostic_name'];
+                        }
+                        $is_submit = 1;
+                    }else{
+                        foreach($ord_con['consultation']['patient_grievance'] ?? [] as $grievance){
+                            if($grievance['from_pos'] == 1){
+                                $consul['grievance'][] = $grievance['grievance']['grievance_name'];
+                            }
+                        }
+                    }
 
-                    foreach($ord_con['consultation']['patient_grievance'] ?? [] as $grievance){
-                        $consul['grievance'][] = $grievance['grievance']['grievance_name'];
-                    }
-                    foreach($ord_con['consultation']['patient_diagnostic'] ?? [] as $diagnostic){
-                        $consul['diagnostic'][] = $diagnostic['diagnostic']['diagnostic_name'];
-                    }
-                    $is_submit = 1;
 
                 }
                 $ord_consul[] = [

@@ -23,6 +23,9 @@ class LoginDoctorRequest extends FormRequest
     {
         return [
             "username" => 'required|exists:users,username',
+            "scope" => 'required',
+            "client_id" => 'required',
+            "client_secret" => 'required',
         ];
     }
 }
