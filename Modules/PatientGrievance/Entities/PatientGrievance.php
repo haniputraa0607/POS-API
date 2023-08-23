@@ -19,6 +19,7 @@ class PatientGrievance extends Model
     protected $fillable = [
         'consultation_id',
         'grievance_id',
+        'from_pos',
         'notes'
     ];
 

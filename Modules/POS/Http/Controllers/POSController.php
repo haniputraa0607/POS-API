@@ -586,6 +586,7 @@ class POSController extends Controller
                             $patient_grievance[] = [
                                 'consultation_id' => $consultation['id'],
                                 'grievance_id'    => $gre['id'],
+                                'from_pos'        => 1,
                                 'notes'           => $gre['notes'],
                                 'created_at'      => date('Y-m-d H:i:s'),
                                 'updated_at'      => date('Y-m-d H:i:s'),
