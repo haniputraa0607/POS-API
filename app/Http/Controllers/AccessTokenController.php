@@ -110,7 +110,7 @@ class AccessTokenController extends PassportAccessTokenController
         }
         Auth::loginUsingId($user['id']);
         $token = auth()->user()->createToken('CashierToken', ['pos'])->accessToken;
-        $data = ['token' => $token];
+        $data = ['access_token' => $token, 'token_type' => 'Bearer'];
         return $this->ok("success login cashier", $data);
     }
     public function loginDoctor(LoginDoctorRequest $request): mixed
@@ -131,7 +131,7 @@ class AccessTokenController extends PassportAccessTokenController
         }
         Auth::loginUsingId($user['id']);
         $token = auth()->user()->createToken('DoctorToken', ['doctor'])->accessToken;
-        $data = ['token' => $token];
+        $data = ['access_token' => $token, 'token_type' => 'Bearer'];
         return $this->ok("success login doctor", $data);
     }
 
