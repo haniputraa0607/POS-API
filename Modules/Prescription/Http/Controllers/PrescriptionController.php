@@ -32,7 +32,7 @@ class PrescriptionController extends Controller
         $this->product_path = "img/product/";
     }
 
-    public function list(Request $request):mixed
+    public function list(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $doctor = $request->user();
@@ -129,7 +129,7 @@ class PrescriptionController extends Controller
         return $this->ok('success', $prescriptionCategories);
     }
 
-    public function createCustom(Request $request):mixed
+    public function createCustom(Request $request):JsonResponse
     {
         $request->validate([
             'id_order' => 'required',
@@ -176,7 +176,7 @@ class PrescriptionController extends Controller
 
     }
 
-    public function listContainer(Request $request): mixed
+    public function listContainer(Request $request): JsonResponse
     {
         $request->validate([
             'id_custom' => 'required',
@@ -210,7 +210,7 @@ class PrescriptionController extends Controller
         return $this->ok('success', $containers);
     }
 
-    public function listSubstance(Request $request): mixed
+    public function listSubstance(Request $request): JsonResponse
     {
         $request->validate([
             'id_custom' => 'required',
@@ -262,7 +262,7 @@ class PrescriptionController extends Controller
         return $this->ok('success', $substances);
     }
 
-    public function getCustom(Request $request): mixed
+    public function getCustom(Request $request): JsonResponse
     {
         $request->validate([
             'id_custom' => 'required',
@@ -284,7 +284,7 @@ class PrescriptionController extends Controller
         return $this->ok('', $return);
     }
 
-    public function getDataCustom($status = true, $data, $message): mixed
+    public function getDataCustom($status = true, $data, $message): JsonResponse
     {
         $id_prescription = $data['prescription_id'];
         $outlet = $data['outlet'];
@@ -367,7 +367,7 @@ class PrescriptionController extends Controller
 
     }
 
-    public function addCustom(Request $request):mixed
+    public function addCustom(Request $request):JsonResponse
     {
 
         $post = $request->json()->all();
@@ -468,7 +468,7 @@ class PrescriptionController extends Controller
         }
     }
 
-    public function submitCustom(Request $request):mixed
+    public function submitCustom(Request $request):JsonResponse
     {
 
         $request->validate([
@@ -510,7 +510,7 @@ class PrescriptionController extends Controller
         return $this->getDataCustom(true, ['prescription_id' => $post['id_custom'], 'outlet' => $outlet],'Succes to submit prescription');
     }
 
-    public function listCustom(Request $request):mixed
+    public function listCustom(Request $request):JsonResponse
     {
         $request->validate([
             'id_order' => 'required',

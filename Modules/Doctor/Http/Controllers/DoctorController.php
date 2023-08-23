@@ -166,7 +166,7 @@ class DoctorController extends Controller
         $ext=explode('.', $splash);
         $result = [
             'splash_screen_url' => $splash."?update=".time(),
-            'splash_screen_duration' => $duration??5,
+            'splash_screen_duration' => (int)($duration??5),
             'splash_screen_ext' => '.'.end($ext)
         ];
         return $this->ok('', $result);
@@ -646,7 +646,7 @@ class DoctorController extends Controller
 
     }
 
-    public function addOrder(Request $request):mixed
+    public function addOrder(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $doctor = $request->user();
@@ -1321,7 +1321,7 @@ class DoctorController extends Controller
 
     }
 
-    public function deleteOrderData($data):mixed
+    public function deleteOrderData($data):JsonResponse
     {
         $outlet =  $data['outlet'];
         $type =  $data['type'];

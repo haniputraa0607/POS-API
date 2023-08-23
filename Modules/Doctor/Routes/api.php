@@ -17,11 +17,14 @@ use Modules\Doctor\Http\Controllers\DoctorController;
 // header('Access-Control-Allow-Origin:  *');
 header('Access-Control-Allow-Methods:  POST, GET, OPTIONS, PUT, DELETE');
 header('Access-Control-Allow-Headers:  Content-Type, X-Auth-Token, Origin, Authorization');
+Route::controller(DoctorController::class)->prefix('doctor')->group(function (){
+    Route::get('splash', 'splash');
+});
+
 Route::middleware(['auth:api','scopes:doctor'])->controller(DoctorController::class)->prefix('doctor')->group(function (){
     Route::get('home', 'home');
     Route::get('list-service', 'listService');
     Route::get('next', 'nextQueue');
-    Route::get('splash', 'splash');
 
     Route::prefix('order')->controller(DoctorController::class)->group(function () {
         Route::post('/', 'getOrder');

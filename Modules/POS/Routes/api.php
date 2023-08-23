@@ -17,10 +17,13 @@ use Modules\POS\Http\Controllers\POSController;
 // header('Access-Control-Allow-Origin:  *');
 header('Access-Control-Allow-Methods:  POST, GET, OPTIONS, PUT, DELETE');
 header('Access-Control-Allow-Headers:  Content-Type, X-Auth-Token, Origin, Authorization');
+Route::controller(POSController::class)->prefix('pos')->group(function (){
+    Route::get('splash', 'splash');
+});
+
 Route::middleware(['auth:api','scopes:pos'])->controller(POSController::class)->prefix('pos')->group(function (){
     Route::get('home', 'home');
     Route::get('list-service', 'listService');
-    Route::get('splash', 'splash');
 
     Route::prefix('order')->controller(POSController::class)->group(function () {
         Route::post('/', 'getOrder');
