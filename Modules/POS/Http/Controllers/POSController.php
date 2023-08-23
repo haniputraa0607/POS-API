@@ -119,7 +119,7 @@ class POSController extends Controller
         $ext=explode('.', $splash);
         $result = [
             'splash_screen_url' => $splash."?update=".time(),
-            'splash_screen_duration' => $duration??5,
+            'splash_screen_duration' => (int)($duration??5),
             'splash_screen_ext' => '.'.end($ext)
         ];
         return $this->ok('', $result);

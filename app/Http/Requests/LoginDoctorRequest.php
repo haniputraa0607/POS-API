@@ -22,7 +22,7 @@ class LoginDoctorRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "username" => 'required|exists:users,username',
+            "username" => 'required',
             "scope" => 'required',
             "client_id" => 'required',
             "client_secret" => 'required',

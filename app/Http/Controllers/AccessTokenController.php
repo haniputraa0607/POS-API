@@ -93,37 +93,45 @@ class AccessTokenController extends PassportAccessTokenController
         return $this->ok("success login cms", $data);
     }
 
-    public function loginCashier(LoginCashierRequest $request): mixed
+    public function loginCashier(LoginCashierRequest $request): JsonResponse
     {
         $post = $request->json()->all();
 
-        if($post['scope'] != 'pos'){
+        if ($post['scope'] != 'pos') {
             return $this->error('Scope invalid');
         }
         $passport = OauthClient::where('id', $post['client_id'])->where('secret', $post['client_secret'])->first();
-        if(!$passport){
+        if (!$passport) {
             return $this->error('Client Secret not found');
         }
-        Auth::loginUsingId(User::cashier()->isActive()->where('username', $post['username'])->firstOrFail()->id);
-        $token = auth()->user()->createToken('CashierToken',['pos'])->accessToken;
-        $data = ['user' => auth()->user()->load('outlet.district'), 'token' => $token];
+        $user = User::cashier()->isActive()->where('username', $post['username'])->first();
+        if (!$user) {
+            return $this->error('User not found');
+        }
+        Auth::loginUsingId($user['id']);
+        $token = auth()->user()->createToken('CashierToken', ['pos'])->accessToken;
+        $data = ['token' => $token];
         return $this->ok("success login cashier", $data);
     }
-    public function loginDoctor(LoginDoctorRequest $request): JsonResponse
+    public function loginDoctor(LoginDoctorRequest $request): mixed
     {
         $post = $request->json()->all();
 
-        if($post['scope'] != 'doctor'){
+        if ($post['scope'] != 'doctor') {
             return $this->error('Scope invalid');
         }
 
         $passport = OauthClient::where('id', $post['client_id'])->where('secret', $post['client_secret'])->first();
-        if(!$passport){
+        if (!$passport) {
             return $this->error('Client Secret not found');
         }
-        Auth::loginUsingId(User::doctor()->isActive()->where('username', $post['username'])->firstOrFail()->id);
-        $token = auth()->user()->createToken('DoctorToken',['doctor'])->accessToken;
-        $data = ['user' => auth()->user()->load('outlet.district'), 'token' => $token];
+        $user = User::doctor()->isActive()->where('username', $post['username'])->first();
+        if (!$user) {
+            return $this->error('User not found');
+        }
+        Auth::loginUsingId($user['id']);
+        $token = auth()->user()->createToken('DoctorToken', ['doctor'])->accessToken;
+        $data = ['token' => $token];
         return $this->ok("success login doctor", $data);
     }
 
