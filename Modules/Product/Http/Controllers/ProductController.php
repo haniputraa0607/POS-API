@@ -127,6 +127,7 @@ class ProductController extends Controller
             $order = Order::with([
                 'order_products'
             ])->where('patient_id', $post['id_customer'])
+            ->where('outlet_id', $outlet['id'])
             ->where('send_to_transaction', 0)->latest()->first();
 
             foreach($order['order_products'] ?? [] as $ord_pro){
