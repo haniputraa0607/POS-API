@@ -41,6 +41,7 @@ Route::middleware(['auth:api','scopes:pos'])->prefix('pos')->group(function (){
     Route::prefix('consultation')->group(function () {
         Route::prefix('grievance')->controller(GrievanceController::class)->group(function () {
             Route::get('', 'show');
+            Route::post('add', 'addGrievancePatientPOS');
         });
     });
 });
