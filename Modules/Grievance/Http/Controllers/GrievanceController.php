@@ -15,6 +15,7 @@ use Modules\Order\Entities\OrderProduct;
 use Illuminate\Support\Facades\DB;
 use Modules\Consultation\Entities\Consultation;
 use Illuminate\Support\Facades\Validator;
+use Modules\POS\Http\Controllers\POSController;
 
 class GrievanceController extends Controller
 {
@@ -76,6 +77,7 @@ class GrievanceController extends Controller
         foreach($patient_grievances ?? [] as $key => $patient_grievance){
             $return[] = [
                 'id' => $patient_grievance['id'],
+                'id_grievance' => $patient_grievance['grievance']['id'],
                 'grievance_name' => $patient_grievance['grievance']['grievance_name'],
                 'notes' => $patient_grievance['notes'] ?? $patient_grievance['grievance']['description'],
             ];
@@ -167,6 +169,58 @@ class GrievanceController extends Controller
 
         DB::commit();
         return $this->getGrievance(['id_order' => $patient_grievance['consultation']['order_consultation']['order_id']],'Success to delete grievance patient');
+
+    }
+
+    public function addGrievancePatientPOS(Request $request): JsonResponse
+    {
+        $request->validate([
+            'id_consultation' => 'required',
+        ]);
+
+        $cashier = $request->user();
+        $outlet = $cashier->outlet;
+        $post = $request->json()->all();
+
+
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+
+        $order_consul = OrderConsultation::with(['order'])->where('id', $post['id_consultation'])->first();
+        if(!$order_consul){
+            return $this->error('Consultation not found');
+        }
+
+        DB::beginTransaction();
+        $consultation = Consultation::where('order_consultation_id', $order_consul['id'])->first();
+        if(!$consultation){
+            $consultation = Consultation::create([
+                'order_consultation_id' => $order_consul['id'],
+            ]);
+        }
+
+        $delete = PatientGrievance::where('consultation_id', $consultation['id'])->delete();
+        $patient_grievance = [];
+        foreach($post['grievances'] ?? [] as $key_gre => $gre){
+            $patient_grievance[] = [
+                'consultation_id' => $consultation['id'],
+                'grievance_id'    => $gre['id'],
+                'from_pos'        => 1,
+                'notes'           => $gre['notes'],
+                'created_at'      => date('Y-m-d H:i:s'),
+                'updated_at'      => date('Y-m-d H:i:s'),
+            ];
+        }
+
+        $insert = PatientGrievance::insert($patient_grievance);
+        if(!$insert){
+            DB::rollBack();
+            return $this->error('Grievance error');
+        }
+
+        DB::commit();
+        return (new POSController)->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $order_consul['order']['patient_id']], 'Succes to add update grievances');
 
     }
 }

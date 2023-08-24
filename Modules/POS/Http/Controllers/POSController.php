@@ -178,7 +178,8 @@ class POSController extends Controller
                 $step->where('status', 'Pending');
             },
             'order_consultations.shift',
-            'order_consultations.doctor'
+            'order_consultations.doctor',
+            'order_consultations.consultation.patient_grievance.grievance',
         ])->where('patient_id', $id_customer)
         ->where('outlet_id', $id_outlet)
         ->where('send_to_transaction', 0);
@@ -237,6 +238,17 @@ class POSController extends Controller
             }
 
             foreach($order['order_consultations'] ?? [] as $key => $ord_con){
+                $grievances = [];
+
+                foreach($ord_con['consultation']['patient_grievance'] ?? [] as $grievance){
+                    if($grievance['from_pos'] == 1){
+                        $grievances[] = [
+                            'id'             => $grievance['grievance']['id'],
+                            'grievance_name' => $grievance['grievance']['grievance_name'],
+                            'notes'          => $grievance['notes'] ?? null,
+                        ];
+                    }
+                }
 
                 $ord_consul[] = [
                     'order_consultation_id' => $ord_con['id'],
@@ -246,6 +258,7 @@ class POSController extends Controller
                     'time'                  => date('H:i', strtotime($ord_con['shift']['start'])).'-'.date('H:i', strtotime($ord_con['shift']['end'])),
                     'price_total'           => $ord_con['order_consultation_grandtotal'],
                     'queue'                 => $ord_con['queue_code'],
+                    'grievances'            => $grievances
                 ];
             }
 

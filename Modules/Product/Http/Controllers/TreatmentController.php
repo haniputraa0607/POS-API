@@ -290,7 +290,12 @@ class TreatmentController extends Controller
 
         }
 
-        $histories = TreatmentPatient::with(['treatment','doctor','steps' => function($steps){ $steps->orderBy('step', 'desc');}])->where('patient_id', $customer_id)->get()->toArray();
+        $histories = TreatmentPatient::with([
+            'treatment','doctor','steps' => function($steps){ $steps->orderBy('step', 'desc');}
+        ])->whereHas('doctor')
+        ->whereNotNull('doctor_id')
+        ->where('patient_id', $customer_id)
+        ->get()->toArray();
 
         $return = [];
         foreach($histories ?? [] as $key => $history){

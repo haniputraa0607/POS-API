@@ -559,6 +559,7 @@ class PrescriptionController extends Controller
 
         $data = [];
         $late = '';
+        $last_created = null;
         foreach($prescriptions ?? [] as $key_pre => $prescription){
             $price = 0;
             $price_total = 0;

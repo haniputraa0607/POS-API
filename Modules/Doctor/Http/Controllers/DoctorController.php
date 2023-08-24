@@ -627,7 +627,6 @@ class DoctorController extends Controller
             })
             ->where('order_id', $post['id_order'])
             ->whereDate('schedule_date', date('Y-m-d'))
-            ->where('status', 'On Progress')
             ->orderBy('queue', 'asc')
             ->first();
 

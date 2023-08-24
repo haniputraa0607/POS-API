@@ -113,7 +113,7 @@ class AccessTokenController extends PassportAccessTokenController
         $data = ['access_token' => $token, 'token_type' => 'Bearer'];
         return $this->ok("success login cashier", $data);
     }
-    public function loginDoctor(LoginDoctorRequest $request): mixed
+    public function loginDoctor(LoginDoctorRequest $request): JsonResponse
     {
         $post = $request->json()->all();
 
