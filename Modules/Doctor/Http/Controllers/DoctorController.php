@@ -330,14 +330,14 @@ class DoctorController extends Controller
                     $consul['schedule_date'] = date('d F Y', strtotime($ord_con['schedule_date']));
                     $consul['grievance'] = [];
                     $consul['diagnostic'] = [];
-                    if($ord_con['consultation']['session_end'] == 1){
+                    if($ord_con['consultation']['session_end'] == 1 || $ord_con['consultation']['is_edit'] == 1){
                         foreach($ord_con['consultation']['patient_grievance'] ?? [] as $grievance){
                             $consul['grievance'][] = $grievance['grievance']['grievance_name'];
                         }
                         foreach($ord_con['consultation']['patient_diagnostic'] ?? [] as $diagnostic){
                             $consul['diagnostic'][] = $diagnostic['diagnostic']['diagnostic_name'];
                         }
-                        $is_submit = 1;
+                        $is_submit = $ord_con['consultation']['session_end'];
                     }else{
                         foreach($ord_con['consultation']['patient_grievance'] ?? [] as $grievance){
                             if($grievance['from_pos'] == 1){
@@ -349,15 +349,16 @@ class DoctorController extends Controller
 
                 }
                 $ord_consul[] = [
-                    'order_consultation_id' => $ord_con['id'],
-                    'doctor_id'             => $ord_con['doctor']['id'],
-                    'doctor_name'           => $ord_con['doctor']['name'],
-                    'schedule_date'         => date('d F Y', strtotime($ord_con['schedule_date'])),
-                    'time'                  => date('H:i', strtotime($ord_con['shift']['start'])).'-'.date('H:i', strtotime($ord_con['shift']['end'])),
-                    'price_total'           => $ord_con['order_consultation_grandtotal'],
-                    'queue'                 => $ord_con['queue_code'],
-                    'is_submit'             => $is_submit,
-                    'consultation'          => $consul,
+                    'order_consultation_id'    => $ord_con['id'],
+                    'doctor_id'                => $ord_con['doctor']['id'],
+                    'doctor_name'              => $ord_con['doctor']['name'],
+                    'schedule_date'            => date('d F Y', strtotime($ord_con['schedule_date'])),
+                    'time'                     => date('H:i', strtotime($ord_con['shift']['start'])).'-'.date('H:i', strtotime($ord_con['shift']['end'])),
+                    'price_total'              => $ord_con['order_consultation_grandtotal'],
+                    'queue'                    => $ord_con['queue_code'],
+                    'is_submit'                => $is_submit,
+                    'consultation'             => $consul,
+                    'treatment_recommendation' => $ord_con['consultation']['treatment_recomendation'] ?? null
                 ];
             }
 

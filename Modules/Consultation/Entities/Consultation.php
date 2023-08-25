@@ -23,6 +23,7 @@ class Consultation extends Model
         'order_consultation_id',
         'treatment_recomendation',
         'session_end',
+        'is_edit'
     ];
 
     public function order_consultation() : BelongsTo {
