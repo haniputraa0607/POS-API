@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
+use App\Http\Models\LogCron;
 
 class MyHelper
 {
@@ -186,5 +187,16 @@ class MyHelper
             'end' => $end,
             'list' => $listDate,
         ];
+    }
+
+    public static function logCron($cronName)
+    {
+        $log = new LogCron();
+        $log->cron = $cronName;
+        $log->status = 'onprocess';
+        $log->start_date = date('Y-m-d H:i:s');
+        $log->save();
+
+        return $log;
     }
 }

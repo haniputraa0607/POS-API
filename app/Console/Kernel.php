@@ -13,6 +13,12 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // $schedule->command('inspire')->hourly();
+
+         /**
+         * Reminder Clock In Clock Out
+         * run every minute
+         */
+        $schedule->call('Modules\POS\Http\Controllers\POSController@cronDelete')->dailyAt('00:05');
     }
 
     /**

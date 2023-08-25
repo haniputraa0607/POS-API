@@ -26,5 +26,6 @@ Route::middleware('auth:api')->controller(ConsultationController::class)->prefix
 Route::middleware(['auth:api','scopes:doctor'])->prefix('doctor')->group(function (){
     Route::prefix('consul')->controller(ConsultationController::class)->group(function () {
         Route::post('submit', 'submit');
+        Route::post('edit', 'edit');
     });
 });

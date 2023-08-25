@@ -90,7 +90,56 @@ class ConsultationController extends Controller
 
         $update = $consultation->update([
             'session_end' => 1,
+            'is_edit' => 0,
             'treatment_recomendation' => $post['treatment_recommendation'] ?? null,
+        ]);
+
+        if(!$update){
+            DB::rollBack();
+            return $this->error('Failed to submit consultation');
+        }
+
+        DB::commit();
+        return (new DoctorController)->getDataOrder(true, [
+            'order_id' => $post['id_order'],
+            'outlet_id' => $outlet['id'],
+            'order_consultation' => $order_consul
+        ],'Success to submit consultation');
+
+    }
+
+    public function edit(Request $request): JsonResponse
+    {
+        $request->validate([
+            'id_order' => 'required',
+        ]);
+
+        $doctor = $request->user();
+        $outlet = $doctor->outlet;
+        $post = $request->json()->all();
+
+
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+
+        $order_consul = OrderConsultation::whereHas('consultation')->where('order_id', $post['id_order'])->first();
+
+        if(!$order_consul){
+            return $this->error('Consulatation not found');
+        }
+
+        DB::beginTransaction();
+
+        $consultation = Consultation::where('order_consultation_id', $order_consul['id'])->first();
+        if(!$consultation){
+            DB::rollBack();
+            return $this->error('Failed to submit consultation');
+        }
+
+        $update = $consultation->update([
+            'session_end' => 0,
+            'is_edit' => 1,
         ]);
 
         if(!$update){
