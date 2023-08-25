@@ -18,7 +18,7 @@ class Kernel extends ConsoleKernel
          * Reminder Clock In Clock Out
          * run every minute
          */
-        $schedule->call('Modules\POS\Http\Controllers\POSController@cronDelete')->everyMinute();
+        $schedule->call('Modules\POS\Http\Controllers\POSController@cronDelete')->dailyAt('00:05');
     }
 
     /**
