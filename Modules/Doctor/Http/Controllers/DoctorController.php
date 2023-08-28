@@ -1377,6 +1377,7 @@ class DoctorController extends Controller
                     $treatment_patient = TreatmentPatient::with(['steps'])->where('id', $order_product['treatment_patient_id'])->first();
                     if($treatment_patient){
                         if(count($treatment_patient['steps']) <= 0){
+                            OrderProduct::where('id', $order_product['id'])->update(['treatment_patient_id' => null]);
                             $delete_treatment_patient = $treatment_patient->delete();
                             if(!$delete_treatment_patient){
                                 DB::rollBack();
