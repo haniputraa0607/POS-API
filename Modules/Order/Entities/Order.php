@@ -33,6 +33,7 @@ class Order extends Model
         'order_grandtotal',
         'send_to_transaction',
         'is_submited',
+        'is_submited_doctor',
     ];
 
     public function order_products(): HasMany

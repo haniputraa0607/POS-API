@@ -30,6 +30,7 @@ Route::middleware(['auth:api','scopes:doctor'])->controller(DoctorController::cl
         Route::post('/', 'getOrder');
         Route::post('add', 'addOrder');
         Route::post('delete', 'deleteOrder');
+        Route::post('submit', 'submitOrder');
     });
 
 });

@@ -152,11 +152,12 @@ class POSController extends Controller
 
     }
 
-    public function getDataOrder($status = true, $data, $message, $submit = false):JsonResponse
+    public function getDataOrder($status = true, $data, $message):JsonResponse
     {
         $id_customer = $data['id_customer'];
         $id_outlet = $data['id_outlet'];
 
+        $can_order = true;
         $return = [
             'summary' => [
                 [
@@ -172,6 +173,7 @@ class POSController extends Controller
                     'value' => 0
                 ],
             ],
+            'can_order' => $can_order
         ];
 
         $order = Order::with([
@@ -190,17 +192,11 @@ class POSController extends Controller
             'order_consultations.consultation.patient_grievance.grievance',
         ])->where('patient_id', $id_customer)
         ->where('outlet_id', $id_outlet)
-        ->where('send_to_transaction', 0);
+        ->where('send_to_transaction', 0)
+        ->latest()->first();
 
-        if($submit){
-            $order = $order->where('is_submited', 1);
-        }else{
-            $order = $order->where('is_submited', 0);
-        }
+        if($order && ($order['is_submited'] == 0 || ($order['is_submited'] == 1 && $order['is_submited_doctor'] == 1))){
 
-        $order = $order->latest()->first();
-
-        if($order){
             $ord_prod = [];
             $ord_treat = [];
             $ord_consul = [];
@@ -246,7 +242,26 @@ class POSController extends Controller
             }
 
             foreach($order['order_consultations'] ?? [] as $key => $ord_con){
-                $grievances = [];
+                $consul = [];
+                $is_submit = 0;
+
+                if($ord_con['consultation']){
+                    if($order['is_submited_doctor'] == 1 && ($ord_con['consultation']['session_end'] == 1 || $ord_con['consultation']['is_edit'] == 1)){
+                        $consul['queue_number']  = $ord_con['queue_code'];
+                        $consul['schedule_date'] = date('d F Y', strtotime($ord_con['schedule_date']));
+                        $consul['grievance'] = [];
+                        $consul['diagnostic'] = [];
+                        foreach($ord_con['consultation']['patient_grievance'] ?? [] as $grievance){
+                            $consul['grievance'][] = $grievance['grievance']['grievance_name'];
+                        }
+                        foreach($ord_con['consultation']['patient_diagnostic'] ?? [] as $diagnostic){
+                            $consul['diagnostic'][] = $diagnostic['diagnostic']['diagnostic_name'];
+                        }
+                        $is_submit = $ord_con['consultation']['session_end'];
+                        $is_submit = 0;
+                    }
+                }
+
 
                 foreach($ord_con['consultation']['patient_grievance'] ?? [] as $grievance){
                     if($grievance['from_pos'] == 1){
@@ -266,7 +281,9 @@ class POSController extends Controller
                     'time'                  => date('H:i', strtotime($ord_con['shift']['start'])).'-'.date('H:i', strtotime($ord_con['shift']['end'])),
                     'price_total'           => $ord_con['order_consultation_grandtotal'],
                     'queue'                 => $ord_con['queue_code'],
-                    'grievances'            => $grievances
+                    'consultation'          => $consul,
+                    'grievances'            => $grievances,
+                    'submited_by_doctor'    => $is_submit
                 ];
             }
 
@@ -292,6 +309,8 @@ class POSController extends Controller
                 ],
             ];
         }
+
+        $return['can_order'] = isset($order) ? (($order['is_submited'] == 1 && $order['is_submited_doctor'] == 0) ? false : true ) : true;
 
         if($status){
             return $this->ok($message, $return);
@@ -808,7 +827,7 @@ class POSController extends Controller
         }
     }
 
-    public function submitOrder(Request $request): JsonResponse
+    public function submitOrder(Request $request): mixed
     {
         $request->validate([
             'id_customer' => 'required',
@@ -836,21 +855,36 @@ class POSController extends Controller
 
         DB::beginTransaction();
 
-        $update = $order->update([
-            'is_submited' => 1,
-        ]);
+        $consultation = OrderConsultation::where('order_id', $order['id'])->get()->toArray();
+        if($consultation){
+            $update = $order->update([
+                'is_submited' => 1,
+            ]);
 
-        if(!$update){
-            DB::rollBack();
-            return $this->error('Failed to submit order');
+            if(!$update){
+                DB::rollBack();
+                return $this->error('Failed to submit order');
+            }
+
+            DB::commit();
+            $return = [
+                'consultation' => true,
+                'list_payment' => [],
+            ];
+
+            return $this->ok('Succes to submit order', $return);
+        }else{
+            $return = [
+                'consultation' => false,
+                'list_payment' => $this->availablePayment($order) ?? [],
+            ];
+
+            return $this->ok('Succes to submit order', $return);
         }
-
-        DB::commit();
-        return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Succes to submit order', true);
 
     }
 
-    public function cronDelete(Request $request): mixed
+    public function cronDelete()
     {
         $log = MyHelper::logCron('Delete Order');
         try {
@@ -1057,11 +1091,72 @@ class POSController extends Controller
             }
 
             DB::commit();
-            return 'suc';
             $log->success();
         } catch (\Exception $e) {
             $log->fail($e->getMessage());
         }
 
+    }
+
+    public function availablePayment($post): mixed
+    {
+        $availablePayment = config('payment_method');
+        $active_payment_methods = Setting::where('key', '=', 'active_payment_methods')->first();
+
+        $setting  = json_decode($active_payment_methods['value_text'] ?? '[]', true) ?? [];
+        $payments = [];
+
+        $last_status = [];
+        foreach ($setting ?? [] as $value) {
+            $payment = $availablePayment[$value['code'] ?? ''] ?? false;
+            if (!$payment) {
+                unset($availablePayment[$value['code']]);
+                continue;
+            }
+
+            if (is_array($payment['available_time'] ?? false)) {
+                $available_time = $payment['available_time'];
+                $current_time = time();
+                if ($current_time < strtotime($available_time['start']) || $current_time > strtotime($available_time['end'])) {
+                    $value['status'] = 0;
+                }
+            }
+
+            if (!($payment['status'] ?? false)) {
+                unset($availablePayment[$value['code']]);
+                continue;
+            }
+
+            if(!is_numeric($payment['status'])){
+                $var = explode(':',$payment['status']);
+                if(($config[$var[0]]??false) != ($var[1]??true)) {
+                    $last_status[$var[0]] = $value['status'];
+                    unset($availablePayment[$value['code']]);
+                    continue;
+                }
+            }
+
+            if((int) $value['status'] == 0){
+                continue;
+            }
+
+            if($payment['type'] == 'cash'){
+                $payments['cash'][] = $post['order_grandtotal'];
+            }elseif($payment['type'] == 'e-payment'){
+                $payments['e-payment'][] = [
+                    'code'                          => $value['code'] ?? '',
+                    'payment_gateway'               => $payment['payment_gateway'] ?? '',
+                    'payment_method'                => $payment['payment_method'] ?? '',
+                    'logo'                          => $payment['logo'] ?? '',
+                    'type'                          => $payment['type'] ?? '',
+                    'text'                          => $payment['text'] ?? '',
+                    'description'                   => $value['description'] ?? '',
+                    'status'                        => (int) $value['status'] ? 1 : 0
+                ];
+            }
+            unset($availablePayment[$value['code']]);
+        }
+
+        return $payments;
     }
 }

@@ -79,6 +79,7 @@ class DoctorController extends Controller
             $order = OrderConsultation::whereHas('order', function($order) use($outlet){
                 $order->where('outlet_id', $outlet['id'])
                 ->where('is_submited', 1)
+                ->where('is_submited_doctor', 0)
                 ->where('send_to_transaction', 0);
             })
             ->whereDate('schedule_date', date('Y-m-d'))
@@ -189,6 +190,7 @@ class DoctorController extends Controller
         $order_consultation = OrderConsultation::with(['order'])->whereHas('order', function($order) use($outlet){
             $order->where('outlet_id', $outlet['id'])
             ->where('is_submited', 1)
+            ->where('is_submited_doctor', 0)
             ->where('send_to_transaction', 0);
         })
         ->whereDate('schedule_date', date('Y-m-d'))
@@ -202,6 +204,7 @@ class DoctorController extends Controller
             $order_consultation = OrderConsultation::with(['order'])->whereHas('order', function($order) use($outlet){
                 $order->where('outlet_id', $outlet['id'])
                 ->where('is_submited', 1)
+                ->where('is_submited_doctor', 0)
                 ->where('send_to_transaction', 0);
             })
             ->whereDate('schedule_date', date('Y-m-d'))
@@ -268,6 +271,7 @@ class DoctorController extends Controller
         ])->where('id', $id_order)
         ->where('send_to_transaction', 0)
         ->where('is_submited', 1)
+        ->where('is_submited_doctor', 0)
         ->latest()
         ->first();
 
@@ -624,6 +628,7 @@ class DoctorController extends Controller
             $order_consultation = OrderConsultation::whereHas('order', function($order) use($outlet){
                 $order->where('outlet_id', $outlet['id'])
                 ->where('is_submited', 1)
+                ->where('is_submited_doctor', 0)
                 ->where('send_to_transaction', 0);
             })
             ->where('order_id', $post['id_order'])
@@ -661,6 +666,7 @@ class DoctorController extends Controller
             $order = Order::with(['order_consultations'])->where('id', $post['id_order'])
             ->where('send_to_transaction', 0)
             ->where('is_submited', 1)
+            ->where('is_submited_doctor', 0)
             ->latest()
             ->first();
 
@@ -1334,6 +1340,7 @@ class DoctorController extends Controller
                 $order->where('order_id', $post['id_order']);
                 $order->where('send_to_transaction', 0);
                 $order->where('is_submited', 1);
+                $order->where('is_submited_doctor', 0);
             })->whereHas('product')
             ->where('id', $post['id'])->first();
 
@@ -1407,6 +1414,7 @@ class DoctorController extends Controller
                 $order->where('order_id', $post['id_order']);
                 $order->where('send_to_transaction', 0);
                 $order->where('is_submited', 1);
+                $order->where('is_submited_doctor', 0);
             })->whereHas('prescription')
             ->where('id', $post['id'])->first();
 
@@ -1461,6 +1469,7 @@ class DoctorController extends Controller
                 $order->where('order_id', $post['id_order']);
                 $order->where('send_to_transaction', 0);
                 $order->where('is_submited', 1);
+                $order->where('is_submited_doctor', 0);
             })->whereHas('prescription')
             ->where('id', $post['id'])->first();
 
@@ -1529,5 +1538,52 @@ class DoctorController extends Controller
         }else{
             return $this->error('Type is invalid');
         }
+    }
+
+    public function submitOrder(Request $request):mixed
+    {
+        $request->validate([
+            'id_order' => 'required',
+        ]);
+
+        $doctor = $request->user();
+        $outlet = $doctor->outlet;
+        $post = $request->json()->all();
+
+
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+
+        $order = Order::with(['order_consultations.consultation'])->where('id', $post['id_order'])
+            ->where('outlet_id', $outlet['id'])
+            ->where('send_to_transaction', 0)
+            ->where('is_submited', 1)
+            ->where('is_submited_doctor', 0)
+            ->whereHas('order_consultations')
+            ->latest()
+            ->first();
+
+        if(!$order){
+            return $this->error('Order not found');
+        }
+
+        if(($order['order_consultations'][0]['consultation']['session_end']??false) == 0){
+            return $this->error('Consultation not completed');
+        }
+
+        DB::beginTransaction();
+        $update = $order->update([
+            'is_submited_doctor' => 1,
+        ]);
+
+        if(!$update){
+            DB::rollBack();
+            return $this->error('Failed to submit order');
+        }
+
+        DB::commit();
+
+        return $this->ok('Succes to submit order', []);
     }
 }
