@@ -244,6 +244,7 @@ class POSController extends Controller
             foreach($order['order_consultations'] ?? [] as $key => $ord_con){
                 $consul = [];
                 $is_submit = 0;
+                $grievances = [];
 
                 if($ord_con['consultation']){
                     if($order['is_submited_doctor'] == 1 && ($ord_con['consultation']['session_end'] == 1 || $ord_con['consultation']['is_edit'] == 1)){
