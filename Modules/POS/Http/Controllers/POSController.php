@@ -336,9 +336,12 @@ class POSController extends Controller
             $order = Order::where('patient_id', $post['id_customer'])
             ->where('outlet_id', $outlet['id'])
             ->where('send_to_transaction', 0)
-            ->where('is_submited', 0)
             ->latest()
             ->first();
+
+            if($order && ($order['is_submited'] == 1 && $order['is_submited_doctor'] == 0)){
+                return $this->error('Cant create order, order has not been submited by the doctor');
+            }
 
             DB::beginTransaction();
             if(!$order){
@@ -856,7 +859,7 @@ class POSController extends Controller
 
         DB::beginTransaction();
 
-        $consultation = OrderConsultation::where('order_id', $order['id'])->get()->toArray();
+        $consultation = OrderConsultation::with(['doctor', 'shift'])->where('order_id', $order['id'])->first();
         if($consultation){
             $update = $order->update([
                 'is_submited' => 1,
@@ -867,17 +870,27 @@ class POSController extends Controller
                 return $this->error('Failed to submit order');
             }
 
-            DB::commit();
             $return = [
                 'consultation' => true,
                 'list_payment' => [],
-            ];
+                'ticket' => [
+                    'title'  => 'CONSULTATION',
+                    'doctor' => $consultation['doctor']['name'],
+                    'date'   => date('d F Y', strtotime($consultation['schedule_date'])),
+                    'time'   => date('H:i', strtotime($consultation['shift']['start'])). ' - '.date('H:i', strtotime($consultation['shift']['end'])),
+                    'queue'  => $consultation['queue_code']
 
+                ]
+
+            ];
+            DB::commit();
             return $this->ok('Succes to submit order', $return);
         }else{
+
             $return = [
                 'consultation' => false,
                 'list_payment' => $this->availablePayment($order) ?? [],
+                'ticket' => []
             ];
 
             return $this->ok('Succes to submit order', $return);
@@ -935,7 +948,7 @@ class POSController extends Controller
                                 $treatment_patient = TreatmentPatient::with(['steps'])->where('id', $order_product['treatment_patient_id'])->first();
                                 if($treatment_patient){
                                     if(count($treatment_patient['steps']) <= 0){
-                                        OrderProduct::where('id', $order_product['id'])->update(['treatment_patient_id' => null]);
+                                        OrderProduct::where('treatment_patient_id', $treatment_patient['id'])->update(['treatment_patient_id' => null]);
                                         $delete_treatment_patient = $treatment_patient->delete();
                                         if(!$delete_treatment_patient){
                                             DB::rollBack();
@@ -1105,7 +1118,11 @@ class POSController extends Controller
         $active_payment_methods = Setting::where('key', '=', 'active_payment_methods')->first();
 
         $setting  = json_decode($active_payment_methods['value_text'] ?? '[]', true) ?? [];
-        $payments = [];
+        $payments = [
+            'cash'      => [],
+            'e-payment' => [],
+            'bank'      => [],
+        ];
 
         $last_status = [];
         foreach ($setting ?? [] as $value) {
@@ -1143,6 +1160,27 @@ class POSController extends Controller
 
             if($payment['type'] == 'cash'){
                 $payments['cash'][] = $post['order_grandtotal'];
+                $last_4 = substr($post['order_grandtotal'], -4);
+                $basic = str_split($post['order_grandtotal']);
+                $last = ((int)$basic[0]+1) * (pow(10,count($basic)-1));
+                if(count($basic) > 5){
+                    if((int)$last_4 != 0 && (int)$last_4 < 5000){
+                        $payments['cash'][] =  (int) substr_replace($post['order_grandtotal'], '5000', -4);
+                    }
+                    if((int)$last_4 != 0 && ((int)$basic[1]+1) * (pow(10,count($basic)-2)) < 50000){
+                        $grand_plus_10 = (int) substr_replace($post['order_grandtotal'], ((int)$basic[1]+1) * (pow(10,count($basic)-2)), -5);
+                        $payments['cash'][] = $grand_plus_10;
+                        if($grand_plus_10 < ($last - 50000)){
+                            $payments['cash'][] = (int) substr_replace($post['order_grandtotal'], 50000, -5);
+                        }
+                    }
+                }
+
+                $payments['cash'][] = $last;
+
+                if(count($basic) <= 5){
+                    $payments['cash'][] = 10 * (pow(10,count($basic)-1));
+                }
             }elseif($payment['type'] == 'e-payment'){
                 $payments['e-payment'][] = [
                     'code'                          => $value['code'] ?? '',
