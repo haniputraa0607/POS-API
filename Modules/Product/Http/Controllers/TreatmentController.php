@@ -320,6 +320,7 @@ class TreatmentController extends Controller
             }
 
             $return[] = [
+                'id_treatment' => $history['treatment']['id'],
                 'treatment_name' => $history['treatment']['product_name'],
                 'doctor_name' => 'By '.$history['doctor']['name'],
                 'start_treatment' => date('Y-m-d', strtotime($history['start_date'])),
