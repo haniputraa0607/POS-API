@@ -40,7 +40,7 @@ class DoctorController extends Controller
         date_default_timezone_set('Asia/Jakarta');
     }
 
-    public function home(Request $request):mixed
+    public function home(Request $request):JsonResponse
     {
 
         $doctor = $request->user();
@@ -1559,7 +1559,7 @@ class DoctorController extends Controller
         }
     }
 
-    public function submitOrder(Request $request):mixed
+    public function submitOrder(Request $request):JsonResponse
     {
         $request->validate([
             'id_order' => 'required',

@@ -5,75 +5,158 @@ namespace Modules\Transaction\Http\Controllers;
 use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
+use Modules\Order\Entities\Order;
+use Modules\Transaction\Entities\Transaction;
+use Modules\Transaction\Entities\TransactionCash;
+use Illuminate\Support\Facades\DB;
 
 class TransactionController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     * @return Renderable
-     */
-    public function index()
+
+    public function __construct()
     {
-        return view('transaction::index');
+        date_default_timezone_set('Asia/Jakarta');
     }
 
-    /**
-     * Show the form for creating a new resource.
-     * @return Renderable
-     */
-    public function create()
+    public function confirm(Request $request):JsonResponse
     {
-        return view('transaction::create');
+        $cashier = $request->user();
+        $outlet = $cashier->outlet;
+        $post = $request->json()->all();
+
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+
+        if(!isset($post['id_customer']) || !isset($post['payment_method']) || !isset($post['payment_gateway'])){
+            return $this->error('Request invalid');
+        }
+
+        $order = Order::where('patient_id', $post['id_customer'])
+        ->where('outlet_id', $outlet['id'])
+        ->where('send_to_transaction', 0)
+        ->latest()->first();
+
+        if(!$order){
+            return $this->error('Order Not Found');
+        }
+
+        if($order['is_submited'] == 1 && $order['is_submited_doctor'] == 0){
+            return $this->error('Cant confirm order, order has not been submited by the doctor');
+        }
+
+        $type = null;
+        $image = null;
+        $url = null;
+        DB::beginTransaction();
+
+        $last_code = Transaction::where('outlet_id', $outlet['id'])->latest('transaction_receipt_number')->first()['transaction_receipt_number']??'';
+        $last_code_outlet = explode('-',$outlet['outlet_code'])[1];
+        $last_code = $last_code == '' ? 0 : explode('-',$last_code)[1];
+        $last_code = (int)$last_code + 1;
+        $transaction_receipt_number = 'TRX'.$last_code_outlet.'-'.sprintf("%05d", $last_code);
+
+        $trx = Transaction::create([
+            'order_id'                   => $order['id'],
+            'outlet_id'                  => $order['outlet_id'],
+            'customer_id'                => $order['patient_id'],
+            'user_id'                    => $cashier['id'],
+            'transaction_receipt_number' => $transaction_receipt_number,
+            'transaction_date'           => date('Y-m-d H:i:s'),
+            'transaction_subtotal'       => $order['order_subtotal'],
+            'transaction_gross'          => $order['order_gross'],
+            'transaction_discount'       => $order['order_discount'],
+            'transaction_tax'            => $order['order_tax'],
+            'transaction_grandtotal'     => $order['order_grandtotal'],
+        ]);
+
+        if(!$trx){
+            DB::rollBack();
+            return $this->error('Failed to created transaction');
+        }
+
+        if($post['payment_method'] == 'Cash'){
+
+            if($post['payment_gateway'] == 'Cash'){
+
+                if(!isset($post['nominal'])){
+                    DB::rollBack();
+                    return $this->error('Please input nominal received');
+                }
+
+                $cash = TransactionCash::create([
+                    'transaction_id' => $trx['id'],
+                    'cash_total'     => $trx['transaction_grandtotal'],
+                    'cash_received'  => $post['nominal'],
+                    'cash_change'    => (int)$post['nominal'] - (int)$trx['transaction_grandtotal'],
+                ]);
+
+                if(!$cash){
+                    DB::rollBack();
+                    return $this->error('Failed to created transaction cash');
+                }
+
+                $update_trx = $trx->update([
+                    'completed_at'               => date('Y-m-d H:i:s'),
+                    'transaction_payment_type'   => 'Cash',
+                    'transaction_payment_status' => 'Completed'
+                ]);
+
+                if(!$update_trx){
+                    DB::rollBack();
+                    return $this->error('Failed to updated transaction');
+                }
+
+                $type = 'Cash';
+                $image = config('payment_method.cash.logo');
+
+            }else{
+                DB::rollBack();
+                return $this->error('Payment Gateway Invalid');
+            }
+
+        }elseif($post['payment_method'] == 'Midtrans'){
+
+        }else{
+            DB::rollBack();
+            return $this->error('Payment Method Invalid');
+        }
+
+        $update_order = $order->update([
+            'send_to_transaction' => 1
+        ]);
+
+        if(!$update_order){
+            DB::rollBack();
+            return $this->error('Failed to updated order');
+        }
+
+        DB::commit();
+        $return = [
+            'id_transaction' => $trx['id'],
+            'type'           => $type,
+            'image_url'      => $image,
+            'url'            => $url,
+            'price_total'    => $trx['transaction_grandtotal']
+        ];
+        return $this->ok('Succes to confirm transaction', $return);
+
     }
 
-    /**
-     * Store a newly created resource in storage.
-     * @param Request $request
-     * @return Renderable
-     */
-    public function store(Request $request)
+    public function done(Request $request):mixed
     {
-        //
-    }
+        $cashier = $request->user();
+        $outlet = $cashier->outlet;
+        $post = $request->json()->all();
 
-    /**
-     * Show the specified resource.
-     * @param int $id
-     * @return Renderable
-     */
-    public function show($id)
-    {
-        return view('transaction::show');
-    }
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
 
-    /**
-     * Show the form for editing the specified resource.
-     * @param int $id
-     * @return Renderable
-     */
-    public function edit($id)
-    {
-        return view('transaction::edit');
-    }
-
-    /**
-     * Update the specified resource in storage.
-     * @param Request $request
-     * @param int $id
-     * @return Renderable
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     * @param int $id
-     * @return Renderable
-     */
-    public function destroy($id)
-    {
-        //
+        if(!isset($post['id_transaction'])){
+            return $this->error('Request invalid');
+        }
+        return 123;
     }
 }

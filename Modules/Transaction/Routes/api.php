@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
-
+use Modules\Transaction\Http\Controllers\TransactionController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -15,4 +15,12 @@ use Illuminate\Http\Request;
 
 Route::middleware('auth:api')->get('/transaction', function (Request $request) {
     return $request->user();
+});
+
+Route::middleware(['auth:api','scopes:pos'])->prefix('pos')->group(function (){
+
+    Route::prefix('transaction')->controller(TransactionController::class)->group(function () {
+        Route::post('confirm', 'confirm');
+        Route::post('done', 'done');
+    });
 });

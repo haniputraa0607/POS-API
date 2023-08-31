@@ -831,7 +831,7 @@ class POSController extends Controller
         }
     }
 
-    public function submitOrder(Request $request): mixed
+    public function submitOrder(Request $request): JsonResponse
     {
         $request->validate([
             'id_customer' => 'required',
@@ -840,7 +840,6 @@ class POSController extends Controller
         $cashier = $request->user();
         $outlet = $cashier->outlet;
         $post = $request->json()->all();
-
 
         if(!$outlet){
             return $this->error('Outlet not found');
@@ -1169,10 +1168,10 @@ class POSController extends Controller
                 $last_4 = substr($total, -4);
                 $basic = str_split($total);
                 $last = ((int)$basic[0]+1) * (pow(10,count($basic)-1));
+                if((int)$last_4 != 0 && (int)$last_4 < 5000){
+                    $payments['cash'][] =  (int) substr_replace($total, '5000', -4);
+                }
                 if(count($basic) > 5){
-                    if((int)$last_4 != 0 && (int)$last_4 < 5000){
-                        $payments['cash'][] =  (int) substr_replace($total, '5000', -4);
-                    }
                     if((int)$last_4 != 0 && ((int)$basic[1]+1) * (pow(10,count($basic)-2)) < 50000){
                         $grand_plus_10 = (int) substr_replace($total, ((int)$basic[1]+1) * (pow(10,count($basic)-2)), -5);
                         $payments['cash'][] = $grand_plus_10;
