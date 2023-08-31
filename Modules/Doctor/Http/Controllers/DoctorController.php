@@ -40,7 +40,7 @@ class DoctorController extends Controller
         date_default_timezone_set('Asia/Jakarta');
     }
 
-    public function home(Request $request):JsonResponse
+    public function home(Request $request):mixed
     {
 
         $doctor = $request->user();
@@ -70,12 +70,31 @@ class DoctorController extends Controller
             $status_doctor = false;
         }
 
+        if(date('H:i') < date('H:i', strtotime($shift['end']))){
+            // return 123;
+        }
+
         $timezone = $outlet->district->province['timezone'] ?? 7;
         $on_progress = false;
         $queue = null;
         $id_order = null;
 
         if($status_outlet && $status_doctor && $shift){
+
+            $order_skip = OrderConsultation::whereHas('order', function($order) use($outlet){
+                $order->where('outlet_id', $outlet['id'])
+                ->where('is_submited', 1)
+                ->where('is_submited_doctor', 0)
+                ->where('send_to_transaction', 0);
+            })
+            ->whereDate('schedule_date', date('Y-m-d'))
+            ->where('doctor_id', $doctor['id'])
+            ->whereHas('shift', function($shift_skip) use($shift){
+                $shift_skip->whereTime('end', '<=', date('H:i:s', strtotime($shift['start'])));
+            })
+            ->orderBy('queue', 'asc')
+            ->update(['doctor_shift_id' => $shift['id']]);
+
             $order = OrderConsultation::whereHas('order', function($order) use($outlet){
                 $order->where('outlet_id', $outlet['id'])
                 ->where('is_submited', 1)

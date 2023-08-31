@@ -157,7 +157,6 @@ class POSController extends Controller
         $id_customer = $data['id_customer'];
         $id_outlet = $data['id_outlet'];
 
-        $can_order = true;
         $return = [
             'summary' => [
                 [
@@ -173,7 +172,6 @@ class POSController extends Controller
                     'value' => 0
                 ],
             ],
-            'can_order' => $can_order
         ];
 
         $order = Order::with([
@@ -195,7 +193,11 @@ class POSController extends Controller
         ->where('send_to_transaction', 0)
         ->latest()->first();
 
-        if($order && ($order['is_submited'] == 0 || ($order['is_submited'] == 1 && $order['is_submited_doctor'] == 1))){
+        if($order){
+
+            if($order && ($order['is_submited'] == 1 && $order['is_submited_doctor'] == 0)){
+                return $this->error('Cant create order, order has not been submited by the doctor');
+            }
 
             $ord_prod = [];
             $ord_treat = [];
@@ -310,8 +312,6 @@ class POSController extends Controller
                 ],
             ];
         }
-
-        $return['can_order'] = isset($order) ? (($order['is_submited'] == 1 && $order['is_submited_doctor'] == 0) ? false : true ) : true;
 
         if($status){
             return $this->ok($message, $return);
@@ -911,6 +911,47 @@ class POSController extends Controller
             DB::beginTransaction();
             foreach($orders ?? [] as $key => $order){
 
+                if($order['order_consultations']){
+
+                    foreach($order['order_consultations'] ?? [] as $key3 => $order_consultation){
+
+                        if(date('Y-m-d', strtotime($order_consultation['schedule_date'])) >= date('Y-m-d')){
+                            continue 2;
+                        }
+
+                        $updateOrder = $order->update([
+                            'order_subtotal'   => $order['order_subtotal'] - $order_consultation['order_consultation_subtotal'],
+                            'order_gross'      => $order['order_gross'] - $order_consultation['order_consultation_subtotal'],
+                            'order_grandtotal' => $order['order_grandtotal'] - $order_consultation['order_consultation_grandtotal'],
+                        ]);
+
+                        if(!$updateOrder){
+                            DB::rollBack();
+                            $log->fail('Failed update order');
+                        }
+
+                        $consultation = Consultation::where('order_consultation_id', $order_consultation['id'])->first();
+                        if($consultation){
+                            $patient_grievances = PatientGrievance::where('consultation_id', $consultation['id'])->get();
+                            if($patient_grievances){
+                                $patient_grievances->each->delete();
+                            }
+
+                            $patient_diagnostics = PatientDiagnostic::where('consultation_id', $consultation['id'])->get();
+                            if($patient_diagnostics){
+                                $patient_diagnostics->each->delete();
+                            }
+
+                            $consultation->delete();
+                        }
+
+                        $delete_order_consultation = OrderConsultation::where('id', $order_consultation['id'])->delete();
+                        if(!$delete_order_consultation){
+                            $log->fail('Failed to delete order consultation');
+                        }
+                    }
+                }
+
                 if($order['order_products']){
 
                     foreach($order['order_products'] ?? [] as $key2 => $order_product){
@@ -971,43 +1012,6 @@ class POSController extends Controller
                         }
                     }
 
-                }
-
-                if($order['order_consultations']){
-
-                    foreach($order['order_consultations'] ?? [] as $key3 => $order_consultation){
-
-                        $updateOrder = $order->update([
-                            'order_subtotal'   => $order['order_subtotal'] - $order_consultation['order_consultation_subtotal'],
-                            'order_gross'      => $order['order_gross'] - $order_consultation['order_consultation_subtotal'],
-                            'order_grandtotal' => $order['order_grandtotal'] - $order_consultation['order_consultation_grandtotal'],
-                        ]);
-
-                        if(!$updateOrder){
-                            DB::rollBack();
-                            $log->fail('Failed update order');
-                        }
-
-                        $consultation = Consultation::where('order_consultation_id', $order_consultation['id'])->first();
-                        if($consultation){
-                            $patient_grievances = PatientGrievance::where('consultation_id', $consultation['id'])->get();
-                            if($patient_grievances){
-                                $patient_grievances->each->delete();
-                            }
-
-                            $patient_diagnostics = PatientDiagnostic::where('consultation_id', $consultation['id'])->get();
-                            if($patient_diagnostics){
-                                $patient_diagnostics->each->delete();
-                            }
-
-                            $consultation->delete();
-                        }
-
-                        $delete_order_consultation = OrderConsultation::where('id', $order_consultation['id'])->delete();
-                        if(!$delete_order_consultation){
-                            $log->fail('Failed to delete order consultation');
-                        }
-                    }
                 }
 
                 if($order['order_prescriptions']){
@@ -1116,9 +1120,11 @@ class POSController extends Controller
     {
         $availablePayment = config('payment_method');
         $active_payment_methods = Setting::where('key', '=', 'active_payment_methods')->first();
+        $total = $post['order_grandtotal'] ?? 0;
 
         $setting  = json_decode($active_payment_methods['value_text'] ?? '[]', true) ?? [];
         $payments = [
+            'total'     => $total,
             'cash'      => [],
             'e-payment' => [],
             'bank'      => [],
@@ -1159,19 +1165,19 @@ class POSController extends Controller
             }
 
             if($payment['type'] == 'cash'){
-                $payments['cash'][] = $post['order_grandtotal'];
-                $last_4 = substr($post['order_grandtotal'], -4);
-                $basic = str_split($post['order_grandtotal']);
+                $payments['cash'][] = $total;
+                $last_4 = substr($total, -4);
+                $basic = str_split($total);
                 $last = ((int)$basic[0]+1) * (pow(10,count($basic)-1));
                 if(count($basic) > 5){
                     if((int)$last_4 != 0 && (int)$last_4 < 5000){
-                        $payments['cash'][] =  (int) substr_replace($post['order_grandtotal'], '5000', -4);
+                        $payments['cash'][] =  (int) substr_replace($total, '5000', -4);
                     }
                     if((int)$last_4 != 0 && ((int)$basic[1]+1) * (pow(10,count($basic)-2)) < 50000){
-                        $grand_plus_10 = (int) substr_replace($post['order_grandtotal'], ((int)$basic[1]+1) * (pow(10,count($basic)-2)), -5);
+                        $grand_plus_10 = (int) substr_replace($total, ((int)$basic[1]+1) * (pow(10,count($basic)-2)), -5);
                         $payments['cash'][] = $grand_plus_10;
                         if($grand_plus_10 < ($last - 50000)){
-                            $payments['cash'][] = (int) substr_replace($post['order_grandtotal'], 50000, -5);
+                            $payments['cash'][] = (int) substr_replace($total, 50000, -5);
                         }
                     }
                 }
