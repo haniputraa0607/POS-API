@@ -81,10 +81,12 @@ class TreatmentController extends Controller
                 'price' => $price,
                 'can_continue' => false,
                 'can_new' => true,
+                'total_history' => 0,
                 'record_history' => []
             ];
             if($post['search']['filter'] == 'date'){
                 $data['date'] = date('Y-m-d', strtotime($post['search']['value']));
+                $data['date_text'] = date('d F Y', strtotime($data['date']));
             }
             return $data;
         },$products ?? []);
@@ -111,6 +113,8 @@ class TreatmentController extends Controller
                     }
                 }
 
+                $value['total_history'] = count($customerPatient);
+
                 return $value;
             },$return['treatment'] ?? []);
 
@@ -129,16 +133,19 @@ class TreatmentController extends Controller
                 foreach($customerPatient ?? [] as $cp){
                     if($value['id'] == $cp['treatment_id']){
                         $value['can_continue'] = true;
+                        $value['can_new'] = false;
                         $value['record_history'] = [
                             'from' => $cp['progress'].'/'.$cp['step'],
                             'to' => ($cp['progress']+1).'/'.$cp['step'],
                         ];
                     }
                 }
+                $value['total_history'] = count($customerPatient);
 
                 return $value;
             },$return['treatment'] ?? []);
         }
+
         return $this->ok('success', $return);
     }
 
@@ -204,8 +211,9 @@ class TreatmentController extends Controller
                 'price' => $data['price'],
                 'can_continue' => $data['can_continue'],
                 'can_new' => $data['can_new'],
+                'total_history' => 0,
                 'date_text' => date('d F Y', strtotime($date)),
-                'date_' => date('Y-m-d', strtotime($date)),
+                'date' => date('Y-m-d', strtotime($date)),
                 'record_history' => []
             ];
             $list_dates[] = $date;
@@ -233,6 +241,7 @@ class TreatmentController extends Controller
                         ];
                     }
                 }
+                $value['total_history'] = count($customerPatient);
 
                 return $value;
             },$return['treatment'] ?? []);
@@ -259,6 +268,7 @@ class TreatmentController extends Controller
                         ];
                     }
                 }
+                $value['total_history'] = count($customerPatient);
 
                 return $value;
             },$return['treatment'] ?? []);
