@@ -4,6 +4,12 @@ namespace Modules\Transaction\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Modules\Transaction\Entities\TransactionCash;
+use Modules\Order\Entities\Order;
 
 class Transaction extends Model
 {
@@ -11,6 +17,7 @@ class Transaction extends Model
 
     protected $table = 'transactions';
     protected $fillable = [
+        'order_id',
         'outlet_id',
         'customer_id',
         'user_id',
@@ -27,4 +34,14 @@ class Transaction extends Model
         'transaction_payment_status',
         'void_date',
     ];
+
+    public function transaction_cash(): HasOne
+    {
+        return $this->hasOne(TransactionCash::class);
+    }
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class, 'order_id', 'id');
+    }
 }
