@@ -284,9 +284,10 @@ class DoctorController extends Controller
             'order_consultations.consultation.patient_grievance.grievance',
             'order_consultations.shift',
             'order_consultations.doctor',
-            'order_products.treatment_patient.steps' => function($step) {
+            'order_products.treatment_patient',
+            'order_products.step' => function($step) {
                 $step->where('status', 'Pending');
-            },
+            }
         ])->where('id', $id_order)
         ->where('send_to_transaction', 0)
         ->where('is_submited', 1)
@@ -328,8 +329,8 @@ class DoctorController extends Controller
                 }elseif($ord_pro['type'] == 'Treatment'){
 
                     $progress = null;
-                    if($ord_pro['treatment_patient'] && isset($ord_pro['treatment_patient']['doctor_id']) && count($ord_pro['treatment_patient']['steps']) > 0){
-                        $progress = $ord_pro['treatment_patient']['steps'][0]['step'].'/'.$ord_pro['treatment_patient']['step'];
+                    if($ord_pro['treatment_patient'] && isset($ord_pro['treatment_patient']['doctor_id']) && isset($ord_pro['step'])){
+                        $progress = $ord_pro['step']['step'].'/'.$ord_pro['treatment_patient']['step'];
                     }
 
                     $ord_treat[] = [
@@ -882,9 +883,14 @@ class DoctorController extends Controller
                             return $this->error('Invalid Error');
                         }
 
+                        $existcustomerPatientStep = TreatmentPatientStep::where('treatment_patient_id', $customerPatient['id'])->max('step') ?? 0;
+                        if(($existcustomerPatientStep+1) > $customerPatient['step']){
+                            return $this->error('Step cannot exceed those specified');
+                        }
+
                         $customerPatientStep = TreatmentPatientStep::create([
                             'treatment_patient_id' => $customerPatient['id'],
-                            'step'                 => $customerPatient['progress'] + 1,
+                            'step'                 => $existcustomerPatientStep + 1,
                             'date'                 => $post['order']['date'],
                         ]);
 
@@ -893,15 +899,16 @@ class DoctorController extends Controller
                         }
 
                         $create_order_product = OrderProduct::create([
-                            'order_id'                 => $order['id'],
-                            'product_id'               => $product['id'],
-                            'type'                     => $product['type'],
-                            'schedule_date'            => $post['order']['date'],
-                            'treatment_patient_id'     => $customerPatient['id'] ?? null,
-                            'qty'                      => 1,
-                            'order_product_price'      => $price,
-                            'order_product_subtotal'   => $price,
-                            'order_product_grandtotal' => $price,
+                            'order_id'                  => $order['id'],
+                            'product_id'                => $product['id'],
+                            'type'                      => $product['type'],
+                            'schedule_date'             => $post['order']['date'],
+                            'treatment_patient_id'      => $customerPatient['id'] ?? null,
+                            'treatment_patient_step_id' => $customerPatientStep['id'] ?? null,
+                            'qty'                       => 1,
+                            'order_product_price'       => $price,
+                            'order_product_subtotal'    => $price,
+                            'order_product_grandtotal'  => $price,
                         ]);
 
                         if(!$create_order_product){
@@ -1399,25 +1406,41 @@ class DoctorController extends Controller
             $delete_order_product = $order_product->delete();
 
             if($delete_order_product && ($type??false) == 'treatment' && $order_product['treatment_patient_id']){
-                $delete_step =  TreatmentPatientStep::where('treatment_patient_id', $order_product['treatment_patient_id'])->where('status', 'Pending')->delete();
-                if($delete_step){
-                    $treatment_patient = TreatmentPatient::with(['steps'])->where('id', $order_product['treatment_patient_id'])->first();
-                    if($treatment_patient){
-                        if(count($treatment_patient['steps']) <= 0){
-                            OrderProduct::where('id', $order_product['id'])->update(['treatment_patient_id' => null]);
-                            $delete_treatment_patient = $treatment_patient->delete();
-                            if(!$delete_treatment_patient){
-                                DB::rollBack();
-                                return $this->error('Failed to delete treatment patient');
+                $step =  TreatmentPatientStep::where('id', $order_product['treatment_patient_step_id'])->where('treatment_patient_id', $order_product['treatment_patient_id'])->where('status', 'Pending')->first();
+                if($step){
+                    OrderProduct::where('id', $order_product['id'])->update(['treatment_patient_step_id' => null]);
+                    $delete_step = $step->delete();
+                    if($delete_step){
+                        $treatment_patient = TreatmentPatient::with(['steps'])->where('id', $order_product['treatment_patient_id'])->first();
+                        if($treatment_patient){
+                            if(count($treatment_patient['steps']) <= 0){
+                                OrderProduct::where('id', $order_product['id'])->update(['treatment_patient_id' => null]);
+                                $delete_treatment_patient = $treatment_patient->delete();
+                                if(!$delete_treatment_patient){
+                                    DB::rollBack();
+                                    return $this->error('Failed to delete treatment patient');
+                                }
+                            }else{
+                                $anotherSteps = TreatmentPatientStep::where('treatment_patient_id', $treatment_patient['id'])->where('status', 'Pending')->orderBy('step', 'asc')->get();
+                                $start_from = ($treatment_patient['progress'] ?? 0) + 1;
+                                foreach($anotherSteps ?? [] as $another){
+                                    $another->update([
+                                        'step' => $start_from,
+                                    ]);
+                                    $start_from++;
+                                }
                             }
+                        }else{
+                            DB::rollBack();
+                            return $this->error('Failed to get treatment patient');
                         }
                     }else{
                         DB::rollBack();
-                        return $this->error('Failed to get treatment patient');
+                        return $this->error('Failed to delete step');
                     }
                 }else{
                     DB::rollBack();
-                    return $this->error('Failed to delete step');
+                    return $this->error('Failed to get treatment patient step');
                 }
             }
 

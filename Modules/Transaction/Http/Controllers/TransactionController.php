@@ -10,6 +10,8 @@ use Modules\Order\Entities\Order;
 use Modules\Transaction\Entities\Transaction;
 use Modules\Transaction\Entities\TransactionCash;
 use Illuminate\Support\Facades\DB;
+use Modules\Customer\Entities\TreatmentPatient;
+use Modules\Customer\Entities\TreatmentPatientStep;
 
 class TransactionController extends Controller
 {
@@ -33,7 +35,10 @@ class TransactionController extends Controller
             return $this->error('Request invalid');
         }
 
-        $order = Order::where('patient_id', $post['id_customer'])
+        $order = Order::with(['order_products' => function($order_products) {
+            $order_products->where('type', 'Treatment');
+        }])
+        ->where('patient_id', $post['id_customer'])
         ->where('outlet_id', $outlet['id'])
         ->where('send_to_transaction', 0)
         ->latest()->first();
@@ -121,6 +126,43 @@ class TransactionController extends Controller
         }else{
             DB::rollBack();
             return $this->error('Payment Method Invalid');
+        }
+
+        foreach($order['order_products'] ?? [] as $order_product){
+
+            $step = TreatmentPatientStep::where('id', $order_product['treatment_patient_step_id'])->where('status', 'Pending')->first();
+            $traitment_patient = TreatmentPatient::where('id', $order_product['treatment_patient_id'])->where('status', '<>', 'Finished')->first();
+            if($step && $traitment_patient){
+                $update_step = $step->update([
+                    'status' => 'Finished'
+                ]);
+
+                if(!$update_step){
+                    DB::rollBack();
+                    return $this->error('Failed update traitment patient step');
+                }
+
+                $update_traitment_patient = $traitment_patient->update([
+                    'progress' => $step['step']
+                ]);
+
+                if(!$update_traitment_patient){
+                    DB::rollBack();
+                    return $this->error('Failed update traitment patient');
+                }
+
+                if($traitment_patient['progress'] == $traitment_patient['step']){
+                    $update_status_traitment_patient = $traitment_patient->update([
+                        'status' => 'Finished'
+                    ]);
+
+                    if(!$update_status_traitment_patient){
+                        DB::rollBack();
+                        return $this->error('Failed update traitment patient status');
+                    }
+                }
+            }
+
         }
 
         $update_order = $order->update([
