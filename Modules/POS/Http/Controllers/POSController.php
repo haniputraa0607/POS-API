@@ -506,6 +506,7 @@ class POSController extends Controller
                             $customerPatient = TreatmentPatient::where('patient_id', $post['id_customer'])
                             ->where('treatment_id', $product['id'])
                             ->where('status', '<>', 'Finished')
+                            ->whereDate('expired_date', '>=', date('y-m-d', strtotime($post['order']['date'])))
                             ->first();
 
                         }else{
@@ -529,7 +530,7 @@ class POSController extends Controller
                         $customerPatientStep = TreatmentPatientStep::create([
                             'treatment_patient_id' => $customerPatient['id'],
                             'step'                 => $customerPatient['progress'] + 1,
-                            'date'                 => date('Y-m-d H:i:s'),
+                            'date'                 => $post['order']['date'],
                         ]);
 
                         if(!$customerPatientStep){

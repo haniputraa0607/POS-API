@@ -12,6 +12,7 @@ use Modules\Customer\Entities\Customer;
 use Modules\Customer\Entities\TreatmentPatient;
 use Modules\Order\Entities\Order;
 use App\Lib\MyHelper;
+use Illuminate\Support\Facades\DB;
 
 class TreatmentController extends Controller
 {
@@ -39,7 +40,7 @@ class TreatmentController extends Controller
         $all_products = 1;
 
         if($post['search']['filter'] == 'date'){
-            $date = date('Y-m-d', strtotime($post['search']['value']));
+            $date = date('y-m-d', strtotime($post['search']['value']));
             $outlet_schedule = $outlet->outlet_schedule->where('day', date('l', strtotime($date)))->first();
             $all_products = $outlet_schedule['all_products'];
             $custom = json_decode($outlet_schedule['custom_products'], true) ?? [];
@@ -85,7 +86,7 @@ class TreatmentController extends Controller
                 'record_history' => []
             ];
             if($post['search']['filter'] == 'date'){
-                $data['date'] = date('Y-m-d', strtotime($post['search']['value']));
+                $data['date'] = date('y-m-d', strtotime($post['search']['value']));
                 $data['date_text'] = date('d F Y', strtotime($data['date']));
             }
             return $data;
@@ -104,7 +105,7 @@ class TreatmentController extends Controller
             $return['treatment'] = array_map(function($value) use($customerPatient){
 
                 foreach($customerPatient ?? [] as $cp){
-                    if($value['id'] == $cp['treatment_id']){
+                    if($value['id'] == $cp['treatment_id'] && (date('y-m-d',strtotime($cp['expired_date'])) >= date('y-m-d',strtotime($value['date'] ?? date('y-m-d'))))){
                         $value['can_continue'] = true;
                         $value['record_history'] = [
                             'from' => $cp['progress'].'/'.$cp['step'],
@@ -131,7 +132,7 @@ class TreatmentController extends Controller
             $return['treatment'] = array_map(function($value) use($customerPatient){
 
                 foreach($customerPatient ?? [] as $cp){
-                    if($value['id'] == $cp['treatment_id']){
+                    if($value['id'] == $cp['treatment_id'] && (date('y-m-d',strtotime($cp['expired_date'])) >= date('y-m-d',strtotime($value['date'] ?? date('y-m-d'))))){
                         $value['can_continue'] = true;
                         $value['can_new'] = false;
                         $value['record_history'] = [
@@ -159,7 +160,7 @@ class TreatmentController extends Controller
             return $this->error('Outlet not found');
         }
 
-        $date_now = date('Y-m-d');
+        $date_now = date('y-m-d');
         $dates = MyHelper::getListDate(date('d'),date('m'),date('Y'));
 
         $products = Product::with(['global_price','outlet_price' => function($outlet_price) use ($outlet){
@@ -213,7 +214,7 @@ class TreatmentController extends Controller
                 'can_new' => $data['can_new'],
                 'total_history' => 0,
                 'date_text' => date('d F Y', strtotime($date)),
-                'date' => date('Y-m-d', strtotime($date)),
+                'date' => date('y-m-d', strtotime($date)),
                 'record_history' => []
             ];
             $list_dates[] = $date;
@@ -233,7 +234,7 @@ class TreatmentController extends Controller
             $return['treatment'] = array_map(function($value) use($customerPatient){
 
                 foreach($customerPatient ?? [] as $cp){
-                    if($value['id'] == $cp['treatment_id']){
+                    if($value['id'] == $cp['treatment_id'] && (date('y-m-d',strtotime($cp['expired_date'])) >= date('y-m-d',strtotime($value['date'])))){
                         $value['can_continue'] = true;
                         $value['record_history'] = [
                             'from' => $cp['progress'].'/'.$cp['step'],
@@ -259,7 +260,7 @@ class TreatmentController extends Controller
             $return['treatment'] = array_map(function($value) use($customerPatient){
 
                 foreach($customerPatient ?? [] as $cp){
-                    if($value['id'] == $cp['treatment_id']){
+                    if($value['id'] == $cp['treatment_id'] && (date('y-m-d',strtotime($cp['expired_date'])) >= date('y-m-d',strtotime($value['date'])))){
                         $value['can_continue'] = true;
                         $value['can_new'] = false;
                         $value['record_history'] = [
@@ -314,22 +315,76 @@ class TreatmentController extends Controller
             foreach($history['steps'] as $key2 => $step){
                 $steps[] = [
                     'index' => $step['step'] == 1 ? '1st Treatment' : ($step['step'] == 2 ? '2nd Treatment' : ($step['step'] == 3 ? '3rd Treatment' : ($step['step'] >= 4 ? $step['step'].'th Treatment' : ''))),
-                    'date' => date('Y-m-d, H:i',strtotime($step['date'])).' WIB',
-                    'queue' => 'Queue Number '.'T0',
+                    'date' => date('y-m-d, H:i',strtotime($step['date'])).' WIB',
+                    'date_text' => date('d F Y, H:i',strtotime($step['date'])).' WIB',
+                    'queue' => 'Queue Number '.'T01',
                 ];
+            }
+
+            $continue = true;
+            if(date('y-m-d', strtotime($history['expired_date'])) < date('y-m-d')){
+                $continue = false;
             }
 
             $return[] = [
                 'id_treatment' => $history['treatment']['id'],
                 'treatment_name' => $history['treatment']['product_name'],
                 'doctor_name' => 'By '.$history['doctor']['name'],
-                'start_treatment' => date('Y-m-d', strtotime($history['start_date'])),
-                'expired_treatment' => date('Y-m-d', strtotime($history['expired_date'])),
+                'start_treatment' => date('y-m-d', strtotime($history['start_date'])),
+                'start_treatment_text' => date('d F Y', strtotime($history['start_date'])),
+                'expired_treatment' => date('y-m-d', strtotime($history['expired_date'])),
+                'expired_treatment_text' => date('d F Y', strtotime($history['expired_date'])),
                 'suggestion' => $history['suggestion'],
-                'progress' => $history['progress'] == $history['step'] ? 'Finished' : $history['progress'].'/'. $history['step'].' Continue Treatment',
+                'progress' => $history['status'] == 'Finished' ? 'Finished' : $history['progress'].'/'. $history['step'].' Continue Treatment',
+                'can_continue' => $continue,
                 'step' => $steps,
             ];
         }
         return $this->ok('success', $return);
+    }
+
+    public function cronCheckTreatment()
+    {
+        $log = MyHelper::logCron('Check Treatment Patient');
+        try {
+
+            $treatment_patients = TreatmentPatient::with(['steps' => function($step){$step->where('status', 'Pending');}])
+            ->whereHas('doctor')
+            ->whereHas('patient')
+            ->whereHas('treatment')
+            ->where('status', '<>', 'Finished')
+            ->get();
+
+            DB::beginTransaction();
+
+            foreach($treatment_patients ?? [] as $key => $treatment_patient){
+                if(date('y-m-d', strtotime($treatment_patient['expired_date'])) < date('y-m-d')){
+
+                    foreach($treatment_patient['steps'] ?? [] as $key_2 => $step){
+                        $delete_step = $step->delete();
+
+                        if(!$delete_step){
+                            DB::rollBack();
+                            $log->fail('Failed deleted step');
+                        }
+                    }
+
+                    $update = $treatment_patient->update([
+                        'status' => 'Finished'
+                    ]);
+
+                    if(!$update){
+                        DB::rollBack();
+                        $log->fail('Failed update treatment patient');
+                    }
+                }
+            }
+
+            DB::commit();
+            $log->success();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $log->fail($e->getMessage());
+        }
     }
 }

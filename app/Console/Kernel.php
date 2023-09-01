@@ -15,10 +15,16 @@ class Kernel extends ConsoleKernel
         // $schedule->command('inspire')->hourly();
 
          /**
-         * Reminder Clock In Clock Out
+         * Delete Order
          * run every minute
          */
         $schedule->call('Modules\POS\Http\Controllers\POSController@cronDelete')->dailyAt('00:05');
+
+        /**
+         * Expired Treatment Patient
+         * run every minute
+         */
+        $schedule->call('Modules\Product\Http\Controllers\TreatmentController@cronCheckTreatment')->dailyAt('00:10');
     }
 
     /**
