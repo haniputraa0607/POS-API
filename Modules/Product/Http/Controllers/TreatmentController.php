@@ -98,7 +98,10 @@ class TreatmentController extends Controller
         ];
 
         if(isset($post['id_customer'])){
-            $customerPatient = TreatmentPatient::where('patient_id', $post['id_customer'])
+            $customerPatient = TreatmentPatient::with(['steps' => function($steps){
+                $steps->latest('step')->first();
+            }])
+            ->where('patient_id', $post['id_customer'])
             ->where('status', '<>', 'Finished')
             ->get()->toArray();
 
@@ -106,11 +109,13 @@ class TreatmentController extends Controller
 
                 foreach($customerPatient ?? [] as $cp){
                     if($value['id'] == $cp['treatment_id'] && (date('y-m-d',strtotime($cp['expired_date'])) >= date('y-m-d',strtotime($value['date'] ?? date('y-m-d'))))){
-                        $value['can_continue'] = true;
-                        $value['record_history'] = [
-                            'from' => $cp['progress'].'/'.$cp['step'],
-                            'to' => ($cp['progress']+1).'/'.$cp['step'],
-                        ];
+                        if($cp['steps'][0]['step'] < $cp['step']){
+                            $value['can_continue'] = true;
+                            $value['record_history'] = [
+                                'from' => $cp['steps'][0]['step'].'/'.$cp['step'],
+                                'to' => ($cp['steps'][0]['step']+1).'/'.$cp['step'],
+                            ];
+                        }
                     }
                 }
 
@@ -125,7 +130,10 @@ class TreatmentController extends Controller
                 return $this->error('Order not found');
             }
 
-            $customerPatient = TreatmentPatient::where('patient_id', $order['patient_id'])
+            $customerPatient = TreatmentPatient::with(['steps' => function($steps){
+                $steps->latest('step')->first();
+            }])
+            ->where('patient_id', $order['patient_id'])
             ->where('status', '<>', 'Finished')
             ->get()->toArray();
 
@@ -133,12 +141,14 @@ class TreatmentController extends Controller
 
                 foreach($customerPatient ?? [] as $cp){
                     if($value['id'] == $cp['treatment_id'] && (date('y-m-d',strtotime($cp['expired_date'])) >= date('y-m-d',strtotime($value['date'] ?? date('y-m-d'))))){
-                        $value['can_continue'] = true;
+                        if($cp['steps'][0]['step'] < $cp['step']){
+                            $value['can_continue'] = true;
+                            $value['record_history'] = [
+                                'from' => $cp['steps'][0]['step'].'/'.$cp['step'],
+                                'to' => ($cp['steps'][0]['step']+1).'/'.$cp['step'],
+                            ];
+                        }
                         $value['can_new'] = false;
-                        $value['record_history'] = [
-                            'from' => $cp['progress'].'/'.$cp['step'],
-                            'to' => ($cp['progress']+1).'/'.$cp['step'],
-                        ];
                     }
                 }
                 $value['total_history'] = count($customerPatient);
@@ -227,7 +237,10 @@ class TreatmentController extends Controller
         ];
 
         if(isset($post['id_customer'])){
-            $customerPatient = TreatmentPatient::where('patient_id', $post['id_customer'])
+            $customerPatient = TreatmentPatient::with(['steps' => function($steps){
+                $steps->latest('step')->first();
+            }])
+            ->where('patient_id', $post['id_customer'])
             ->where('status', '<>', 'Finished')
             ->get()->toArray();
 
@@ -235,11 +248,13 @@ class TreatmentController extends Controller
 
                 foreach($customerPatient ?? [] as $cp){
                     if($value['id'] == $cp['treatment_id'] && (date('y-m-d',strtotime($cp['expired_date'])) >= date('y-m-d',strtotime($value['date'])))){
-                        $value['can_continue'] = true;
-                        $value['record_history'] = [
-                            'from' => $cp['progress'].'/'.$cp['step'],
-                            'to' => ($cp['progress']+1).'/'.$cp['step'],
-                        ];
+                        if($cp['steps'][0]['step'] < $cp['step']){
+                            $value['can_continue'] = true;
+                            $value['record_history'] = [
+                                'from' => $cp['steps'][0]['step'].'/'.$cp['step'],
+                                'to' => ($cp['steps'][0]['step']+1).'/'.$cp['step'],
+                            ];
+                        }
                     }
                 }
                 $value['total_history'] = count($customerPatient);
@@ -253,7 +268,10 @@ class TreatmentController extends Controller
                 return $this->error('Order not found');
             }
 
-            $customerPatient = TreatmentPatient::where('patient_id', $order['patient_id'])
+            $customerPatient = TreatmentPatient::with(['steps' => function($steps){
+                $steps->latest('step')->first();
+            }])
+            ->where('patient_id', $order['patient_id'])
             ->where('status', '<>', 'Finished')
             ->get()->toArray();
 
@@ -261,12 +279,14 @@ class TreatmentController extends Controller
 
                 foreach($customerPatient ?? [] as $cp){
                     if($value['id'] == $cp['treatment_id'] && (date('y-m-d',strtotime($cp['expired_date'])) >= date('y-m-d',strtotime($value['date'])))){
-                        $value['can_continue'] = true;
+                        if($cp['steps'][0]['step'] < $cp['step']){
+                            $value['can_continue'] = true;
+                            $value['record_history'] = [
+                                'from' => $cp['steps'][0]['step'].'/'.$cp['step'],
+                                'to' => ($cp['steps'][0]['step']+1).'/'.$cp['step'],
+                            ];
+                        }
                         $value['can_new'] = false;
-                        $value['record_history'] = [
-                            'from' => $cp['progress'].'/'.$cp['step'],
-                            'to' => ($cp['progress']+1).'/'.$cp['step'],
-                        ];
                     }
                 }
                 $value['total_history'] = count($customerPatient);
@@ -322,7 +342,13 @@ class TreatmentController extends Controller
             }
 
             $continue = true;
+            if($history['status'] == 'Finished'){
+                $continue = false;
+            }
             if(date('y-m-d', strtotime($history['expired_date'])) < date('y-m-d')){
+                $continue = false;
+            }
+            if($history['steps'][0]['step'] >= $history['step']){
                 $continue = false;
             }
 
@@ -335,7 +361,7 @@ class TreatmentController extends Controller
                 'expired_treatment' => date('y-m-d', strtotime($history['expired_date'])),
                 'expired_treatment_text' => date('d F Y', strtotime($history['expired_date'])),
                 'suggestion' => $history['suggestion'],
-                'progress' => $history['status'] == 'Finished' ? 'Finished' : $history['progress'].'/'. $history['step'].' Continue Treatment',
+                'progress' => $history['status'] == 'Finished' ? 'Finished' : $history['steps'][0]['step'].'/'. $history['step'].' Continue Treatment',
                 'can_continue' => $continue,
                 'step' => $steps,
             ];
