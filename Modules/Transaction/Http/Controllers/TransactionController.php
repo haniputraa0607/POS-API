@@ -191,6 +191,7 @@ class TransactionController extends Controller
         $cashier = $request->user();
         $outlet = $cashier->outlet;
         $post = $request->json()->all();
+        $schedule = $outlet->outlet_schedule->where('day', date('l'))->first();
 
         if(!$outlet){
             return $this->error('Outlet not found');
@@ -199,6 +200,120 @@ class TransactionController extends Controller
         if(!isset($post['id_transaction'])){
             return $this->error('Request invalid');
         }
-        return 123;
+
+        $transaction = Transaction::with([
+            'transaction_cash',
+            'order.order_products.product',
+            'order.order_prescriptions.prescription',
+            'order.order_consultations.shift',
+            'order.order_consultations.doctor',
+        ])
+        ->where('id', $post['id_transaction'])
+        ->whereNotNull('completed_at')
+        ->first();
+
+        if(!$transaction){
+            return $this->error('Transaction not found');
+        }
+
+        $data = [
+            'detail' => [],
+            'ticket' => [],
+            'payment' => [],
+        ];
+
+        foreach($transaction['order']['order_products'] ?? [] as $key => $ord_pro){
+
+            if($ord_pro['type'] == 'Product'){
+
+                $data['detail']['product'] = [
+                    'order_product_id' => $ord_pro['id'],
+                    'product_name'     => $ord_pro['product']['product_name'],
+                    'qty'              => $ord_pro['qty'],
+                    'price_total'      => $ord_pro['order_product_grandtotal'],
+                ];
+
+                $data['ticket'][] = [
+                    'type' => 'product',
+                    'type_text' => 'PRODUCT',
+                    'product_name'     => $ord_pro['product']['product_name'],
+                    'qty'              => $ord_pro['qty'],
+                    'queue'              => $ord_pro['queue_code'],
+                ];
+
+            }elseif($ord_pro['type'] == 'Treatment'){
+
+                $data['detail']['treatment'] = [
+                    'order_product_id' => $ord_pro['id'],
+                    'product_name'     => $ord_pro['product']['product_name'],
+                    'qty'              => 1,
+                    'schedule_date'    => date('d F Y', strtotime($ord_pro['schedule_date'])),
+                    'price_total'      => $ord_pro['order_product_grandtotal']
+                ];
+
+                $data['ticket'][] = [
+                    'type' => 'treatment',
+                    'type_text' => 'TREATMENT',
+                    'product_name'     => $ord_pro['product']['product_name'],
+                    'schedule_date'    => date('d F Y', strtotime($ord_pro['schedule_date'])),
+                    'time'  => date('H:i', strtotime($schedule['open'])).' - '.date('H:i', strtotime($schedule['close'])),
+                    'queue'              => $ord_pro['queue_code'],
+                ];
+            }
+        }
+
+        foreach($transaction['order']['order_consultations'] ?? [] as $key => $ord_con){
+
+            $data['detail']['consultation'] = [
+                'order_consultation_id'    => $ord_con['id'],
+                'doctor_name'              => $ord_con['doctor']['name'],
+                'schedule_date'            => date('d F Y', strtotime($ord_con['schedule_date'])),
+                'time'                     => date('H:i', strtotime($ord_con['shift']['start'])).'-'.date('H:i', strtotime($ord_con['shift']['end'])),
+                'price_total'              => $ord_con['order_consultation_grandtotal'],
+            ];
+
+            $data['ticket'][] = [
+                'type' => 'consultation',
+                'type_text' => 'CONSULTATION',
+                'doctor_name'              => $ord_con['doctor']['name'],
+                'schedule_date'            => date('d F Y', strtotime($ord_con['schedule_date'])),
+                'time'                     => date('H:i', strtotime($ord_con['shift']['start'])).' - '.date('H:i', strtotime($ord_con['shift']['end'])),
+                'queue'              => $ord_con['queue_code'],
+            ];
+        }
+
+        foreach($transaction['order']['order_prescriptions'] ?? [] as $key => $ord_pres){
+
+            $ord_prescriptions[] = [
+                'order_prescription_id' => $ord_pres['id'],
+                'prescription_name'     => $ord_pres['prescription']['prescription_name'],
+                'type'                  => $ord_pres['prescription']['type'],
+                'unit'                  => $ord_pres['prescription']['unit'],
+                'qty'                   => $ord_pres['qty'],
+                'price_total'           => $ord_pres['order_prescription_grandtotal'],
+            ];
+        }
+
+        if($transaction['transaction_cash']){
+
+            $is_change = false;
+            if($transaction['transaction_cash']['cash_change'] > 0){
+                $is_change = true;
+            }
+            $data['payment'] = [
+                'type' => 'Cash',
+                'is_change' => $is_change,
+                'change text' => 'CHANGE MONEY',
+                'change' => $transaction['transaction_cash']['cash_change'],
+                'payment' => $transaction['transaction_cash']['cash_total'],
+                'amount' => $transaction['transaction_cash']['cash_received'],
+            ];
+
+        }else{
+            return $this->error('Transaction Unpaid');
+        }
+
+        return $this->ok('', $data);
+
     }
 }
