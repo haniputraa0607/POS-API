@@ -297,7 +297,7 @@ class TreatmentController extends Controller
         return $this->ok('success', $return);
     }
 
-    public function customerHistory(Request $request):JsonResponse
+    public function customerHistory(Request $request):mixed
     {
         $post = $request->json()->all();
         $cashier = $request->user();
@@ -322,7 +322,12 @@ class TreatmentController extends Controller
         }
 
         $histories = TreatmentPatient::with([
-            'treatment','doctor','steps' => function($steps){ $steps->orderBy('step', 'desc');}
+            'treatment',
+            'doctor',
+            'steps' => function($steps){
+                $steps->orderBy('step', 'desc');
+            },
+            'steps.order_product'
         ])->whereHas('doctor')
         ->whereNotNull('doctor_id')
         ->where('patient_id', $customer_id)
@@ -337,7 +342,7 @@ class TreatmentController extends Controller
                     'index' => $step['step'] == 1 ? '1st Treatment' : ($step['step'] == 2 ? '2nd Treatment' : ($step['step'] == 3 ? '3rd Treatment' : ($step['step'] >= 4 ? $step['step'].'th Treatment' : ''))),
                     'date' => date('y-m-d, H:i',strtotime($step['date'])).' WIB',
                     'date_text' => date('d F Y, H:i',strtotime($step['date'])).' WIB',
-                    'queue' => 'Queue Number '.'T01',
+                    'queue' => isset($step['order_product']['queue_code']) ? 'Queue Number '.$step['order_product']['queue_code'] : '-',
                 ];
             }
 
