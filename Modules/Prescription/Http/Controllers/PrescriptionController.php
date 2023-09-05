@@ -172,7 +172,7 @@ class PrescriptionController extends Controller
             return $this->error('Create prescription failed');
         }
 
-        return $this->ok('success', $create);
+        return $this->getDataCustom(true, ['prescription_id' => $create['id'], 'outlet' => $outlet],'Succes to create prescription custom');
 
     }
 

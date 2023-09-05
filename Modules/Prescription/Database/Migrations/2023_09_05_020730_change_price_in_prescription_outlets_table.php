@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('prescriptions', function (Blueprint $table) {
+        Schema::table('prescription_outlets', function (Blueprint $table) {
             $table->integer('price')->nullable(true)->change();
         });
     }
@@ -25,7 +25,7 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('prescriptions', function (Blueprint $table) {
+        Schema::table('prescription_outlets', function (Blueprint $table) {
             $table->integer('price')->nullable(false)->change();
         });
     }

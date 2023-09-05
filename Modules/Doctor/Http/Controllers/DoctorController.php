@@ -279,7 +279,7 @@ class DoctorController extends Controller
             'order_products.product.outlet_stock' => function($outlet_stock) use($id_outlet){
                 $outlet_stock->where('product_outlet_stocks.outlet_id',$id_outlet);
             },
-            'order_prescriptions.prescription',
+            'order_prescriptions.prescription.category',
             'order_consultations.consultation.patient_diagnostic.diagnostic',
             'order_consultations.consultation.patient_grievance.grievance',
             'order_consultations.shift',
@@ -392,9 +392,10 @@ class DoctorController extends Controller
                     'order_prescription_id' => $ord_pres['id'],
                     'prescription_id'       => $ord_pres['prescription']['id'],
                     'prescription_name'     => $ord_pres['prescription']['prescription_name'],
-                    'type'                  => $ord_pres['prescription']['type'],
+                    'type'                  => $ord_pres['prescription']['category']['category_name'] ?? null,
                     'unit'                  => $ord_pres['prescription']['unit'],
                     'qty'                   => $ord_pres['qty'],
+                    'current_qty'           => $ord_pres['qty'],
                     'price_total'           => $ord_pres['order_prescription_grandtotal'],
                 ];
             }
