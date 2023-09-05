@@ -99,7 +99,7 @@ class TreatmentController extends Controller
 
         if(isset($post['id_customer'])){
             $customerPatient = TreatmentPatient::with(['steps' => function($steps){
-                $steps->latest('step')->first();
+                $steps->latest('step');
             }])
             ->where('patient_id', $post['id_customer'])
             ->where('status', '<>', 'Finished')
@@ -131,7 +131,7 @@ class TreatmentController extends Controller
             }
 
             $customerPatient = TreatmentPatient::with(['steps' => function($steps){
-                $steps->latest('step')->first();
+                $steps->latest('step');
             }])
             ->where('patient_id', $order['patient_id'])
             ->where('status', '<>', 'Finished')
@@ -238,7 +238,7 @@ class TreatmentController extends Controller
 
         if(isset($post['id_customer'])){
             $customerPatient = TreatmentPatient::with(['steps' => function($steps){
-                $steps->latest('step')->first();
+                $steps->latest('step');
             }])
             ->where('patient_id', $post['id_customer'])
             ->where('status', '<>', 'Finished')
@@ -269,7 +269,7 @@ class TreatmentController extends Controller
             }
 
             $customerPatient = TreatmentPatient::with(['steps' => function($steps){
-                $steps->latest('step')->first();
+                $steps->latest('step');
             }])
             ->where('patient_id', $order['patient_id'])
             ->where('status', '<>', 'Finished')

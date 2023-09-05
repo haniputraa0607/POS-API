@@ -186,7 +186,7 @@ class TransactionController extends Controller
 
     }
 
-    public function done(Request $request):mixed
+    public function done(Request $request):JsonResponse
     {
         $cashier = $request->user();
         $outlet = $cashier->outlet;
