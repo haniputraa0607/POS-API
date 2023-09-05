@@ -1045,7 +1045,6 @@ class POSController extends Controller
                                 DB::rollBack();
                                 return $this->error('Failed to get treatment patient step');
                             }
-                            $delete_step =  TreatmentPatientStep::where('treatment_patient_id', $order_product['treatment_patient_id'])->where('status', 'Pending')->delete();
 
                         }
 
