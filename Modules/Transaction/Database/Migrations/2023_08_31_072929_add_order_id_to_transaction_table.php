@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -17,7 +18,21 @@ return new class extends Migration
             $table->after('id', function (Blueprint $table) {
                 $table->foreignId('order_id')->constrained('orders');
             });
-            $table->enum('transaction_payment_type',['Cash','Xendit','Midtrans','Balance'])->nullable(true)->change();
+
+            
+            if (env('DB_CONNECTION')=='pgsql') {
+                # code...
+                // uncomment this to use in pgsql
+                DB::raw('CREATE TYPE new_transaction_payment_type AS ENUM (\'Cash\', \'Xendit\', \'Midtrans\', \'Balance\', NULL);');
+                DB::raw('ALTER TABLE transactions ADD COLUMN new_transaction_payment_type new_transaction_payment_type;');
+                DB::raw('UPDATE transactions SET new_transaction_payment_type = transaction_payment_type;');
+                DB::raw('ALTER TABLE transactions DROP COLUMN transaction_payment_type;');
+                DB::raw('ALTER TABLE transactions RENAME COLUMN new_transaction_payment_type TO transaction_payment_type;');
+            }else{
+                // uncomment this to use in mysql
+                $table->enum('transaction_payment_type',['Cash','Xendit','Midtrans','Balance'])->nullable(true)->change();
+
+            }
         });
     }
 
@@ -31,7 +46,7 @@ return new class extends Migration
         Schema::table('transactions', function (Blueprint $table) {
             $table->dropForeign('transactions_order_id_foreign');
             $table->dropColumn('order_id');
-            $table->enum('transaction_payment_type',['Cash','Xendit','Midtrans','Balance'])->nullable(false)->default('Cash')->change();
+            $table->enum('transaction_payment_type', ['Cash', 'Xendit', 'Midtrans', 'Balance'])->nullable(false)->default('Cash')->change();
         });
     }
 };

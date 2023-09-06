@@ -6,6 +6,7 @@ use App\Http\Models\Feature;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -101,6 +102,11 @@ class User extends Authenticatable
     public function doctor_shifts(): HasMany
     {
         return $this->hasMany(DoctorShift::class);
+    }
+
+    public function shifts(): BelongsToMany
+    {
+        return $this->BelongsToMany(DoctorShift::class, 'user_has_shift', 'doctor_shift_id','user_id');
     }
 
     public function scopeDoctor(Builder $query): Builder
