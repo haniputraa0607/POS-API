@@ -15,10 +15,15 @@ return new class extends Migration
     public function up()
     {
         Schema::table('outlets', function (Blueprint $table) {
+            if (env('DB_CONNECTION')=='pgsql') {
+                # code...
+                DB::statement('ALTER TABLE "outlets" ALTER COLUMN "status" SET DEFAULT \'Active\'');
+            }else{
+                $table->enum('status',["Active","Inactive"])->default('Active')->nullback(false)->change(); 
+
+            }
             //commant for mysql
-            $table->enum('status',["Active","Inactive"])->default('Active')->nullback(false)->change(); 
             //commant for pgsql
-            // DB::statement('ALTER TABLE "outlets" ALTER COLUMN "status" SET DEFAULT \'Active\'');
         });
     }
 
