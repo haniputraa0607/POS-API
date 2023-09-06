@@ -106,7 +106,7 @@ class User extends Authenticatable
 
     public function shifts(): BelongsToMany
     {
-        return $this->BelongsToMany(DoctorShift::class, 'user_has_shift', 'doctor_shift_id','user_id');
+        return $this->belongsToMany(DoctorShift::class, 'user_has_shift', 'user_id', 'doctor_shift_id');
     }
 
     public function scopeDoctor(Builder $query): Builder

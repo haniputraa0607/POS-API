@@ -5,6 +5,7 @@ namespace Modules\Doctor\Entities;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Doctor\Database\factories\DoctorDayFactory;
 use Modules\Order\Entities\OrderConsultation;
@@ -17,7 +18,6 @@ class DoctorShift extends Model
 
     protected $table = 'doctor_shifts';
     protected $fillable = [
-        'user_id',
         'day',
         'name',
         'start',
@@ -25,9 +25,9 @@ class DoctorShift extends Model
         'price'
     ];
 
-    public function user(): BelongsTo
+    public function users(): BelongsToMany
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsToMany(User::class, 'user_has_shift', 'doctor_shift_id', 'user_id');
     }
 
     protected static function newFactory()

@@ -584,11 +584,13 @@ class POSController extends Controller
 
             }elseif(($post['type']??false) == 'consultation'){
 
-                $doctor = User::with(['doctor_shifts' => function($query) use($post){
-                    $query->where('id', $post['order']['id_shift']);
+                $doctor = User::with(['shifts' => function($query) use($post){
+                    $query->where('doctor_shift_id', $post['order']['id_shift']);
+                    $query->where('user_id', $post['order']['id']);
                 }])
-                ->whereHas('doctor_shifts',function($query) use($post){
-                    $query->where('id', $post['order']['id_shift']);
+                ->whereHas('shifts',function($query) use($post){
+                    $query->where('doctor_shift_id', $post['order']['id_shift']);
+                    $query->where('user_id', $post['order']['id']);
                 })
                 ->whereHas('doctor_schedules.schedule_dates',function($query) use($post){
                     $query->where('schedule_month', date('m', strtotime($post['order']['date'])));
@@ -607,7 +609,7 @@ class POSController extends Controller
                     return $this->getDataOrder(false, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Consultation already exist in order');
                 }else{
 
-                    $price = $doctor['doctor_shifts'][0]['price'] ?? $doctor['consultation_price'] ?? $outlet['consultation_price'];
+                    $price = $doctor['shifts'][0]['price'] ?? $doctor['consultation_price'] ?? $outlet['consultation_price'];
                     $create_order_consultation = OrderConsultation::create([
                         'order_id'                 => $order['id'],
                         'doctor_id'                => $doctor['id'],
