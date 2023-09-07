@@ -65,7 +65,9 @@ class DoctorController extends Controller
             $status_doctor = false;
         }
 
-        $shift = DoctorShift::where('user_id', $doctor['id'])->where('day', date('l'))->whereTime('start', '<=', date('H:i'))->whereTime('end', '>=', date('H:i'))->first();
+        $shift = DoctorShift::whereHas('users', function($users) use($doctor){
+            $users->where('user_id', $doctor['id']);
+        })->where('day', date('l'))->whereTime('start', '<=', date('H:i'))->whereTime('end', '>=', date('H:i'))->first();
         if(!$shift){
             $status_doctor = false;
         }
@@ -201,7 +203,9 @@ class DoctorController extends Controller
             return $this->error('Outlet not found');
         }
 
-        $shift = DoctorShift::where('user_id', $doctor['id'])->where('day', date('l'))->whereTime('start', '<=', date('H:i'))->whereTime('end', '>=', date('H:i'))->first();
+        $shift = DoctorShift::whereHas('users', function($users) use($doctor){
+            $users->where('user_id', $doctor['id']);
+        })->where('day', date('l'))->whereTime('start', '<=', date('H:i'))->whereTime('end', '>=', date('H:i'))->first();
         if(!$shift){
             return $this->error('Shift not found');
         }
@@ -526,9 +530,13 @@ class DoctorController extends Controller
             $doc_shift = [];
             if($date){
                 $day = date('l', strtotime($date));
-                $shifts = DoctorShift::with(['order_consultations' => function($order_consultation) use($date){
+                $shifts = DoctorShift::with([
+                    'order_consultations' => function($order_consultation) use($date){
                     $order_consultation->whereDate('schedule_date', $date);
-                }])->where('user_id', $doc['id'])->where('day',$day)->get()->toArray();
+                }])->whereHas('users', function($users) use($doc){
+                    $users->where('user_id', $doc['id']);
+                })
+                ->where('day',$day)->get()->toArray();
                 foreach($shifts ?? [] as $key_2 =>$shift){
                     $doc_shift[] = [
                         'id_doctor_shift' => $shift['id'],
@@ -601,9 +609,13 @@ class DoctorController extends Controller
 
             $doc_shift = [];
             $day = date('l', strtotime($schedule_dates['date']));
-            $shifts = DoctorShift::with(['order_consultations' => function($order_consultation) use($schedule_dates){
+            $shifts = DoctorShift::with([
+                'order_consultations' => function($order_consultation) use($schedule_dates){
                 $order_consultation->whereDate('schedule_date', $schedule_dates['date']);
-            }])->where('user_id', $doctors['id'])->where('day',$day)->get()->toArray();
+            }])->whereHas('users', function($users) use($doctors){
+                $users->where('user_id', $doctors['id']);
+            })
+            ->where('day',$day)->get()->toArray();
 
             foreach($shifts ?? [] as $key_2 =>$shift){
                 $doc_shift[] = [

@@ -20,7 +20,8 @@ return new class extends Migration
             $table->timestamps();
         });
         Schema::table('doctor_shifts', function (Blueprint $table) {
-            $table->unsignedBigInteger('user_id')->nullable()->change();
+            $table->dropForeign('doctor_shifts_user_id_foreign');
+            $table->dropColumn('user_id');
         });
     }
 
@@ -32,5 +33,10 @@ return new class extends Migration
     public function down()
     {
         Schema::dropIfExists('user_has_shift');
+        Schema::table('doctor_shifts', function (Blueprint $table) {
+            $table->after('price', function(Blueprint $table){
+                $table->foreignId('user_id')->constrained('users');
+            });
+        });
     }
 };
