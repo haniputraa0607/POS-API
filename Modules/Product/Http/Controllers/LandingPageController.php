@@ -26,7 +26,7 @@ class LandingPageController extends Controller
         $category = empty($post['product_category_id']) ? 'all' : $post['product_category_id'];
         $paginate = empty($post['pagination_total_row']) ? 8 : $post['pagination_total_row'];
         $sort_by = empty($post['sort_by']) ? 1 : $post['sort_by'];
-        $productsQuery = Product::with(['global_price', 'product_category'])
+        $productsQuery = Product::with(['global_price', 'product_category', 'product_package.product'])
             ->where('type', 'Product')
             ->when($category, function ($query) use ($category) {
                 if ($category != 'all') {
@@ -75,13 +75,35 @@ class LandingPageController extends Controller
         return $this->ok('success', $products);
     }
 
-    public function detail(Request $request):JsonResponse
+    public function detail(Request $request, $id): JsonResponse
     {
-        $post = $request->json()->all();
-        $id = $post['id'];
-        $products = Product::with(['global_price', 'product_category'])->where('id', $id)->firstOrFail();
-        return $this->ok("success", $products);
+        $products = Product::with(['global_price', 'product_category', 'product_package.product'])->where('id', $id)->firstOrFail();
+
+        $category_id = $products->product_category->id;
+        $other_products = Product::with(['global_price', 'product_category', 'product_package.product'])
+            ->where('product_category_id', $category_id)
+            ->where('id', '!=', $id)
+            ->inRandomOrder()
+            ->limit(4)
+            ->get();
+
+        if ($other_products->count() < 4) {
+            $additional_products = Product::with(['global_price', 'product_category', 'product_package.product'])
+                ->where('product_category_id', $category_id)
+                ->whereNotIn('id', $other_products->pluck('id')->toArray())
+                ->inRandomOrder()
+                ->limit(4 - $other_products->count())
+                ->get();
+
+            $other_products = $other_products->concat($additional_products);
+        }
+
+        return $this->ok("success", [
+            'product' => $products,
+            'other_products' => $other_products,
+        ]);
     }
+
 
     public function product_category(Request $request):JsonResponse
     {
