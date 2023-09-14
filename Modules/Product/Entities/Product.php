@@ -45,6 +45,10 @@ class Product extends Model
         return $this->hasMany(ProductTrending::class, 'product_id');
     }
 
+    public function product_package(){
+        return $this->hasMany(ProductPackage::class, 'product_id');
+    }
+
     public function scopeProduct(Builder $query): Builder
     {
         return $query->whereNotNull('product_category_id')->where('type', 'Product');
