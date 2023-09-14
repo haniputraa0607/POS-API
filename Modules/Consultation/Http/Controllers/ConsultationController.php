@@ -153,6 +153,5 @@ class ConsultationController extends Controller
             'outlet_id' => $outlet['id'],
             'order_consultation' => $order_consul
         ],'Success to submit consultation');
-
     }
 }

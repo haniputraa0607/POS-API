@@ -14,7 +14,9 @@ use Modules\Queue\Database\Seeders\QueueDatabaseSeeder;
 use Modules\User\Database\Seeders\UserDatabaseSeeder;
 use Database\Seeders\FeaturesTableSeeder;
 use Database\Seeders\SettingTableSeeder;
+use Modules\Article\Database\Seeders\ArticleDatabaseSeeder;
 use Modules\Banner\Database\Seeders\BannerDatabaseSeeder;
+use Modules\Partner\Database\Seeders\PartnerDatabaseSeeder;
 use Modules\Product\Database\Seeders\ProductDatabaseSeeder;
 
 class DatabaseSeeder extends Seeder
@@ -34,6 +36,8 @@ class DatabaseSeeder extends Seeder
             FeaturesTableSeeder::class,
             ProductDatabaseSeeder::class,
             BannerDatabaseSeeder::class,
+            ArticleDatabaseSeeder::class,
+            PartnerDatabaseSeeder::class,
         ]);
 
     }

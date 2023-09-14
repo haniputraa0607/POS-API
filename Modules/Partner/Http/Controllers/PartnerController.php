@@ -9,9 +9,31 @@ use Illuminate\Http\Request;
 use Modules\Partner\Entities\PartnerEqual;
 use Modules\Partner\Entities\PartnerSosialMedia;
 use Modules\Partner\Entities\PartnerStore;
+use Modules\Partner\Entities\OfficialPartner;
+use Modules\Partner\Entities\OfficialPartnerDetail;
 
 class PartnerController extends Controller
 {
+    public function index(Request $request):JsonResponse
+    {
+        $post = $request->json()->all();
+        $query = PartnerEqual::query();
+        if (isset($post['city_code']) && is_array($post['city_code'])) {
+            $query->whereIn('city_code', $post['city_code']);
+        }
+        $paginate = isset($post['pagination_total_row']) ? (int) $post['pagination_total_row'] : 8;
+        $page = isset($post['page']) ? (int) $post['page'] : 1;
+        $query->with('city.province', 'partner_store.partner_sosial_media');
+        $partners = $query->paginate($paginate, ['*'], 'page', $page);
+        return $this->ok('', $partners);
+    }
+
+    public function show(PartnerEqual $partner):JsonResponse
+    {
+        $partner_result = $partner->load('city.province', 'partner_store.partner_sosial_media');
+        return $this->ok('success', $partner_result);
+    }
+
     public function webHookCreate(Request $request)
     {
         $post = $request->json()->all();
@@ -73,20 +95,20 @@ class PartnerController extends Controller
                     'equal_id' => $key['id'],
                     'partner_store_id' => $partner_store_id,
                     'type' => $type,
-                    'url' => $key['url'] 
+                    'url' => $key['url']
                 ]);
             } else {
                 $partner_sosial_media = PartnerSosialMedia::create([
                     'equal_id' => $key['id'],
                     'partner_store_id' => $partner_store_id,
                     'type' => $type,
-                    'url' => $key['url'] 
+                    'url' => $key['url']
                 ]);
             }
         }
-        
+
         return $this->ok("succes", $post);
-    } 
+    }
 
     public function webHookUpdate(Request $request)
     {
@@ -150,23 +172,23 @@ class PartnerController extends Controller
                     'equal_id' => $key['id'],
                     'partner_store_id' => $partner_store_id,
                     'type' => $type,
-                    'url' => $key['url'] 
+                    'url' => $key['url']
                 ]);
             } else {
                 $partner_sosial_media = PartnerSosialMedia::create([
                     'equal_id' => $key['id'],
                     'partner_store_id' => $partner_store_id,
                     'type' => $type,
-                    'url' => $key['url'] 
+                    'url' => $key['url']
                 ]);
             }
         }
-        
+
         return $this->ok("succes", $post);
     }
 
     public function webHookDelete(Request $request)
-    {   
+    {
         $post = $request->json()->all();
         $val_partner_store = PartnerStore::where(['equal_id' => $post['mitra_store']['id']])->first();
         if($val_partner_store){
@@ -187,5 +209,14 @@ class PartnerController extends Controller
         if($val_partner_equal)
             $partner = PartnerEqual::find($val_partner_equal->id)->delete();
         return $this->ok("success","");
+    }
+
+    public function official_partner(){
+        $official = OfficialPartner::first();
+        $detail = OfficialPartnerDetail::all();
+        return $this->ok('success', [
+            'official' => $official,
+            'detail' => $detail
+        ]);
     }
 }

@@ -12,6 +12,7 @@
 */
 
 use App\Http\Controllers\AccessTokenController;
+use App\Http\Controllers\Api\UploadFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
@@ -30,3 +31,6 @@ Route::get('test-log', function () {
     Log::channel('db_log')->info("test log debug test", ['message' => 'test logging from url', "run"]);
     return ["result" => true];
 });
+
+
+Route::post('/upload-file', [UploadFile::class,'upload']);
