@@ -14,7 +14,6 @@ class UploadFile extends Controller
     {
         $uploads = [];
         foreach ($request->file('images') as $image) {
-
             $uploaded = Storage::put($request->folder, $image);
             array_push($uploads, $uploaded);
         }
