@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Product\Entities\Product;
+use Modules\Product\Entities\ProductTrending;
 use Modules\Product\Entities\ProductCategory;
 use Modules\Product\Entities\DatatablesModel;
 use Modules\Outlet\Http\Controllers\OutletController;
@@ -42,7 +43,7 @@ class LandingPageController extends Controller
             case 3:
                 $productsQuery->withCount('orders')->orderByDesc('orders_count');
                 break;
-            case 4: 
+            case 4:
                 $productsQuery->orderBy('created_at', 'desc');
                 break;
             default:
@@ -92,6 +93,11 @@ class LandingPageController extends Controller
         return $this->ok('success', $productCategories);
     }
 
+    public function product_trending()
+    {
+        $trendingProducts = ProductTrending::with('products')->get();
+        return $this->ok("success", $trendingProducts);
+    }
 
 }
 

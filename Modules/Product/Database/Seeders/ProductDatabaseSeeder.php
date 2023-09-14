@@ -6,6 +6,8 @@ use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Product\Entities\Product;
 use Modules\Product\Entities\ProductCategory;
+use Modules\Product\Entities\ProductPackage;
+use Modules\Product\Entities\ProductTrending;
 
 class ProductDatabaseSeeder extends Seeder
 {
@@ -26,6 +28,8 @@ class ProductDatabaseSeeder extends Seeder
         ];
 
         $treatments = ['Microdermabaison', 'Laser Rejuvination', 'Mesoteraphy'];
+        $packages = ['Paket Glowing Series', 'Paket Gold Series', 'Paket Acne Series', 'Paket Acne Series'];
+        $trending = [1,2,3,4];
 
         foreach ($categories as $category) {
             ProductCategory::create([
@@ -54,5 +58,30 @@ class ProductDatabaseSeeder extends Seeder
                 'need_recipe_status' =>  rand(0, 1),
             ]);
         }
+        foreach ($packages as $key => $package) {
+            $product = Product::create([
+                'product_code' => 'PCG-000' . $key,
+                'product_name' => $package,
+                'type' => 'Package',
+                'description' => 'Lorem ipsum dolor sit amet, consectetur adipisicing elit.',
+                'is_active' =>  rand(0, 1),
+                'need_recipe_status' =>  rand(0, 1),
+            ]);
+            $id_package = $product->id;
+            $data_packages = [1, 2, 3];
+            foreach($data_packages as $data_package){
+                $product_package = ProductPackage::create([
+                    'package_id' => $id_package,
+                    'product_id' => $data_package
+                ]);
+            }
+        }
+
+        foreach($trending as $key){
+            ProductTrending::create([
+                'product_id' => $key
+            ]);
+        }
+
     }
 }

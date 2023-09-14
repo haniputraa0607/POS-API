@@ -24,8 +24,19 @@ class ArticleController extends Controller
         return $this->ok("success get data all article", $articles);
     }
 
-    public function show(Article $article): JsonResponse
+    public function show($id): JsonResponse
     {
+        $article = Article::find($id)->first();
+        $other_article = Article::whereNotIn('id', [$id])->inRandomOrder()->limit(3)->get();
+        $payload = [
+            'detail' => $article,
+            'read_too' => $other_article
+        ];
+        return $this->ok("success", $payload);
+    }
+
+    public function otherArticle(){
+        $article = Article::orderBy('created_at', 'DESC')->limit(15)->get();
         return $this->ok("success", $article);
     }
 

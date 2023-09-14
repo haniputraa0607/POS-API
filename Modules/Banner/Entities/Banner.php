@@ -12,7 +12,7 @@ class Banner extends Model
     use HasFactory;
 
     protected $table = 'banners';
-    protected $fillable = ['title', 'product_id'];
+    protected $fillable = ['title','description', 'link', 'product_id'];
 
     public function product() : BelongsTo {
         return $this->belongsTo(Product::class);

@@ -22,6 +22,8 @@ class BannerDatabaseSeeder extends Seeder
         foreach ($titles as $title) {
             Banner::create([
                 'title' => $title,
+                'description' => 'All in one, Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam ultrices enimacnibh tristique semper. Aliquam at dolor at justo suscipit ullamcorper.',
+                'link' => 'https://daviena.belum.live/',
                 'product_id' => Product::InRandomOrder()->first()->id,
             ]);
         }
