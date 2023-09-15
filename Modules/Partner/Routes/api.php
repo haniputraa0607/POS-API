@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use Modules\Partner\Http\Controllers\PartnerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,5 +24,19 @@ Route::middleware(['auth:api','scopes:be'])->prefix('webhook')->group(function()
         Route::post('create', 'webHookCreate');
         Route::patch('update', 'webHookUpdate');
         Route::delete('delete', 'webHookDelete');
+    });
+});
+
+Route::prefix('landing-page')->group(function(){
+    Route::prefix('official-partner')->controller(PartnerController::class)->group(function(){
+        Route::get('', 'official_partner');
+    });
+});
+
+Route::prefix('landing-page')->group(function(){
+    Route::controller(PartnerController::class)->prefix('partner')->group(function () {
+        $partner = '{partner}';
+        Route::post('', 'index')->name('partner.list');
+        Route::get($partner, 'show')->name('partner.show');
     });
 });

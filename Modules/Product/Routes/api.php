@@ -79,11 +79,12 @@ Route::middleware(['auth:api','scopes:pos'])->prefix('pos')->group(function (){
 Route::prefix('landing-page')->group(function(){
     Route::prefix('product')->controller(LandingPageController::class)->group(function(){
         Route::post('list', 'list');
-        Route::post('detail', 'detail');
+        Route::get('detail/{id}', 'detail');
+        Route::get('trending', 'product_trending');
     });
     Route::prefix('treatment')->controller(LandingPageController::class)->group(function(){
         Route::post('list', 'treatment');
-        Route::post('detail', 'detail');
+        Route::get('detail/{id}', 'detail');
     });
     Route::prefix('product-category')->controller(LandingPageController::class)->group(function () {
         Route::get('list', 'product_category');

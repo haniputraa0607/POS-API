@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use Modules\Banner\Http\Controllers\BannerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,6 +14,9 @@ use Illuminate\Http\Request;
 |
 */
 
-Route::middleware('auth:api')->get('/banner', function (Request $request) {
-    return $request->user();
+Route::prefix('landing-page')->group(function(){
+    Route::prefix('banner')->controller(BannerController::class)->group(function(){
+        Route::get('/', 'index');
+        Route::get('{id}', 'show');
+    });
 });

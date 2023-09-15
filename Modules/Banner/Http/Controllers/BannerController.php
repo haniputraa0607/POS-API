@@ -12,7 +12,7 @@ class BannerController extends Controller
 
     public function index()
     {
-        $data = Banner::with(['product:id,product_name,description,product_category_id', 'product.product_category:id,product_category_name'])->all();
+        $data = Banner::with(['product:id,product_name,description,product_category_id', 'product.product_category:id,product_category_name'])->get();
         return $this->ok('Banner List', $data);
     }
 

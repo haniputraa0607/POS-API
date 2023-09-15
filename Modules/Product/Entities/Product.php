@@ -9,6 +9,7 @@ use Modules\Product\Entities\ProductGlobalPrice;
 use Modules\Product\Entities\ProductOutletPrice;
 use Modules\Product\Entities\ProductOutletStock;
 use Modules\Product\Entities\TreatmentOutlet;
+use Modules\Product\Entities\ProductTrending;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -37,6 +38,15 @@ class Product extends Model
     public function product_category(): BelongsTo
     {
         return $this->belongsTo(ProductCategory::class);
+    }
+
+    public function product_trending()
+    {
+        return $this->hasMany(ProductTrending::class, 'product_id');
+    }
+
+    public function product_package(){
+        return $this->hasMany(ProductPackage::class, 'product_id');
     }
 
     public function scopeProduct(Builder $query): Builder
