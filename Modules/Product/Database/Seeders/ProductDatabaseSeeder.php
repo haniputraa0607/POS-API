@@ -22,13 +22,48 @@ class ProductDatabaseSeeder extends Seeder
 
         $categories = ['Cream & Lotion', 'Serum', 'Toner', 'Mask', 'Facial Wash', 'Package & Other'];
         $products = [
-            'Paket Hemat Glowing Series', 'Paket Glowing Series', 'Beauty Charge Face Mist',
-            'Paket Hemat Glowing Series', 'Grape Glowing Booster',
+            'Chocolate Body Scrub',
+            'Acne Gel Strawberry',
+            'Day Cream Acne',
+            'Toner Acne',
+            'Grape Glowing Booster',
             'Apricot Glowing Series',
+        ];
+        $images_product = [
+            [
+                'https://daviena.belum.live/images/products/Rectangle 114.jpg'
+            ],
+            [
+                'https://daviena.belum.live/images/products/Rectangle 115.jpg'
+            ],
+            [
+                'https://daviena.belum.live/images/products/Rectangle 116.jpg'
+            ],
+            [
+                'https://daviena.belum.live/images/products/Rectangle 111.jpg'
+            ],
+            [
+                'https://daviena.belum.live/images/products/Kandungan-Skincare 2.jpg',
+                'https://daviena.belum.live/images/products/Rectangle 109.jpg',
+                'https://daviena.belum.live/images/products/Rectangle 110.jpg'
+            ],
+            [
+                'https://daviena.belum.live/images/products/Rectangle 111.jpg'
+            ]
         ];
 
         $treatments = ['Microdermabaison', 'Laser Rejuvination', 'Mesoteraphy'];
-        $packages = ['Paket Glowing Series', 'Paket Gold Series', 'Paket Acne Series', 'Paket Acne Series'];
+        $images_treatments = [
+            'https://daviena.belum.live/images/treatment/1.png',
+            'https://daviena.belum.live/images/treatment/2.png',
+            'https://daviena.belum.live/images/treatment/3.png',
+        ];
+        $packages = [
+            'Paket Glowing Series',
+            'Paket Gold Series',
+            'Paket Acne Series',
+            'Paket Acne Series'
+        ];
         $trending = [1,2,3,4];
 
         foreach ($categories as $category) {
@@ -44,6 +79,7 @@ class ProductDatabaseSeeder extends Seeder
                 'product_name' => $product,
                 'type' => 'Product',
                 'description' => 'Lorem ipsum dolor sit amet, consectetur adipisicing elit.',
+                'image' => json_encode($images_product[$key]),
                 'is_active' => rand(0, 1),
                 'need_recipe_status' =>  rand(0, 1),
             ]);
@@ -53,6 +89,7 @@ class ProductDatabaseSeeder extends Seeder
                 'product_code' => 'TRE-000' . $key,
                 'product_name' => $treatment,
                 'type' => 'Treatment',
+                'image' => json_encode($images_treatments[$key]),
                 'description' => 'Lorem ipsum dolor sit amet, consectetur adipisicing elit.',
                 'is_active' =>  rand(0, 1),
                 'need_recipe_status' =>  rand(0, 1),
@@ -60,9 +97,11 @@ class ProductDatabaseSeeder extends Seeder
         }
         foreach ($packages as $key => $package) {
             $product = Product::create([
-                'product_code' => 'PCG-000' . $key,
+                'product_category_id' => 6,
                 'product_name' => $package,
+                'product_code' => 'PCG-000'.$key,
                 'type' => 'Package',
+                'image' => json_encode('https://daviena.belum.live/images/products/Rectangle 111.jpg'),
                 'description' => 'Lorem ipsum dolor sit amet, consectetur adipisicing elit.',
                 'is_active' =>  rand(0, 1),
                 'need_recipe_status' =>  rand(0, 1),

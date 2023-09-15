@@ -19,10 +19,13 @@ class ArticleController extends Controller
         $paginate = empty($post['pagination_total_row']) ? 8 : $post['pagination_total_row'];
         $articles = Article::paginate($paginate, ['*'], 'page', $post['page']);
         foreach ($articles as $article) {
-            $article->image = 'https://be-daviena.belum.live/images/'.$article->image;
+            if (strpos($article->image, 'https://') !== 0) {
+                $article->image = asset($article->image);
+            }
         }
         return $this->ok("success get data all article", $articles);
     }
+
 
     public function show($id): JsonResponse
     {
@@ -35,9 +38,16 @@ class ArticleController extends Controller
         return $this->ok("success", $payload);
     }
 
-    public function otherArticle(){
-        $article = Article::orderBy('created_at', 'DESC')->limit(15)->get();
-        return $this->ok("success", $article);
+    public function otherArticle()
+    {
+        $articles = Article::orderBy('created_at', 'DESC')->limit(15)->get();
+        foreach ($articles as $article) {
+            if (strpos($article->image, 'https://') !== 0) {
+                $article->image = asset($article->image);
+            }
+        }
+        return $this->ok("success", $articles);
     }
+
 
 }

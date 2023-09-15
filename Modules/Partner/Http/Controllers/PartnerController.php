@@ -14,25 +14,46 @@ use Modules\Partner\Entities\OfficialPartnerDetail;
 
 class PartnerController extends Controller
 {
-    public function index(Request $request):JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $post = $request->json()->all();
         $query = PartnerEqual::query();
+
         if (isset($post['city_code']) && is_array($post['city_code'])) {
             $query->whereIn('city_code', $post['city_code']);
         }
+
         $paginate = isset($post['pagination_total_row']) ? (int) $post['pagination_total_row'] : 8;
         $page = isset($post['page']) ? (int) $post['page'] : 1;
         $query->with('city.province', 'partner_store.partner_sosial_media');
         $partners = $query->paginate($paginate, ['*'], 'page', $page);
+        foreach ($partners->items() as $partner) {
+            $imageUrl = $partner->images;
+            if (!str_contains($imageUrl, 'https://')) {
+                $partner->images = asset(json_decode($imageUrl));
+            } else {
+                $partner->images = json_decode($imageUrl);
+
+            }
+        }
+
         return $this->ok('', $partners);
     }
 
-    public function show(PartnerEqual $partner):JsonResponse
+
+    public function show(PartnerEqual $partner): JsonResponse
     {
         $partner_result = $partner->load('city.province', 'partner_store.partner_sosial_media');
+        $imageUrl = $partner_result->images;
+        if (!str_contains($imageUrl, 'https://')) {
+            $imageUrl = asset(json_decode($imageUrl));
+        } else {
+            $imageUrl = json_decode($imageUrl);
+        }
+        $partner_result->images = $imageUrl;
         return $this->ok('success', $partner_result);
     }
+
 
     public function webHookCreate(Request $request)
     {

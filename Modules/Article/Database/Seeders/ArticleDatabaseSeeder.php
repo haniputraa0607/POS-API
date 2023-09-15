@@ -25,7 +25,7 @@ class ArticleDatabaseSeeder extends Seeder
                 'title' => $title,
                 'description' => 'All in one, Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam ultrices enimacnibh tristique semper. Aliquam at dolor at justo suscipit ullamcorper.',
                 'writer' => 'Admin',
-                'image' => '""',
+                'image' => 'https://daviena.belum.live/images/article/'.($i+1).'.png',
                 'release_date' => date('Y-m-d'),
             ]);
             $i++;
