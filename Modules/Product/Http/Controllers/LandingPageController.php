@@ -20,14 +20,14 @@ class LandingPageController extends Controller
         date_default_timezone_set('Asia/Jakarta');
     }
 
-    public function list(Request $request,):JsonResponse
+    public function list(Request $request):JsonResponse
     {
         $post = $request->json()->all();
         $category = empty($post['product_category_id']) ? 'all' : $post['product_category_id'];
         $paginate = empty($post['pagination_total_row']) ? 8 : $post['pagination_total_row'];
         $sort_by = empty($post['sort_by']) ? 1 : $post['sort_by'];
         $productsQuery = Product::with(['global_price', 'product_category', 'product_package.product'])
-            ->where('type', 'Product')
+            ->whereIn('type', ['Product', 'Package'])
             ->when($category, function ($query) use ($category) {
                 if ($category != 'all') {
                     return $query->where('product_category_id', $category);
@@ -54,7 +54,12 @@ class LandingPageController extends Controller
         }
         $products = $productsQuery->paginate($paginate, ['*'], 'page', $post['page']);
         foreach ($products as $product) {
-            $product->image = 'https://api-daviena.belum.live/'.$product->image;
+            $product->image = json_decode($product->image);
+            foreach ($product->product_package as $package) {
+                if (is_string($package->product->image) && json_decode($package->product->image) !== null) {
+                    $package->product->image = json_decode($package->product->image);
+                }
+            }
         }
         return $this->ok('success', $products);
     }
@@ -70,7 +75,7 @@ class LandingPageController extends Controller
             return $query->orderBy('product_name', $sortBy);
         })->paginate($paginate, ['*'], 'page', $post['page']);
         foreach ($products as $product) {
-            $product->image = 'https://api-daviena.belum.live/'.$product->image;
+            $product->image = json_decode($product->image);
         }
         return $this->ok('success', $products);
     }
@@ -98,6 +103,16 @@ class LandingPageController extends Controller
             $other_products = $other_products->concat($additional_products);
         }
 
+        $products->image = json_decode($products->image);
+        foreach ($other_products as $otherProduct) {
+            $otherProduct->image = json_decode($otherProduct->image);
+            foreach ($otherProduct->product_package as $package) {
+                if (is_string($package->product->image) && json_decode($package->product->image) !== null) {
+                    $package->product->image = json_decode($package->product->image);
+                }
+            }
+        }
+
         return $this->ok("success", [
             'product' => $products,
             'other_products' => $other_products,
@@ -118,8 +133,12 @@ class LandingPageController extends Controller
     public function product_trending()
     {
         $trendingProducts = ProductTrending::with('products')->get();
+        foreach ($trendingProducts as $trendingProduct) {
+            $trendingProduct->products->image = json_decode($trendingProduct->products->image);
+        }
         return $this->ok("success", $trendingProducts);
     }
+
 
 }
 

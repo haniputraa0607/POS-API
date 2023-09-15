@@ -35,7 +35,11 @@ class TreatmentConsultationController extends Controller
         if (empty($fileContents)) {
             return $this->error('Treatment and Consultation not set yet');
         } else {
-            return $this->ok('success', json_decode($fileContents));
+            $data = json_decode($fileContents);
+            $data->image_front = asset($data->image_front);
+            $data->image_behind = asset($data->image_behind);
+            return $this->ok('success', $data);
         }
     }
+
 }

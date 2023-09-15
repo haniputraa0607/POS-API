@@ -84,7 +84,7 @@ Route::prefix('landing-page')->group(function(){
     });
     Route::prefix('treatment')->controller(LandingPageController::class)->group(function(){
         Route::post('list', 'treatment');
-        Route::post('detail', 'detail');
+        Route::get('detail/{id}', 'detail');
     });
     Route::prefix('product-category')->controller(LandingPageController::class)->group(function () {
         Route::get('list', 'product_category');
