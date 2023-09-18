@@ -14,8 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('products', function (Blueprint $table) {
-            // Mengubah tipe kolom image menjadi JSON
-            $table->json('image')->nullable()->change();
+            $table->json('image')->nullable(true)->change();
         });
     }
 
@@ -26,9 +25,8 @@ return new class extends Migration
      */
     public function down()
     {
-        // Untuk rollback, kita bisa mengubah kembali tipe kolom image ke tipe awalnya
         Schema::table('products', function (Blueprint $table) {
-            $table->string('image')->nullable()->change();
+            $table->string('image')->nullable(true)->change();
         });
     }
 };
