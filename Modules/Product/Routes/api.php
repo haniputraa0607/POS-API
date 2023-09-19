@@ -91,7 +91,7 @@ Route::prefix('landing-page')->group(function(){
     });
 });
 
-Route::middleware(['auth:api','scopes:be'])->prefix('webhook')->group(function(){
+Route::middleware('client')->prefix('webhook')->group(function(){
     Route::prefix('product')->controller(ProductController::class)->group(function (){
         Route::post('create', 'webHookCreate');
         Route::patch('update', 'webHookUpdate');
