@@ -23,6 +23,13 @@ class PartnerController extends Controller
             $query->whereIn('city_code', $post['city_code']);
         }
 
+        if(isset($post['search'])){
+            $searchTerm = $post['search'];
+            $query->whereHas('partner_store', function ($subquery) use ($searchTerm) {
+                $subquery->where('store_name', 'like', '%' . $searchTerm . '%');
+            });
+        }
+
         $paginate = isset($post['pagination_total_row']) ? (int) $post['pagination_total_row'] : 8;
         $page = isset($post['page']) ? (int) $post['page'] : 1;
         $query->with('city.province', 'partner_store.partner_sosial_media');
