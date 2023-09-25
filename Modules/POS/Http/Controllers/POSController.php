@@ -32,6 +32,8 @@ use Modules\Prescription\Entities\PrescriptionOutletLog;
 use Modules\Prescription\Entities\ContainerStock;
 use Modules\Prescription\Entities\SubstanceStock;
 use Modules\Prescription\Http\Controllers\PrescriptionController;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class POSController extends Controller
 {
@@ -41,7 +43,7 @@ class POSController extends Controller
         date_default_timezone_set('Asia/Jakarta');
     }
 
-    public function home(Request $request):JsonResponse
+    public function home(Request $request):mixed
     {
         $cashier = $request->user();
         $outlet = $cashier->outlet;
@@ -52,15 +54,49 @@ class POSController extends Controller
             $product = null;
             $treatment = null;
             $consultation = null;
-            $schedule = $outlet->outlet_schedule->where('day', date('l'))->first();
-            if(!$schedule){
-                $status = false;
-            }elseif($schedule['is_closed'] == 1){
-                $status = false;
-            }elseif(($schedule['open'] && date('H:i') < date('H:i', strtotime($schedule['open']))) || ($schedule['close'] && date('H:i') > date('H:i', strtotime($schedule['close'])))){
-                $status = false;
+
+            $make_new = false;
+            $check_json = file_exists(storage_path() . "\json\outlet_status.json");
+            if($check_json){
+                $config = json_decode(file_get_contents(storage_path() . "\json\outlet_status.json"), true);
+                if(isset($config[$outlet['id']]['schedule'][date('l')])){
+                    if(date('Y-m-d H:i', strtotime($config[$outlet['id']]['schedule'][date('l')]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
+                        $make_new = true;
+                    }
+                }else{
+                    $make_new = true;
+                }
+            }else{
+                $make_new = true;
             }
 
+            if($make_new){
+                $schedule = $outlet->outlet_schedule->where('day', date('l'))->first();
+                if(!$schedule){
+                    $config[$outlet['id']]['schedule'][date('l')] = [
+                        'updated_at' => date('Y-m-d H:i'),
+                        'status' => false
+                    ];
+                }else{
+                    $config[$outlet['id']]['schedule'][date('l')] = [
+                        'updated_at' => date('Y-m-d H:i'),
+                        'status' => $schedule['is_closed'] == 1 ? false : true,
+                        'open'   => $schedule['open'],
+                        'close'  => $schedule['close'],
+                    ];
+                }
+
+                file_put_contents(storage_path('json\outlet_status.json'), json_encode($config));
+            }
+
+            $config = $config[$outlet['id']]['schedule'][date('l')] ?? [];
+
+            $status = $config['status'] ?? false;
+
+
+            if($status && (($config['open'] && date('H:i') < date('H:i', strtotime($config['open']))) || ($config['close'] && date('H:i') > date('H:i', strtotime($config['close']))))){
+                $status = false;
+            }
             if($status){
 
                 $product = OrderProduct::whereHas('order',function($order) use($outlet){ $order->where('outlet_id', $outlet['id'])->whereDate('order_date', date('Y-m-d'));})->where('type', 'Product')->orderBy('queue', 'desc')->first()['queue_code'] ?? null;
@@ -114,23 +150,53 @@ class POSController extends Controller
 
     }
 
-    public function splash(Request $request):JsonResponse
+    public function splash(Request $request):mixed
     {
-        $splash = Setting::where('key', '=', 'splash_pos_apps')->first();
-        $duration = Setting::where('key', '=', 'splash_pos_apps_duration')->pluck('value')->first();
-
-        if(!empty($splash)){
-            $splash = env('STORAGE_URL_API').$splash['value'];
-        } else {
-            $splash = null;
+        $data = [];
+        $make_new = false;
+        $check_json = file_exists(storage_path() . "\json\splash.json");
+        if($check_json){
+            $config = json_decode(file_get_contents(storage_path() . "\json\splash.json"), true);
+            if(isset($config['pos'])){
+                if(date('Y-m-d H:i', strtotime($config['pos']['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
+                    $make_new = true;
+                }
+            }else{
+                $make_new = true;
+            }
+        }else{
+            $make_new = true;
         }
-        $ext=explode('.', $splash);
-        $result = [
-            'splash_screen_url' => $splash."?update=".time(),
-            'splash_screen_duration' => (int)($duration??5),
-            'splash_screen_ext' => '.'.end($ext)
-        ];
-        return $this->ok('', $result);
+
+        if($make_new){
+
+            $splash = Setting::where('key', '=', 'splash_pos_apps')->first();
+            $duration = Setting::where('key', '=', 'splash_pos_apps_duration')->pluck('value')->first();
+
+            if(!empty($splash)){
+                $splash = env('STORAGE_URL_API').$splash['value'];
+            } else {
+                $splash = null;
+            }
+
+            $ext=explode('.', $splash);
+            $config['pos'] = [
+                'updated_at' => date('Y-m-d H:i'),
+                'data' => [
+                    'splash_screen_url' => isset($splash) ? $splash."?update=".time() : null,
+                    'splash_screen_duration' => (int)($duration??5),
+                    'splash_screen_ext' => '.'.end($ext)
+                ]
+            ];
+
+            file_put_contents(storage_path('json\splash.json'), json_encode($config));
+
+        }
+        $config = $config['pos'] ?? [];
+
+        $data = $config['data'] ?? [];
+
+        return $this->ok('', $data);
     }
 
     public function getOrder(Request $request):JsonResponse
@@ -211,12 +277,14 @@ class POSController extends Controller
                     }else{
                         $price = $ord_pro['product']['global_price']['price'] ?? null;
                     }
+                    // $image_url = json_decode($ord_pro['product']['image'] ?? '' , true) ?? [];
 
                     $ord_prod[] = [
                         'order_product_id' => $ord_pro['id'],
                         'product_id'       => $ord_pro['product']['id'],
                         'product_name'     => $ord_pro['product']['product_name'],
                         'image_url'        => isset($ord_pro['product']['image']) ? env('STORAGE_URL_API').$ord_pro['product']['image'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
+                        // 'image_url'        => isset($ord_pro['product']['image']) ? ($image_url[0] ?? null) : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
                         'qty'              => $ord_pro['qty'],
                         'current_qty'      => $ord_pro['qty'],
                         'stock'            => ($ord_pro['product']['outlet_stock'][0]['stock'] ?? 0) + $ord_pro['qty'],
@@ -421,7 +489,7 @@ class POSController extends Controller
                                 ]);
 
                             }else{
-                                return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Succes to update order');
+                                return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Success to update order');
                             }
 
                             if(!$update_order){
@@ -454,7 +522,7 @@ class POSController extends Controller
                             }
 
                             DB::commit();
-                            return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Succes to delete order');
+                            return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Success to delete order');
 
                         }
 
@@ -580,7 +648,7 @@ class POSController extends Controller
                 DB::commit();
 
                 $generate = GenerateQueueOrder::dispatch($send)->onConnection('generatequeueorder');
-                return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Succes to add new order');
+                return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Success to add new order');
 
             }elseif(($post['type']??false) == 'consultation'){
 
@@ -672,7 +740,7 @@ class POSController extends Controller
                     DB::commit();
 
                     $generate = GenerateQueueOrder::dispatch($send)->onConnection('generatequeueorder');
-                    return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Succes to add new order');
+                    return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Success to add new order');
 
                 }
 
@@ -726,7 +794,13 @@ class POSController extends Controller
             $order_product = OrderProduct::with(['order'])->whereHas('order', function($order) use($post){
                 $order->where('patient_id', $post['id_customer']);
                 $order->where('send_to_transaction', 0);
-                $order->where('is_submited', 0);
+                $order->where(function($whereSubmit){
+                    $whereSubmit->where('is_submited', 0)
+                    ->orWhere(function($whereSubmitOr){
+                        $whereSubmitOr->where('is_submited', 1)
+                        ->where('is_submited_doctor', 1);
+                    });
+                });
             })->whereHas('product')
             ->where('id', $post['id'])->first();
 
@@ -804,14 +878,20 @@ class POSController extends Controller
             }
 
             DB::commit();
-            return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Succes to delete order');
+            return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Success to delete order');
 
         }elseif(($type??false) == 'consultation'){
 
             $order_consultation = OrderConsultation::with(['order'])->whereHas('order', function($order) use($post){
                 $order->where('patient_id', $post['id_customer']);
                 $order->where('send_to_transaction', 0);
-                $order->where('is_submited', 0);
+                $order->where(function($whereSubmit){
+                    $whereSubmit->where('is_submited', 0)
+                    ->orWhere(function($whereSubmitOr){
+                        $whereSubmitOr->where('is_submited', 1)
+                        ->where('is_submited_doctor', 1);
+                    });
+                });
             })->whereHas('doctor')
             ->where('id', $post['id'])->first();
 
@@ -849,14 +929,14 @@ class POSController extends Controller
             $order_consultation->delete();
 
             DB::commit();
-            return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Succes to delete order');
+            return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']], 'Success to delete order');
 
         }else{
             return $this->error('Type is invalid');
         }
     }
 
-    public function submitOrder(Request $request): JsonResponse
+    public function submitOrder(Request $request): mixed
     {
         $request->validate([
             'id_customer' => 'required',
@@ -870,59 +950,362 @@ class POSController extends Controller
             return $this->error('Outlet not found');
         }
 
-        $order = Order::where('patient_id', $post['id_customer'])
+        $is_error = false;
+        $errors = [];
+        if(isset($post['id_customer'])){
+
+            DB::beginTransaction();
+            $last_code = Order::where('outlet_id', $outlet['id'])->latest('order_code')->first()['order_code']??'';
+            $last_code_outlet = explode('-',$outlet['outlet_code'])[1];
+            $last_code = $last_code == '' ? 0 : explode('-',$last_code)[1];
+            $last_code = (int)$last_code + 1;
+            $order_code = 'ORD'.$last_code_outlet.'-'.sprintf("%05d", $last_code);
+
+            $order = Order::create([
+                'patient_id' => $post['id_customer'],
+                'outlet_id'  => $outlet['id'],
+                'cashier_id' => $cashier['id'],
+                'order_date' => date('Y-m-d H:i:s'),
+                'order_code' => $order_code,
+                'notes'      => $post['notes'] ?? null
+            ]);
+
+            if(!$order){
+                DB::rollBack();
+                return $this->error('Failed to create Order');
+            }
+
+            foreach($post['order_products'] ?? [] as $order_product){
+                $product = Product::with([
+                    'global_price','outlet_price' => function($outlet_price) use ($outlet){
+                        $outlet_price->where('outlet_id',$outlet['id']);
+                    }, 'outlet_stock' => function($outlet_stock) use ($outlet){
+                        $outlet_stock->where('outlet_id',$outlet['id']);
+                    }
+                ])->where('id', $order_product['id'])->first();
+
+                if(!$product){
+                    $is_error = true;
+                    $errors[] = 'Product not found';
+                    continue;
+                }
+
+                $price = ($product['outlet_price'][0]['price'] ?? $product['global_price']['price']) ?? 0;
+                $stock = $product['outlet_stock'][0]['stock'] ?? 0;
+
+                if($order_product['qty'] > $stock){
+                    $is_error = true;
+                    $errors[] = $product['product_name']. ' out of stock';
+                    continue;
+                }
+
+                $store_order_product = OrderProduct::create([
+                    'order_id'                 => $order['id'],
+                    'product_id'               => $product['id'],
+                    'type'                     => 'Product',
+                    'qty'                      => $order_product['qty'],
+                    'order_product_price'      => $price,
+                    'order_product_subtotal'   => $order_product['qty']*$price,
+                    'order_product_grandtotal' => $order_product['qty']*$price,
+                ]);
+
+                $price_to_order = ($order_product['qty']*$price);
+                if(!$store_order_product){
+                    $is_error = true;
+                    $errors[] = 'Failed to order '.$product['product_name'];
+                    continue;
+                }
+
+                $stock = ProductOutletStock::where('product_id', $product['id'])->where('outlet_id', $outlet['id'])->first();
+                if($stock){
+                    $old_stock = clone $stock;
+                    $stock->update([
+                        'stock' =>  $stock['stock']-$order_product['qty']
+                    ]);
+
+                    if(!$stock){
+                        $is_error = true;
+                        $errors[] = 'Failed to update stock '.$product['product_name'];
+                        continue;
+                    }
+
+                    (new ProductController)->addLogProductStockLog($old_stock['id'], -$order_product['qty'], $old_stock['stock'], $stock['stock'], 'Booking Order', null);
+                }
+
+                $order->update([
+                    'order_subtotal'   => $order['order_subtotal'] + $price_to_order,
+                    'order_gross'      => $order['order_gross'] + $price_to_order,
+                    'order_grandtotal' => $order['order_grandtotal'] + $price_to_order,
+                ]);
+            }
+
+            foreach($post['order_treatments'] ?? [] as $order_treatment){
+                $treatment = Product::with([
+                    'global_price','outlet_price' => function($outlet_price) use ($outlet){
+                        $outlet_price->where('outlet_id',$outlet['id']);
+                    }
+                ])->where('id', $order_treatment['id'])->first();
+
+                if(!$treatment){
+                    $is_error = true;
+                    $errors[] = 'Treatment not found';
+                    continue;
+                }
+
+                $price = $treatment['outlet_price'][0]['price'] ?? $treatment['global_price']['price'];
+
+                $get_order_treatment = OrderProduct::where('order_id', $order_treatment['id'])->where('product_id', $treatment['id'])->whereDate('schedule_date',$order_treatment['date'])->where('type', 'Treatment')->first();
+                if($get_order_treatment){
+                    $is_error = true;
+                    $errors[] = 'Treatment already exist in order';
+                    continue;
+                }else{
+
+                    if(($order_treatment['continue']??false) == 1){
+                        $customerPatient = TreatmentPatient::where('patient_id', $post['id_customer'])
+                        ->where('treatment_id', $treatment['id'])
+                        ->where('status', '<>', 'Finished')
+                        ->whereDate('expired_date', '>=', date('y-m-d', strtotime($order_treatment['date'])))
+                        ->first();
+
+                    }else{
+                        $customerPatient = TreatmentPatient::create([
+                            'treatment_id' => $treatment['id'],
+                            'patient_id' => $post['id_customer'],
+                            'step' => 1,
+                            'progress' => 0,
+                            'status' => 'On Progress',
+                            'start_date' => date('Y-m-d H:i:s'),
+                            'timeframe' => 1,
+                            'timeframe_type' => 'Day',
+                            'expired_date' => date('Y-m-d H:i:s', strtotime('+1 days')),
+                        ]);
+                    }
+
+                    if(!$customerPatient){
+                        $is_error = true;
+                        $errors[] = 'Failed to create order treatment';
+                        continue;
+                    }
+
+                    $existCustomerPatientStep = TreatmentPatientStep::where('treatment_patient_id', $customerPatient['id'])->max('step') ?? 0;
+                    if(($existCustomerPatientStep+1) > $customerPatient['step']){
+                        $is_error = true;
+                        $errors[] = 'Step cannot exceed those specified';
+                        continue;
+                    }
+                    $customerPatientStep = TreatmentPatientStep::create([
+                        'treatment_patient_id' => $customerPatient['id'],
+                        'step'                 => $existCustomerPatientStep + 1,
+                        'date'                 => $order_treatment['date'],
+                    ]);
+
+                    if(!$customerPatientStep){
+                        $is_error = true;
+                        $errors[] = 'Failed to create order treatment';
+                        continue;
+                    }
+
+                    $store_order_treatment = OrderProduct::create([
+                        'order_id'                  => $order['id'],
+                        'product_id'                => $treatment['id'],
+                        'type'                      => 'Treatment',
+                        'schedule_date'             => $order_treatment['date'],
+                        'treatment_patient_id'      => $customerPatient['id'] ?? null,
+                        'treatment_patient_step_id' => $customerPatientStep['id'] ?? null,
+                        'qty'                       => 1,
+                        'order_product_price'       => $price,
+                        'order_product_subtotal'    => $price,
+                        'order_product_grandtotal'  => $price,
+                    ]);
+
+                    if(!$store_order_treatment){
+                        $is_error = true;
+                        $errors[] = 'Failed to create order treatment';
+                        continue;
+                    }
+
+                    $price_to_order = $price;
+
+                    $order->update([
+                        'order_subtotal'   => $order['order_subtotal'] + $price_to_order,
+                        'order_gross'      => $order['order_gross'] + $price_to_order,
+                        'order_grandtotal' => $order['order_grandtotal'] + $price_to_order,
+                    ]);
+                }
+            }
+
+            $is_consultation = false;
+            foreach($post['order_consultations'] ?? [] as $order_consultation){
+
+                $doctor = User::with(['shifts' => function($query) use($order_consultation){
+                    $query->where('doctor_shift_id', $order_consultation['id_shift']);
+                    $query->where('user_id', $order_consultation['id']);
+                }])
+                ->whereHas('shifts',function($query) use($order_consultation){
+                    $query->where('doctor_shift_id', $order_consultation['id_shift']);
+                    $query->where('user_id', $order_consultation['id']);
+                })
+                ->whereHas('doctor_schedules.schedule_dates',function($query) use($order_consultation){
+                    $query->where('schedule_month', date('m', strtotime($order_consultation['date'])));
+                    $query->where('schedule_year', date('Y', strtotime($order_consultation['date'])));
+                    $query->where('doctor_schedule_dates.date', date('Y-m-d', strtotime($order_consultation['date'])));
+                })
+                ->where('id', $order_consultation['id'])->first();
+
+                if(!$doctor){
+                    $is_error = true;
+                    $errors[] = 'Doctor not found';
+                    continue;
+                }
+
+                $get_order_consultation = OrderConsultation::where('order_id', $order['id'])->first();
+                if($get_order_consultation){
+                    $is_error = true;
+                    $errors[] = 'Consultation already exist in order';
+                    continue;
+                }else{
+                    $price = $doctor['shifts'][0]['price'] ?? $doctor['consultation_price'] ?? $outlet['consultation_price'];
+                    $store_order_consultation = OrderConsultation::create([
+                        'order_id'                 => $order['id'],
+                        'doctor_id'                => $doctor['id'],
+                        'schedule_date'            => $order_consultation['date'],
+                        'doctor_shift_id'          => $order_consultation['id_shift'],
+                        'order_consultation_price'      => $price,
+                        'order_consultation_subtotal'   => $price,
+                        'order_consultation_grandtotal' => $price,
+                    ]);
+
+                    if(!$store_order_consultation){
+                        $is_error = true;
+                        $errors[] = 'Failed to create order consultation';
+                        continue;
+                    }
+
+                    if(isset($order_consultation['grievance']) && count($order_consultation['grievance']) > 0){
+
+                        $consultation = Consultation::where('order_consultation_id', $store_order_consultation['id'])->first();
+                        if(!$consultation){
+                            $consultation = Consultation::create([
+                                'order_consultation_id' => $store_order_consultation['id'],
+                            ]);
+                        }
+
+                        $patient_grievance = [];
+                        foreach($order_consultation['grievance'] ?? [] as $key_gre => $gre){
+                            $patient_grievance[] = [
+                                'consultation_id' => $consultation['id'],
+                                'grievance_id'    => $gre['id'],
+                                'from_pos'        => 1,
+                                'notes'           => $gre['notes'],
+                                'created_at'      => date('Y-m-d H:i:s'),
+                                'updated_at'      => date('Y-m-d H:i:s'),
+                            ];
+                        }
+
+                        $insert = PatientGrievance::insert($patient_grievance);
+                        if(!$insert){
+                            $is_error = true;
+                            $errors[] = 'Grievance error';
+                            continue;
+                        }
+
+                    }
+
+                    $is_consultation = true;
+                    $order->update([
+                        'order_subtotal'   => $order['order_subtotal'] + $price,
+                        'order_gross'      => $order['order_gross'] + $price,
+                        'order_grandtotal' => $order['order_grandtotal'] + $price,
+                    ]);
+                }
+            }
+
+            if($is_error){
+                DB::rollBack();
+                return $this->error($errors);
+            }else{
+                if($is_consultation){
+                    $update = $order->update([
+                        'is_submited' => 1,
+                    ]);
+                    if(!$update){
+
+                        $is_error = true;
+                        $errors[] = 'Failed submit order';
+                        DB::rollBack();
+
+                        return $this->error($errors);
+                    }
+
+                    $generate = GenerateQueueOrder::dispatch($order)->onConnection('generatequeueorder');
+                    DB::commit();
+
+                    $return = [
+                        'consultation' => true,
+                        'list_payment' => []
+                    ];
+
+                    return $this->ok('Success to submit order', $return);
+                }else{
+
+                    $generate = GenerateQueueOrder::dispatch($order)->onConnection('generatequeueorder');
+                    DB::commit();
+
+                    $return = [
+                        'consultation' => false,
+                        'list_payment' => $this->availablePayment($order) ?? []
+                    ];
+
+                    return $this->ok('Success to submit order', $return);
+                }
+
+            }
+
+        }else{
+            return $this->error('Customer not found');
+        }
+
+    }
+
+    public function ticket(Request $request):mixed
+    {
+        $request->validate([
+            'id_customer' => 'required',
+        ]);
+
+        $cashier = $request->user();
+        $outlet = $cashier->outlet;
+        $post = $request->json()->all();
+
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+
+        if(isset($post['id_customer'])){
+            $order = Order::with(['order_consultations.doctor', 'order_consultations.shift'])
+            ->where('patient_id', $post['id_customer'])
             ->where('outlet_id', $outlet['id'])
             ->where('send_to_transaction', 0)
             ->latest()
             ->first();
 
-        if(!$order){
-            return $this->error('Order not found');
-        }
-
-        if($order['is_submited'] == 1 && $order['is_submited_doctor'] == 0){
-            return $this->error('Cant create order, order has not been submited by the doctor');
-        }
-
-        DB::beginTransaction();
-
-        $consultation = OrderConsultation::with(['doctor', 'shift'])->where('order_id', $order['id'])->first();
-        if($consultation && $order['is_submited_doctor'] == 0){
-            $update = $order->update([
-                'is_submited' => 1,
-            ]);
-
-            if(!$update){
-                DB::rollBack();
-                return $this->error('Failed to submit order');
+            $consultation = $order['order_consultations'][0] ?? null;
+            if(!$consultation){
+                return $this->error('Ticket not found');
             }
 
             $return = [
-                'consultation' => true,
-                'list_payment' => [],
-                'ticket' => [
-                    'title'  => 'CONSULTATION',
-                    'doctor' => $consultation['doctor']['name'],
-                    'date'   => date('d F Y', strtotime($consultation['schedule_date'])),
-                    'time'   => date('H:i', strtotime($consultation['shift']['start'])). ' - '.date('H:i', strtotime($consultation['shift']['end'])),
-                    'queue'  => $consultation['queue_code']
-
-                ]
-
+                'title'  => 'CONSULTATION',
+                'doctor' => $consultation['doctor']['name'],
+                'date'   => date('d F Y', strtotime($consultation['schedule_date'])),
+                'time'   => date('H:i', strtotime($consultation['shift']['start'])). ' - '.date('H:i', strtotime($consultation['shift']['end'])),
+                'queue'  => $consultation['queue_code']
             ];
-            DB::commit();
-            return $this->ok('Succes to submit order', $return);
+            return $this->ok('Success to submit order', $return);
         }else{
-
-            $return = [
-                'consultation' => false,
-                'list_payment' => $this->availablePayment($order) ?? [],
-                'ticket' => []
-            ];
-
-            return $this->ok('Succes to submit order', $return);
+            return $this->error('Customer not found');
         }
-
     }
 
     public function cronDelete()

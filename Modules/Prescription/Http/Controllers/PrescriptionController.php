@@ -42,21 +42,48 @@ class PrescriptionController extends Controller
             return $this->error('Outlet not found');
         }
 
-        $prescriptions = Prescription::with([
-            'prescription_outlets' => function($prescription_outlets) use ($outlet){
-                $prescription_outlets->where('outlet_id',$outlet['id']);
-            }, 'category'
-        ])->whereHas('prescription_outlets', function($prescription_outlets) use ($outlet){
-            $prescription_outlets->where('outlet_id',$outlet['id']);
-        });
-
-        if(isset($post['search']) && !empty($post['search'])){
-            $prescriptions = $prescriptions->where('prescription_name', 'like', '%'.$post['search'].'%');
+        $data = [];
+        $make_new = false;
+        $check_json = file_exists(storage_path() . "\json\get_prescription.json");
+        if($check_json){
+            $config = json_decode(file_get_contents(storage_path() . "\json\get_prescription.json"), true);
+            if(isset($config[$outlet['id']])){
+                if(date('Y-m-d H:i', strtotime($config[$outlet['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
+                    $make_new = true;
+                }
+            }else{
+                $make_new = true;
+            }
+        }else{
+            $make_new = true;
         }
 
-        $prescriptions = $prescriptions->original()->get()->toArray();
+        if($make_new){
 
-        $prescriptions = array_map(function($value){
+            $prescriptions = Prescription::with([
+                'prescription_outlets' => function($prescription_outlets) use ($outlet){
+                    $prescription_outlets->where('outlet_id',$outlet['id']);
+                }, 'category'
+            ])->whereHas('prescription_outlets', function($prescription_outlets) use ($outlet){
+                $prescription_outlets->where('outlet_id',$outlet['id']);
+            });
+
+            if(isset($post['search']) && !empty($post['search'])){
+                $prescriptions = $prescriptions->where('prescription_name', 'like', '%'.$post['search'].'%');
+            }
+
+            $prescriptions = $prescriptions->original()->get()->toArray();
+            $config[$outlet['id']] = [
+                'updated_at' => date('Y-m-d H:i'),
+                'data'       => $prescriptions
+            ];
+            file_put_contents(storage_path('json\get_prescription.json'), json_encode($config));
+        }
+        $config = $config[$outlet['id']] ?? [];
+
+        $data = $config['data'] ?? [];
+
+        $data = array_map(function($value){
 
             if(isset($value['prescription_outlets'][0]['price']) ?? false){
                 $price = $value['prescription_outlets'][0]['price'] ?? 0;
@@ -72,9 +99,9 @@ class PrescriptionController extends Controller
                 'stock'             => $value['prescription_outlets'][0]['stock'] ?? 0
             ];
             return $data;
-        },$prescriptions ?? []);
+        },$data ?? []);
 
-        return $this->ok('success', $prescriptions);
+        return $this->ok('success', $data);
     }
 
     public function addLogPrescriptionStockLog($id, $qty, $stock_before, $stock_after, $source, $desc){
@@ -122,11 +149,34 @@ class PrescriptionController extends Controller
             return $this->error('Outlet not found');
         }
 
-        $prescriptionCategories = PrescriptionCategory::select('id','category_name')->get()->toArray();
-        if(!$prescriptionCategories){
-            return $this->error('Category not found');
+        $return = [];
+        $make_new = false;
+        $check_json = file_exists(storage_path() . "\json\prescription_categories.json");
+        if($check_json){
+            $config = json_decode(file_get_contents(storage_path() . "\json\prescription_categories.json"), true);
+            if(date('Y-m-d H:i', strtotime($config['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
+                $make_new = true;
+            }
+        }else{
+            $make_new = true;
         }
-        return $this->ok('success', $prescriptionCategories);
+
+        if($make_new){
+            $prescriptionCategories = PrescriptionCategory::select('id','category_name')->get()->toArray();
+
+            if($prescriptionCategories){
+                $config = [
+                    'updated_at' => date('Y-m-d H:i'),
+                    'data'       => $prescriptionCategories
+                ];
+                file_put_contents(storage_path('json\prescription_categories.json'), json_encode($config));
+
+            }
+        }
+        $return = $config['data'] ?? [];
+
+
+        return $this->ok('success', $return);
     }
 
     public function createCustom(Request $request):JsonResponse
@@ -172,7 +222,7 @@ class PrescriptionController extends Controller
             return $this->error('Create prescription failed');
         }
 
-        return $this->getDataCustom(true, ['prescription_id' => $create['id'], 'outlet' => $outlet],'Succes to create prescription custom');
+        return $this->getDataCustom(true, ['prescription_id' => $create['id'], 'outlet' => $outlet],'Success to create prescription custom');
 
     }
 
@@ -195,22 +245,58 @@ class PrescriptionController extends Controller
             return $this->error('Prescription not found');
         }
 
-        $containers = Container::whereHas('categories', function($categories) use($prescription){
-            $categories->where('prescription_category_id', $prescription['prescription_category_id']);
-        })->get()->toArray();
+        $data = [];
+        $make_new = false;
+        $check_json = file_exists(storage_path() . "\json\get_containers.json");
+        if($check_json){
+            $config = json_decode(file_get_contents(storage_path() . "\json\get_containers.json"), true);
+            if(isset($config[$outlet['id']][$prescription['prescription_category_id']])){
+                if(date('Y-m-d H:i', strtotime($config[$outlet['id']][$prescription['prescription_category_id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
+                    $make_new = true;
+                }
+            }else{
+                $make_new = true;
+            }
+        }else{
+            $make_new = true;
+        }
 
-        $containers = array_map(function($value){
+        if($make_new){
+
+            $containers = Container::with(['outlet_price' => function($outlet_price) use ($outlet){
+                $outlet_price->where('outlet_id',$outlet['id']);
+            }])->whereHas('categories', function($categories) use($prescription){
+                $categories->where('prescription_category_id', $prescription['prescription_category_id']);
+            })->whereHas('stocks', function($stock) use($outlet){
+                $stock->where('outlet_id', $outlet['id'])
+                ->where('qty', '>', 0);
+            })
+            ->get()->toArray();
+
+            $config[$outlet['id']][$prescription['prescription_category_id']] = [
+                'updated_at' => date('Y-m-d H:i'),
+                'data'       => $containers
+            ];
+            file_put_contents(storage_path('json\get_containers.json'), json_encode($config));
+        }
+
+        $config = $config[$outlet['id']][$prescription['prescription_category_id']] ?? [];
+
+        $data = $config['data'] ?? [];
+
+        $data = array_map(function($value){
             $value = [
-                'id'   => $value['id'],
-                'name' => $value['container_name'].' '.$value['type'].' - '.$value['unit'],
+                'id'    => $value['id'],
+                'name'  => $value['container_name'].' '.$value['type'].' - '.$value['unit'],
+                'price' => ($value['outlet_price'][0]['price'] ?? $value['price']) ?? 0,
             ];
             return $value;
-        }, $containers ?? []);
+        }, $data ?? []);
 
-        return $this->ok('success', $containers);
+        return $this->ok('success', $data);
     }
 
-    public function listSubstance(Request $request): JsonResponse
+    public function listSubstance(Request $request): mixed
     {
         $request->validate([
             'id_custom' => 'required',
@@ -229,37 +315,67 @@ class PrescriptionController extends Controller
             return $this->error('Prescription not found');
         }
 
-        $limit = $post['limit'] ?? 10;
-
-        $substances = Substance::with([
-            'outlet_price' => function($outlet_price) use ($outlet){
-                $outlet_price->where('outlet_id',$outlet['id']);
+        $data = [];
+        $make_new = false;
+        $check_json = file_exists(storage_path() . "\json\get_substances.json");
+        if($check_json){
+            $config = json_decode(file_get_contents(storage_path() . "\json\get_substances.json"), true);
+            if(isset($config[$outlet['id']][$prescription['prescription_category_id']])){
+                if(date('Y-m-d H:i', strtotime($config[$outlet['id']][$prescription['prescription_category_id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
+                    $make_new = true;
+                }
+            }else{
+                $make_new = true;
             }
-        ])->whereHas('categories', function($categories) use($prescription){
-            $categories->where('prescription_category_id', $prescription['prescription_category_id']);
-        });
-
-        if(isset($post['search_name']) ?? false){
-            $substances = $substances->where('substance_name', 'like', '%'.$post['search_name'].'%');
+        }else{
+            $make_new = true;
         }
 
-        $substances = $substances->select('id', 'substance_name', 'type', 'unit', 'price')
-        ->paginate($post['limit'] ?? 10)->toArray();
+        if($make_new){
 
-        $data = [];
-        foreach($substances['data'] ?? [] as $sub){
-            $data[] = [
+            $substances = Substance::with([
+                'outlet_price' => function($outlet_price) use ($outlet){
+                    $outlet_price->where('outlet_id',$outlet['id']);
+                },
+                'stocks' => function($stockWith) use ($outlet){
+                    $stockWith->where('outlet_id', $outlet['id']);
+                },
+            ])->whereHas('categories', function($categories) use($prescription){
+                $categories->where('prescription_category_id', $prescription['prescription_category_id']);
+            })->whereHas('stocks', function($stock) use($outlet){
+                $stock->where('outlet_id', $outlet['id'])
+                ->where('qty', '>', 0);
+            });
+
+            if(isset($post['search_name']) ?? false){
+                $substances = $substances->where('substance_name', 'like', '%'.$post['search_name'].'%');
+            }
+
+            $substances = $substances->get()->toArray();
+            $config[$outlet['id']][$prescription['prescription_category_id']] = [
+                'updated_at' => date('Y-m-d H:i'),
+                'data'       => $substances
+            ];
+            file_put_contents(storage_path('json\get_substances.json'), json_encode($config));
+        }
+
+        $config = $config[$outlet['id']][$prescription['prescription_category_id']] ?? [];
+
+        $data = $config['data'] ?? [];
+
+        $return = [];
+        foreach($data ?? [] as $sub){
+            $return[] = [
                 'id' => $sub['id'],
                 'substance_name' =>  $sub['substance_name'],
                 'type' =>  $sub['type'],
                 'unit' =>  $sub['unit'],
                 'price' => ($sub['outlet_price'][0]['price'] ?? $sub['price']) ?? 0,
+                'qty' => ($sub['stocks'][0]['qty']) ?? 0,
             ];
         }
 
-        $substances['data'] = $data;
-
-        return $this->ok('success', $substances);
+        return $this->ok('success', $return);
     }
 
     public function getCustom(Request $request): JsonResponse
@@ -419,7 +535,7 @@ class PrescriptionController extends Controller
                     }
 
                     DB::commit();
-                    return $this->getDataCustom(true, ['prescription_id' => $post['id_custom'], 'outlet' => $outlet],'Succes to add container');
+                    return $this->getDataCustom(true, ['prescription_id' => $post['id_custom'], 'outlet' => $outlet],'Success to add container');
 
                 }else{
                     DB::rollBack();
@@ -451,7 +567,7 @@ class PrescriptionController extends Controller
                     }
 
                     DB::commit();
-                    return $this->getDataCustom(true, ['prescription_id' => $post['id_custom'], 'outlet' => $outlet],'Succes to add substance');
+                    return $this->getDataCustom(true, ['prescription_id' => $post['id_custom'], 'outlet' => $outlet],'Success to add substance');
 
                 }else{
                     DB::rollBack();
@@ -468,7 +584,7 @@ class PrescriptionController extends Controller
         }
     }
 
-    public function submitCustom(Request $request):JsonResponse
+    public function submitCustom(Request $request):mixed
     {
 
         $request->validate([
@@ -486,28 +602,140 @@ class PrescriptionController extends Controller
         $prescription = Prescription::where('id', $post['id_custom'])
         ->where('is_custom', 1)
         ->where('is_active', 0)
-        ->whereHas('prescription_container')
-        ->whereHas('prescription_substances')
         ->first();
 
         if(!$prescription){
             return $this->error('Prescription not found');
         }
 
+        $is_error = false;
+        $errors = [];
+        $total_price = 0;
+
         DB::beginTransaction();
+        foreach($post['containers'] ?? [] as $ord_container){
+            if(isset($ord_container['id']) ?? false){
+                $container = Container::with([
+                    'outlet_price' => function($outlet_price) use ($outlet){
+                        $outlet_price->where('outlet_id',$outlet['id']);
+                    }, 'stocks' => function($outlet_stock) use ($outlet){
+                        $outlet_stock->where('outlet_id',$outlet['id']);
+                    }
+                ])
+                ->whereHas('categories', function($categories) use($prescription){
+                    $categories->where('prescription_category_id', $prescription['prescription_category_id']);
+                })->where('id', $ord_container['id'])
+                ->first();
+
+                if(!$container){
+                    $is_error = true;
+                    $errors[] = 'Container not found';
+                    continue;
+                }
+
+                $price = ($container['outlet_price'][0]['price'] ?? $container['price']) ?? 0;
+                $stock = $container['stocks'][0]['qty'] ?? 0;
+                if($stock <= 0){
+                    $is_error = true;
+                    $errors[] = $container['container_name']. ' out of stock';
+                    continue;
+                }
+
+                $prescription_container = PrescriptionContainer::where('prescription_id', $post['id_custom'])->first();
+                if($prescription_container){
+                    $prescription_container->delete();
+                }
+
+                $prescription_container = PrescriptionContainer::create([
+                    'prescription_id' => $post['id_custom'],
+                    'container_id' => $container['id'],
+                ]);
+
+                if(!$prescription_container){
+                    $is_error = true;
+                    $errors[] = 'Failed to create prescription container';
+                    continue;
+                }
+                $total_price += $price;
+
+            }else{
+                $is_error = true;
+                $errors[] = 'ID cointainer is invalid';
+                continue;
+            }
+        }
+
+        foreach($post['substances'] ?? [] as $ord_substance){
+            if(isset($ord_substance['id']) ?? false && isset($ord_substance['qty']) ?? false){
+                $substance = Substance::with([
+                    'outlet_price' => function($outlet_price) use ($outlet){
+                        $outlet_price->where('outlet_id',$outlet['id']);
+                    }, 'stocks' => function($outlet_stock) use ($outlet){
+                        $outlet_stock->where('outlet_id',$outlet['id']);
+                    }
+                ])
+                ->whereHas('categories', function($categories) use($prescription){
+                    $categories->where('prescription_category_id', $prescription['prescription_category_id']);
+                })->where('id', $ord_substance['id'])
+                ->first();
+
+                if(!$substance){
+                    $is_error = true;
+                    $errors[] = 'Substance not found';
+                    continue;
+                }
+
+                $price = ($substance['outlet_price'][0]['price'] ?? $substance['price']) ?? 0;
+                $stock = $substance['stocks'][0]['qty'] ?? 0;
+
+                if($ord_substance['qty'] > $stock){
+                    $is_error = true;
+                    $errors[] = $substance['substance_name']. ' out of stock';
+                    continue;
+                }
+
+                $price = $price * $ord_substance['qty'];
+
+                $prescription_substance = PrescriptionSubstance::create([
+                    'prescription_id' => $post['id_custom'],
+                    'substance_id' => $substance['id'],
+                    'qty' => $ord_substance['qty'],
+                ]);
+
+                if(!$prescription_substance){
+                    $is_error = true;
+                    $errors[] = 'Failed to create prescription substance';
+                    continue;
+                }
+                $total_price += $price;
+
+            }else{
+                $is_error = true;
+                $errors[] = 'ID substance is invalid';
+                continue;
+            }
+        }
 
         $update = $prescription->update([
             'is_active' => 1,
-            'active_date' => date('Y-m-d')
+            'active_date' => date('Y-m-d'),
+            'price' => $total_price
         ]);
 
         if(!$update){
-            DB::rollBack();
-            return $this->error('Failed to submit prescription');
+            $is_error = true;
+            $errors[] = 'Failed to submit prescription';
         }
 
-        DB::commit();
-        return $this->getDataCustom(true, ['prescription_id' => $post['id_custom'], 'outlet' => $outlet],'Succes to submit prescription');
+        if($is_error){
+            DB::rollBack();
+            return $this->error($errors);
+        }else{
+            DB::commit();
+            return $this->ok('Success to submit prescription', $prescription);
+
+        }
+
     }
 
     public function listCustom(Request $request):JsonResponse
@@ -606,7 +834,7 @@ class PrescriptionController extends Controller
                 'id' => $prescription['id'],
                 'prescription_name' => $prescription['prescription_name'],
                 'category_name' => $prescription['category']['category_name'],
-                'price' => $price_total,
+                'price' => $prescription['price'] ?? $price_total,
                 'stock' => $stock,
             ];
 

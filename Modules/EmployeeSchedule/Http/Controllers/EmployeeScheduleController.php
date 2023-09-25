@@ -27,7 +27,7 @@ class EmployeeScheduleController extends Controller
     public function doctor(): JsonResponse
     {
         $data = EmployeeSchedule::with('user.outlet.district')->doctor()->paginate(10);
-        return $this->ok("succes get all schedules of all doctors", $data);
+        return $this->ok("success get all schedules of all doctors", $data);
     }
 
     public function doctorDetail(int $id): JsonResponse
@@ -39,7 +39,7 @@ class EmployeeScheduleController extends Controller
     public function cashier(): JsonResponse
     {
         $data = EmployeeSchedule::with('user.outlet.district')->cashier()->paginate(10);
-        return $this->ok("succes get all schedules of all cashiers", $data);
+        return $this->ok("success get all schedules of all cashiers", $data);
     }
 
     public function cashierDetail(int $id): JsonResponse

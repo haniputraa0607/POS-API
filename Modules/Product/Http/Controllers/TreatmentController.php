@@ -38,36 +38,69 @@ class TreatmentController extends Controller
 
         $custom = [];
         $all_products = 1;
+        $today = false;
 
         if($post['search']['filter'] == 'date'){
             $date = date('y-m-d', strtotime($post['search']['value']));
+            if($date == date('Y-m-d')){
+                $today = true;
+            }
             $outlet_schedule = $outlet->outlet_schedule->where('day', date('l', strtotime($date)))->first();
             $all_products = $outlet_schedule['all_products'];
             $custom = json_decode($outlet_schedule['custom_products'], true) ?? [];
+        }elseif($post['search']['filter'] == 'name'){
+            return $this->listAll($outlet);
         }
 
-        $products = Product::with(['global_price','outlet_price' => function($outlet_price) use ($outlet){
-            $outlet_price->where('outlet_id',$outlet['id']);
-        }])->whereHas('outlet_treatment', function($outlet_treatment) use ($outlet, $all_products, $custom){
-
-            $outlet_treatment->where('outlet_id',$outlet['id']);
-            if(count($custom) > 0 && $all_products == 0){
-                $outlet_treatment->whereIn('treatment_id',$custom);
-            }
-        });
-
-        if($post['search']['filter'] == 'name'){
-            if($post['search']['value'] == ''){
-                $products = $products->where('product_name', '');
+        $get_treatments = [];
+        $make_new = false;
+        $check_json = file_exists(storage_path() . "\json\get_treatment.json");
+        if($check_json){
+            $config = json_decode(file_get_contents(storage_path() . "\json\get_treatment.json"), true);
+            if(isset($config[$outlet['id']])){
+                if(($date && !$today) || (date('Y-m-d H:i', strtotime($config[$outlet['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i'))){
+                    $make_new = true;
+                }
             }else{
-                $products = $products->where('product_name', 'like', '%'.$post['search']['value'].'%');
+                $make_new = true;
             }
+        }else{
+            $make_new = true;
         }
 
-        $products = $products->treatment()->get()->toArray();
-        if(!$products){
-            return $this->error('Treatment is empty');
+        if($make_new){
+
+            $products = Product::with(['global_price','outlet_price' => function($outlet_price) use ($outlet){
+                $outlet_price->where('outlet_id',$outlet['id']);
+            }])->whereHas('outlet_treatment', function($outlet_treatment) use ($outlet, $all_products, $custom){
+
+                $outlet_treatment->where('outlet_id',$outlet['id']);
+                if(count($custom) > 0 && $all_products == 0){
+                    $outlet_treatment->whereIn('treatment_id',$custom);
+                }
+            });
+
+            if($post['search']['filter'] == 'name'){
+                if($post['search']['value'] == ''){
+                    $products = $products->where('product_name', '');
+                }else{
+                    $products = $products->where('product_name', 'like', '%'.$post['search']['value'].'%');
+                }
+            }
+
+            $products = $products->treatment()->get()->toArray();
+
+            $config[$outlet['id']] = [
+                'updated_at' => date('Y-m-d H:i'),
+                'data'       => $products
+            ];
+            file_put_contents(storage_path('json\get_treatment.json'), json_encode($config));
+
         }
+
+        $config = $config[$outlet['id']] ?? [];
+
+        $get_treatments = $config['data'] ?? [];
 
         $products = array_map(function($value) use($post){
 
@@ -90,7 +123,7 @@ class TreatmentController extends Controller
                 $data['date_text'] = date('d F Y', strtotime($data['date']));
             }
             return $data;
-        },$products ?? []);
+        },$get_treatments ?? []);
 
         $return = [
             'available' => count($products),
@@ -156,6 +189,83 @@ class TreatmentController extends Controller
                 return $value;
             },$return['treatment'] ?? []);
         }
+
+        return $this->ok('success', $return);
+    }
+
+    public function listAll($outlet):JsonResponse
+    {
+
+        $custom = [];
+        $all_products = 1;
+
+        $get_treatments = [];
+        $make_new = false;
+        $check_json = file_exists(storage_path() . "\json\get_treatment_all.json");
+        if($check_json){
+            $config = json_decode(file_get_contents(storage_path() . "\json\get_treatment_all.json"), true);
+            if(isset($config[$outlet['id']])){
+                if(date('Y-m-d H:i', strtotime($config[$outlet['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
+                    $make_new = true;
+                }
+            }else{
+                $make_new = true;
+            }
+        }else{
+            $make_new = true;
+        }
+
+        if($make_new){
+
+            $products = Product::with(['global_price','outlet_price' => function($outlet_price) use ($outlet){
+                $outlet_price->where('outlet_id',$outlet['id']);
+            }])->whereHas('outlet_treatment', function($outlet_treatment) use ($outlet, $all_products, $custom){
+
+                $outlet_treatment->where('outlet_id',$outlet['id']);
+                if(count($custom) > 0 && $all_products == 0){
+                    $outlet_treatment->whereIn('treatment_id',$custom);
+                }
+            });
+
+            $products = $products->treatment()->get()->toArray();
+
+            $config[$outlet['id']] = [
+                'updated_at' => date('Y-m-d H:i'),
+                'data'       => $products
+            ];
+            file_put_contents(storage_path('json\get_treatment_all.json'), json_encode($config));
+
+        }
+
+        $config = $config[$outlet['id']] ?? [];
+
+        $get_treatments = $config['data'] ?? [];
+
+        $products = array_map(function($value){
+
+            if(isset($value['outlet_price'][0]['price']) ?? false){
+                $price = $value['outlet_price'][0]['price'];
+            }else{
+                $price = $value['global_price']['price'];
+            }
+            $data = [
+                'id' => $value['id'],
+                'treatment_name' => $value['product_name'],
+                'price' => $price,
+                'can_continue' => false,
+                'can_new' => true,
+                'total_history' => 0,
+                'record_history' => []
+            ];
+
+            return $data;
+        },$get_treatments ?? []);
+
+        $return = [
+            'available' => count($products),
+            'recent_history' => [],
+            'treatment' => $products,
+        ];
 
         return $this->ok('success', $return);
     }
@@ -321,20 +431,48 @@ class TreatmentController extends Controller
 
         }
 
-        $histories = TreatmentPatient::with([
-            'treatment',
-            'doctor',
-            'steps' => function($steps){
-                $steps->orderBy('step', 'desc');
-            },
-            'steps.order_product'
-        ])->whereHas('doctor')
-        ->whereNotNull('doctor_id')
-        ->where('patient_id', $customer_id)
-        ->get()->toArray();
+        $get_histories = [];
+        $make_new = false;
+        $check_json = file_exists(storage_path() . "\json\customer_histories.json");
+        if($check_json){
+            $config = json_decode(file_get_contents(storage_path() . "\json\customer_histories.json"), true);
+            if(isset($config[$customer_id])){
+                if(($date && !$today) || (date('Y-m-d H:i', strtotime($config[$customer_id]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i'))){
+                    $make_new = true;
+                }
+            }else{
+                $make_new = true;
+            }
+        }else{
+            $make_new = true;
+        }
+
+        if($make_new){
+            $histories = TreatmentPatient::with([
+                'treatment',
+                'doctor',
+                'steps' => function($steps){
+                    $steps->orderBy('step', 'desc');
+                },
+                'steps.order_product'
+            ])->whereHas('doctor')
+            ->whereNotNull('doctor_id')
+            ->where('patient_id', $customer_id)
+            ->get()->toArray();
+
+            $config[$customer_id] = [
+                'updated_at' => date('Y-m-d H:i'),
+                'data'       => $histories
+            ];
+            file_put_contents(storage_path('json\customer_histories.json'), json_encode($config));
+        }
+
+        $config = $config[$customer_id] ?? [];
+
+        $get_histories = $config['data'] ?? [];
 
         $return = [];
-        foreach($histories ?? [] as $key => $history){
+        foreach($get_histories ?? [] as $key => $history){
 
             $steps = [];
             foreach($history['steps'] as $key2 => $step){
