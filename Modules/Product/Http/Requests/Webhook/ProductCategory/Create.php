@@ -16,7 +16,6 @@ class Create extends FormRequest
         return [
             'equal_id' =>'required|unique:product_categories,equal_id',
             'equal_code' =>'required',
-            'equal_parent_id' =>'required',
             'product_category_name' =>'required',
         ];
     }
@@ -38,7 +37,6 @@ class Create extends FormRequest
             'equal_id.required' => 'id item category is required',
             'equal_id.unique' => 'id item category has been taken',
             'equal_code.required' => 'item category code is required',
-            'equal_parent_id.required' => 'id item category parent is required',
             'product_category_name.required' => 'item category name is required',
             'product_category_photo.required' => 'photo path is required',
         ];
