@@ -19,7 +19,8 @@ class ProductCategory extends Model
         'equal_parent_id',
         'product_category_name',
         'description',
-        'product_category_photo'
+        'product_category_photo',
+        'is_active',
     ];
 
     public function products(): HasMany
