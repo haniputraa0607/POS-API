@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Product\Entities\ProductCategory;
 use Modules\Outlet\Http\Controllers\OutletController;
+use Modules\Product\Http\Requests\Webhook\ProductCategory\Create;
+use Modules\Product\Http\Requests\Webhook\ProductCategory\Update;
 
 class ProductCategoryController extends Controller
 {
@@ -71,41 +73,21 @@ class ProductCategoryController extends Controller
         return $this->ok('success', $return);
     }
 
-    public function webHookCreate(Request $request)
+    public function webHookCreate(Create $request)
     {
-        $post = $request->json()->all();
-        $payload = [
-            'equal_id' => $post['id_item_category'],
-            'equal_name' => $post['item_category_name'],
-            'equal_code' => $post['item_category_code'],
-            'equal_parent_id' => $post['id_item_category_parent'],
-            'product_category_name' => $post['item_category_name'],
-            'product_category_photo' => $post['photo_path'],
-        ];
-        $product = ProductCategory::create($payload);
+        $product = ProductCategory::create($request->all());
         return $this->ok("succes", $product);
     }
 
-    public function webHookUpdate(Request $request)
+    public function webHookUpdate(Update $request)
     {
-
-        $post = $request->json()->all();
-        $payload = [
-            'equal_id' => $post['id_item_category'],
-            'equal_name' => $post['item_category_name'],
-            'equal_code' => $post['item_category_code'],
-            'equal_parent_id' => $post['id_item_category_parent'],
-            'product_category_name' => $post['item_category_name'],
-            'product_category_photo' => $post['photo_path'],
-        ];
-        $product = ProductCategory::where(['equal_id' => $post['id_item_category']])->update($payload);
-        return $this->ok("succes", $payload);
+        $product = ProductCategory::where(['equal_id' => $request->equal_id])->update($request->all());
+        return $this->ok("succes", $product);
     }
 
     public function webHookDelete(Request $request)
     {
-        $post = $request->json()->all();
-        $product = ProductCategory::where(['equal_id' => $post['id_item_category']])->delete();
+        ProductCategory::where(['equal_id' => $request->id_item_category])->delete();
         return $this->ok("success","");
     }
 }
