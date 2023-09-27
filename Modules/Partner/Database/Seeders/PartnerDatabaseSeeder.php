@@ -9,6 +9,7 @@ use Modules\Partner\Entities\OfficialPartnerDetail;
 use KodePandai\Indonesia\Models\City;
 use Modules\Partner\Entities\PartnerEqual;
 use Faker\Factory as Faker;
+use Modules\Partner\Entities\OfficialPartnerHome;
 
 class PartnerDatabaseSeeder extends Seeder
 {
@@ -124,6 +125,26 @@ class PartnerDatabaseSeeder extends Seeder
                 'url_shopee' => 'https://shopee.com',
                 'username_bukalapak' => 'dwi_suwarni',
                 'url_bukalapak' => 'https://bukalapak.com',
+            ],
+            [
+                'name' => 'Tiwi',
+                'email' => 'tiwi@gmail.com',
+                'phone' => $faker->phoneNumber(),
+                'images' => json_encode($faker->imageUrl()),
+                'city_code' => City::InRandomOrder()->first()->code,
+                'store_name' => $faker->name(),
+                'store_address' => $faker->address(),
+                'store_city' => $faker->city,
+                'username_instagram' => '@daviena.skincarebdg',
+                'url_instagram' => 'https://instagram.com',
+                'username_tiktok' => '@daviena.skincarebdg',
+                'url_tiktok' => 'https://tiktok.com',
+                'username_tokopedia' => '@daviena.skincarebdg',
+                'url_tokopedia' => 'https://tokopedia.com',
+                'username_shopee' => '@daviena.skincarebdg',
+                'url_shopee' => 'https://shopee.com',
+                'username_bukalapak' => '@daviena.skincarebdg',
+                'url_bukalapak' => 'https://bukalapak.com',
             ]
         ];
 
@@ -139,6 +160,7 @@ class PartnerDatabaseSeeder extends Seeder
             $partner = PartnerEqual::create($partner_payload);
             $partner_store_payload = [
                 'equal_id' => 0,
+                'partner_equal_id' => $partner->id,
                 'store_name' => $key['store_name'],
                 'store_address' => $key['store_address'],
                 'store_city' => $key['store_city']
@@ -189,6 +211,14 @@ class PartnerDatabaseSeeder extends Seeder
                 ];
                 $partner_sosial_media_5 = $partner_store->partner_sosial_media()->create($payload_bk);
             }
+        }
+
+        $official_partner_home = [1,2,3,4];
+
+        foreach($official_partner_home as $key){
+            OfficialPartnerHome::create([
+                'partner_equal_id' => $key
+            ]);
         }
     }
 

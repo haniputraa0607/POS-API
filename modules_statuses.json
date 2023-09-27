@@ -24,5 +24,6 @@
     "Mitra": true,
     "Partner": true,
     "Prescription": true,
-    "Contact": true
+    "Contact": true,
+    "CreateProductFinestTable": true
 }

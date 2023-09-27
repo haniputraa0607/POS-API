@@ -1,0 +1,11 @@
+{
+    "name": "CreateProductFinestTable",
+    "alias": "createproductfinesttable",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\CreateProductFinestTable\\Providers\\CreateProductFinestTableServiceProvider"
+    ],
+    "files": []
+}

@@ -5,6 +5,7 @@ namespace Modules\Article\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Article\Entities\Article;
+use Modules\Article\Entities\ArticleRecommendation;
 
 class ArticleDatabaseSeeder extends Seeder
 {
@@ -30,5 +31,10 @@ class ArticleDatabaseSeeder extends Seeder
             ]);
             $i++;
         }
+
+        ArticleRecommendation::create([
+            'article_top' => 1,
+            'article_recommendation' => json_encode([2,3])
+        ]);
     }
 }

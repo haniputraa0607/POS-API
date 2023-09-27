@@ -1,1 +1,1 @@
-<?php return ['Instagram', 'Tiktok', 'Tokopedia', 'Shopee', 'Bukalapak'];
+<?php return ['Instagram', 'Tiktok', 'Tiktok Shop', 'Tokopedia', 'Shopee', 'Bukalapak'];

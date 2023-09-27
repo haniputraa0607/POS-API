@@ -6,6 +6,7 @@ use Illuminate\Contracts\Support\Renderable;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Modules\Article\Entities\Article;
+use Modules\Article\Entities\ArticleRecommendation;
 use Illuminate\Http\JsonResponse;
 use App\Traits\ApiResponse;
 
@@ -49,5 +50,17 @@ class ArticleController extends Controller
         return $this->ok("success", $articles);
     }
 
+    public function recommendationArticle()
+    {
+        $recommendation = ArticleRecommendation::first();
+        $topArticle = $recommendation->topArticle;
+        $recommendedArticleIds = json_decode($recommendation->article_recommendation, true);
+        $recommendedArticles = Article::whereIn('id', $recommendedArticleIds)->get();
+        $response = [
+            'top_article' => $topArticle,
+            'recommended_articles' => $recommendedArticles,
+        ];
+        return response()->json($response);
+    }
 
 }

@@ -6,6 +6,8 @@ use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 use Modules\Product\Entities\Product;
 use Modules\Product\Entities\ProductCategory;
+use Modules\Product\Entities\ProductFinest;
+use Modules\Product\Entities\ProductFinestList;
 use Modules\Product\Entities\ProductPackage;
 use Modules\Product\Entities\ProductTrending;
 
@@ -65,6 +67,7 @@ class ProductDatabaseSeeder extends Seeder
             'Paket Acne Series'
         ];
         $trending = [1,2,3,4];
+        $product_finest = [1,2,3,4];
 
         foreach ($categories as $category) {
             ProductCategory::create([
@@ -118,6 +121,17 @@ class ProductDatabaseSeeder extends Seeder
 
         foreach($trending as $key){
             ProductTrending::create([
+                'product_id' => $key
+            ]);
+        }
+
+        ProductFinest::create([
+            'title' => 'THE BEST BEAUTY SUPPLEMENT BACKED BY RESEARCH',
+            'description' => 'Take your skincare routine to the next level with Daviena Skin Care. clean and pure ingredients help plump skin.'
+        ]);
+
+        foreach($trending as $key){
+            ProductFinestList::create([
                 'product_id' => $key
             ]);
         }
