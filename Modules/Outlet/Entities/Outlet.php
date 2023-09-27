@@ -20,6 +20,7 @@ class Outlet extends Model
     protected $fillable = [
         'name',
         'id_partner',
+        'partner_equal_id',
         'outlet_code',
         // 'id_city',
         'outlet_phone',
@@ -33,7 +34,8 @@ class Outlet extends Model
         'district_code',
         'postal_code',
         'coordinates',
-        'activities'
+        'activities',
+        'images'
     ];
 
     protected static function newFactory()

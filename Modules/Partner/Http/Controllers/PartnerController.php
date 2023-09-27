@@ -11,6 +11,7 @@ use Modules\Partner\Entities\PartnerSosialMedia;
 use Modules\Partner\Entities\PartnerStore;
 use Modules\Partner\Entities\OfficialPartner;
 use Modules\Partner\Entities\OfficialPartnerDetail;
+use Modules\Partner\Entities\OfficialPartnerHome;
 
 class PartnerController extends Controller
 {
@@ -246,5 +247,14 @@ class PartnerController extends Controller
             'official' => $official,
             'detail' => $detail
         ]);
+    }
+
+    public function official_partner_home(){
+        $officialPartnerHome = OfficialPartnerHome::with('partner_equal.partner_store.partner_sosial_media')->get();
+        $officialPartnerHome->transform(function ($item, $key) {
+            $item->partner_equal->images = [json_decode($item->partner_equal->images)];
+            return $item;
+        });
+        return $this->ok("success", $officialPartnerHome);
     }
 }

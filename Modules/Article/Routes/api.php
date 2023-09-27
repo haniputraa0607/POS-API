@@ -19,5 +19,6 @@ Route::prefix('landing-page')->group(function(){
         Route::post('', 'index');
         Route::get('detail/{id}', 'show');
         Route::get('other', 'otherArticle');
+        Route::get('recommendation', 'recommendationArticle');
     });
 });

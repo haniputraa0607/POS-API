@@ -11,6 +11,8 @@ use Modules\Product\Entities\ProductTrending;
 use Modules\Product\Entities\ProductCategory;
 use Modules\Product\Entities\DatatablesModel;
 use Modules\Outlet\Http\Controllers\OutletController;
+use Modules\Product\Entities\ProductFinest;
+use Modules\Product\Entities\ProductFinestList;
 
 class LandingPageController extends Controller
 {
@@ -137,6 +139,16 @@ class LandingPageController extends Controller
             $trendingProduct->products->image = json_decode($trendingProduct->products->image);
         }
         return $this->ok("success", $trendingProducts);
+    }
+
+    public function product_finest(){
+        $finestProduct = ProductFinest::first();
+        $finestProduct['products'] = ProductFinestList::with('products')->get();
+        $finestProduct['products']->transform(function ($item, $key) {
+            $item->products->image = json_decode($item->products->image);
+            return $item;
+        });
+        return $this->ok("success", $finestProduct);
     }
 
 

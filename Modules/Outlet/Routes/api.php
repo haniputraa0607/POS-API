@@ -28,3 +28,9 @@ Route::middleware('auth:api')->controller(OutletController::class)->prefix('outl
     Route::patch($outlet, 'update')->name('outlet.update');
     Route::delete($outlet, 'destroy')->name('outlet.delete');
 });
+
+Route::prefix('landing-page')->group(function(){
+    Route::post('clinic', [OutletController::class, 'clinic']);
+    Route::get('clinic/banner', [OutletController::class, 'banner_clinic']);
+    Route::get('clinic/{id}', [OutletController::class, 'clinic_detail']);
+});

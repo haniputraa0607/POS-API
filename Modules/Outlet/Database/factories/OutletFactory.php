@@ -7,6 +7,7 @@ use Illuminate\Support\Arr;
 use KodePandai\Indonesia\Models\District;
 use Modules\Outlet\Entities\Outlet;
 use Modules\Outlet\Entities\Partner;
+use Modules\Partner\Entities\PartnerEqual;
 
 class OutletFactory extends Factory
 {
@@ -27,6 +28,7 @@ class OutletFactory extends Factory
         $name = $this->faker->city();
         return [
             'id_partner' => Partner::inRandomorder()->first()->id,
+            'partner_equal_id' => PartnerEqual::orderByRaw('RAND()')->first()->id,
             'name' => $name,
             'outlet_code' => ucfirst(substr($name,0,1)).rand(1000,9999),
             'outlet_phone' => $this->faker->phoneNumber(),
@@ -34,7 +36,8 @@ class OutletFactory extends Factory
             'address' => $this->faker->address(),
             'district_code' => District::InRandomOrder()->first()->code,
             'postal_code' => $this->faker->postcode(),
-            'coordinates' => json_encode($this->faker->localCoordinates())
+            'coordinates' => json_encode($this->faker->localCoordinates()),
+            'images' => json_encode("img/outlet/outlet_room.jpg")
         ];
     }
 }
