@@ -31,6 +31,10 @@ class PartnerController extends Controller
             });
         }
 
+        if(isset($post['type'])){
+            $query->where('type', $post['type']);
+        }
+
         $paginate = isset($post['pagination_total_row']) ? (int) $post['pagination_total_row'] : 8;
         $page = isset($post['page']) ? (int) $post['page'] : 1;
         $query->with('city.province', 'partner_store.partner_sosial_media');
