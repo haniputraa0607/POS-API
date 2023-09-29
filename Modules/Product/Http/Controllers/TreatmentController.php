@@ -54,9 +54,9 @@ class TreatmentController extends Controller
 
         $get_treatments = [];
         $make_new = false;
-        $check_json = file_exists(storage_path() . "\json\get_treatment.json");
+        $check_json = file_exists(storage_path() . "/json/get_treatment.json");
         if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "\json\get_treatment.json"), true);
+            $config = json_decode(file_get_contents(storage_path() . "/json/get_treatment.json"), true);
             if(isset($config[$outlet['id']])){
                 if(($date && !$today) || (date('Y-m-d H:i', strtotime($config[$outlet['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i'))){
                     $make_new = true;
@@ -94,7 +94,7 @@ class TreatmentController extends Controller
                 'updated_at' => date('Y-m-d H:i'),
                 'data'       => $products
             ];
-            file_put_contents(storage_path('json\get_treatment.json'), json_encode($config));
+            file_put_contents(storage_path('/json/get_treatment.json'), json_encode($config));
 
         }
 
@@ -201,9 +201,9 @@ class TreatmentController extends Controller
 
         $get_treatments = [];
         $make_new = false;
-        $check_json = file_exists(storage_path() . "\json\get_treatment_all.json");
+        $check_json = file_exists(storage_path() . "/json/get_treatment_all.json");
         if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "\json\get_treatment_all.json"), true);
+            $config = json_decode(file_get_contents(storage_path() . "/json/get_treatment_all.json"), true);
             if(isset($config[$outlet['id']])){
                 if(date('Y-m-d H:i', strtotime($config[$outlet['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
                     $make_new = true;
@@ -233,7 +233,7 @@ class TreatmentController extends Controller
                 'updated_at' => date('Y-m-d H:i'),
                 'data'       => $products
             ];
-            file_put_contents(storage_path('json\get_treatment_all.json'), json_encode($config));
+            file_put_contents(storage_path('/json/get_treatment_all.json'), json_encode($config));
 
         }
 
@@ -433,9 +433,9 @@ class TreatmentController extends Controller
 
         $get_histories = [];
         $make_new = false;
-        $check_json = file_exists(storage_path() . "\json\customer_histories.json");
+        $check_json = file_exists(storage_path() . "/json/customer_histories.json");
         if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "\json\customer_histories.json"), true);
+            $config = json_decode(file_get_contents(storage_path() . "/json/customer_histories.json"), true);
             if(isset($config[$customer_id])){
                 if(($date && !$today) || (date('Y-m-d H:i', strtotime($config[$customer_id]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i'))){
                     $make_new = true;
@@ -464,7 +464,7 @@ class TreatmentController extends Controller
                 'updated_at' => date('Y-m-d H:i'),
                 'data'       => $histories
             ];
-            file_put_contents(storage_path('json\customer_histories.json'), json_encode($config));
+            file_put_contents(storage_path('/json/customer_histories.json'), json_encode($config));
         }
 
         $config = $config[$customer_id] ?? [];

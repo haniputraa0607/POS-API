@@ -102,11 +102,11 @@ class ProductController extends Controller
 
         $products = [];
         $make_new = false;
-        $check_json = file_exists(storage_path() . "\json\get_product.json");
+        $check_json = file_exists(storage_path() . "/json/get_product.json");
         if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "\json\get_product.json"), true);
-            if(isset($config[$post['id']][$outlet['id']])){
-                if(date('Y-m-d H:i', strtotime($config[$post['id']][$outlet['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
+            $config = json_decode(file_get_contents(storage_path() . "/json/get_product.json"), true);
+            if(isset($config[$outlet['id']])){
+                if(date('Y-m-d H:i', strtotime($config[$outlet['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
                     $make_new = true;
                 }
             }else{
@@ -126,24 +126,23 @@ class ProductController extends Controller
                 }
             ])->whereHas('outlet_stock', function($outlet_stock) use ($outlet){
                 $outlet_stock->where('outlet_id',$outlet['id']);
-            })
-            ->where('product_category_id', $post['id']);
+            });
 
             if(isset($post['search']) && !empty($post['search'])){
                 $product = $product->where('product_name', 'like', '%'.$post['search'].'%');
             }
 
-            $product = $product->select('id','product_name', 'image')
+            $product = $product->select('id','product_name', 'image', 'product_category_id')
             ->product()->get()->toArray();
 
-            $config[$post['id']][$outlet['id']] = [
+            $config[$outlet['id']] = [
                 'updated_at' => date('Y-m-d H:i'),
                 'data'       => $product
             ];
-            file_put_contents(storage_path('json\get_product.json'), json_encode($config));
+            file_put_contents(storage_path('/json/get_product.json'), json_encode($config));
 
         }
-        $config = $config[$post['id']][$outlet['id']] ?? [];
+        $config = $config[$outlet['id']] ?? [];
 
         $products = $config['data'] ?? [];
 
@@ -181,14 +180,15 @@ class ProductController extends Controller
 
             $stock = ($value['outlet_stock'][0]['stock'] ?? 0) + ($order_products[$value['id']] ?? 0);
             if($stock > 0){
-                // $image_url = json_decode($value['image'] , true) ?? [];
+                $image_url = json_decode($value['image'] , true) ?? [];
                 $data_pro[] = [
                     'id'           => $value['id'],
                     'product_name' => $value['product_name'],
-                    'image_url'    => isset($value['image']) ? env('STORAGE_URL_API').$value['image'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
-                    // 'image_url'    => $image_url[0] ?? env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
+                    // 'image_url'    => isset($value['image']) ? env('STORAGE_URL_API').$value['image'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
+                    'image_url'    => $image_url[0] ?? env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
                     'price'        => $price,
-                    'stock'        => $stock
+                    'stock'        => $stock,
+                    'id_category'  => $value['product_category_id']
                 ];
             }
         }

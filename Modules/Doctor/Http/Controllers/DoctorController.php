@@ -50,11 +50,11 @@ class DoctorController extends Controller
         $order = [];
 
         $make_new = false;
-        $check_json = file_exists(storage_path() . "\json\outlet_status.json");
+        $check_json = file_exists(storage_path() . "/json/outlet_status.json");
         $schedule = $outlet->outlet_schedule->where('day', date('l'))->first();
 
         if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "\json\outlet_status.json"), true);
+            $config = json_decode(file_get_contents(storage_path() . "/json/outlet_status.json"), true);
             if(isset($config[$outlet['id']]['schedule'][date('l')])){
                 if(date('Y-m-d H:i', strtotime($config[$outlet['id']]['schedule'][date('l')]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
                     $make_new = true;
@@ -82,7 +82,7 @@ class DoctorController extends Controller
                 ];
             }
 
-            file_put_contents(storage_path('json\outlet_status.json'), json_encode($config));
+            file_put_contents(storage_path('/json/outlet_status.json'), json_encode($config));
         }
         $config = $config[$outlet['id']]['schedule'][date('l')] ?? [];
 
@@ -93,11 +93,11 @@ class DoctorController extends Controller
         }
 
         $make_new = false;
-        $check_json = file_exists(storage_path() . "\json\doctor_schedule.json");
+        $check_json = file_exists(storage_path() . "/json/doctor_schedule.json");
         $schedule = $outlet->outlet_schedule->where('day', date('l'))->first();
         $config = [];
         if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "\json\doctor_schedule.json"), true);
+            $config = json_decode(file_get_contents(storage_path() . "/json/doctor_schedule.json"), true);
             if(isset($config[$doctor['id']])){
                 if(date('Y-m-d H:i', strtotime($config[$doctor['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
                     $make_new = true;
@@ -134,7 +134,7 @@ class DoctorController extends Controller
                 ];
             }
 
-            file_put_contents(storage_path('json\doctor_schedule.json'), json_encode($config));
+            file_put_contents(storage_path('/json/doctor_schedule.json'), json_encode($config));
 
         }
 
@@ -260,9 +260,9 @@ class DoctorController extends Controller
     {
         $data = [];
         $make_new = false;
-        $check_json = file_exists(storage_path() . "\json\splash.json");
+        $check_json = file_exists(storage_path() . "/json/splash.json");
         if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "\json\splash.json"), true);
+            $config = json_decode(file_get_contents(storage_path() . "/json/splash.json"), true);
             if(isset($config['doctor'])){
                 if(date('Y-m-d H:i', strtotime($config['doctor']['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
                     $make_new = true;
@@ -295,7 +295,7 @@ class DoctorController extends Controller
                 ]
             ];
 
-            file_put_contents(storage_path('json\splash.json'), json_encode($config));
+            file_put_contents(storage_path('/json/splash.json'), json_encode($config));
 
         }
 
@@ -316,11 +316,11 @@ class DoctorController extends Controller
         }
 
         $make_new = false;
-        $check_json = file_exists(storage_path() . "\json\doctor_schedule.json");
+        $check_json = file_exists(storage_path() . "/json/doctor_schedule.json");
         $schedule = $outlet->outlet_schedule->where('day', date('l'))->first();
 
         if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "\json\doctor_schedule.json"), true);
+            $config = json_decode(file_get_contents(storage_path() . "/json/doctor_schedule.json"), true);
             if(isset($config[$doctor['id']])){
                 if(date('Y-m-d H:i', strtotime($config[$doctor['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
                     $make_new = true;
@@ -357,7 +357,7 @@ class DoctorController extends Controller
                 ];
             }
 
-            file_put_contents(storage_path('json\doctor_schedule.json'), json_encode($config));
+            file_put_contents(storage_path('/json/doctor_schedule.json'), json_encode($config));
 
         }
 
@@ -516,6 +516,7 @@ class DoctorController extends Controller
                         'product_id'       => $ord_pro['product']['id'],
                         'product_name'     => $ord_pro['product']['product_name'],
                         'schedule_date'    => date('d F Y', strtotime($ord_pro['schedule_date'])),
+                        'schedule'         => date('Y-m-d', strtotime($ord_pro['schedule_date'])),
                         'price_total'      => $ord_pro['order_product_grandtotal'],
                         'queue'            => $ord_pro['queue_code'],
                         'progress'         => $progress
@@ -680,9 +681,9 @@ class DoctorController extends Controller
 
         $get_doctors = [];
         $make_new = false;
-        $check_json = file_exists(storage_path() . "\json\get_doctor.json");
+        $check_json = file_exists(storage_path() . "/json/get_doctor.json");
         if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "\json\get_doctor.json"), true);
+            $config = json_decode(file_get_contents(storage_path() . "/json/get_doctor.json"), true);
             if(isset($config[$outlet['id']])){
                 if(($date && !$today) || (date('Y-m-d H:i', strtotime($config[$outlet['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i'))){
                     $make_new = true;
@@ -724,7 +725,7 @@ class DoctorController extends Controller
                 'updated_at' => date('Y-m-d H:i'),
                 'data'       => $doctors
             ];
-            file_put_contents(storage_path('json\get_doctor.json'), json_encode($config));
+            file_put_contents(storage_path('/json/get_doctor.json'), json_encode($config));
 
         }
         $config = $config[$outlet['id']] ?? [];
@@ -786,9 +787,9 @@ class DoctorController extends Controller
 
         $get_doctors = [];
         $make_new = false;
-        $check_json = file_exists(storage_path() . "\json\get_doctor_all.json");
+        $check_json = file_exists(storage_path() . "/json/get_doctor_all.json");
         if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "\json\get_doctor_all.json"), true);
+            $config = json_decode(file_get_contents(storage_path() . "/json/get_doctor_all.json"), true);
             if(isset($config[$outlet['id']])){
                 if(date('Y-m-d H:i', strtotime($config[$outlet['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
                     $make_new = true;
@@ -808,7 +809,7 @@ class DoctorController extends Controller
                 'updated_at' => date('Y-m-d H:i'),
                 'data'       => $doctors
             ];
-            file_put_contents(storage_path('json\get_doctor_all.json'), json_encode($config));
+            file_put_contents(storage_path('/json/get_doctor_all.json'), json_encode($config));
 
         }
         $config = $config[$outlet['id']] ?? [];
@@ -851,9 +852,9 @@ class DoctorController extends Controller
 
         $get_doctors = [];
         $make_new = false;
-        $check_json = file_exists(storage_path() . "\json\get_doctor_date.json");
+        $check_json = file_exists(storage_path() . "/json/get_doctor_date.json");
         if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "\json\get_doctor_date.json"), true);
+            $config = json_decode(file_get_contents(storage_path() . "/json/get_doctor_date.json"), true);
             if(isset($config[$outlet['id']][$post['id']])){
                 if(date('Y-m-d H:i', strtotime($config[$outlet['id']][$post['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
                     $make_new = true;
@@ -888,7 +889,7 @@ class DoctorController extends Controller
                 'data'       => $doctors ?? []
             ];
 
-            file_put_contents(storage_path('json\get_doctor_date.json'), json_encode($config));
+            file_put_contents(storage_path('/json/get_doctor_date.json'), json_encode($config));
 
         }
         $config = $config[$outlet['id']][$post['id']] ?? [];
@@ -1659,12 +1660,11 @@ class DoctorController extends Controller
 
     }
 
-    public function deleteOrderData($data):JsonResponse
+    public function deleteOrderData($data, &$delete_errors):mixed
     {
         $outlet =  $data['outlet'];
         $type =  $data['type'];
         $post =  $data['post'];
-
 
         if(($type??false) == 'product' || ($type??false) == 'treatment'){
 
@@ -1677,8 +1677,8 @@ class DoctorController extends Controller
             ->where('id', $post['id'])->first();
 
             if(!$order_product){
-                DB::rollBack();
-                return $this->error('Order not found');
+                $delete_errors = 'Order not found';
+                return false;
             }
 
             $order = Order::where('id', $order_product['order_id'])->update([
@@ -1688,8 +1688,8 @@ class DoctorController extends Controller
             ]);
 
             if(!$order){
-                DB::rollBack();
-                return $this->error('Order not found');
+                $delete_errors = 'Order not found';
+                return false;
             }
 
             if(($type??false) == 'product'){
@@ -1701,8 +1701,8 @@ class DoctorController extends Controller
                     ]);
 
                     if(!$stock){
-                        DB::rollBack();
-                        return $this->error('Failed to update stock');
+                        $delete_errors = 'Failed to update stock';
+                        return false;
                     }
                     (new ProductController)->addLogProductStockLog($old_stock['id'], $order_product['qty'], $old_stock['stock'], $stock['stock'], 'Cancel Booking Order', null);
                 }
@@ -1722,8 +1722,8 @@ class DoctorController extends Controller
                                 OrderProduct::where('id', $order_product['id'])->update(['treatment_patient_id' => null]);
                                 $delete_treatment_patient = $treatment_patient->delete();
                                 if(!$delete_treatment_patient){
-                                    DB::rollBack();
-                                    return $this->error('Failed to delete treatment patient');
+                                    $delete_errors = 'Failed to delete treatment patient';
+                                    return false;
                                 }
                             }else{
                                 $anotherSteps = TreatmentPatientStep::where('treatment_patient_id', $treatment_patient['id'])->where('status', 'Pending')->orderBy('step', 'asc')->get();
@@ -1736,25 +1736,20 @@ class DoctorController extends Controller
                                 }
                             }
                         }else{
-                            DB::rollBack();
-                            return $this->error('Failed to get treatment patient');
+                            $delete_errors = 'Failed to get treatment patient';
+                            return false;
                         }
                     }else{
-                        DB::rollBack();
-                        return $this->error('Failed to delete step');
+                        $delete_errors = 'Failed to delete step';
+                        return false;
                     }
                 }else{
-                    DB::rollBack();
-                    return $this->error('Failed to get treatment patient step');
+                    $delete_errors = 'Failed to get treatment patient step';
+                    return false;
                 }
             }
 
-            DB::commit();
-            return $this->getDataOrder(true, [
-                'order_id' => $order_product['order']['id'],
-                'outlet_id' => $outlet['id'],
-                'order_consultation' => $order_product['order']['order_consultations'][0]
-            ],'Success to delete order');
+            return true;
 
         }elseif(($type??false) == 'prescription'){
 
@@ -1903,27 +1898,325 @@ class DoctorController extends Controller
             return $this->error('Outlet not found');
         }
 
-        $order = Order::with(['order_consultations.consultation'])->where('id', $post['id_order'])
-            ->where('outlet_id', $outlet['id'])
-            ->where('send_to_transaction', 0)
-            ->where('is_submited', 1)
-            ->where('is_submited_doctor', 0)
-            ->whereHas('order_consultations')
-            ->latest()
-            ->first();
+        $is_error = false;
+        $errors = [];
+        $order = Order::with([
+            'order_consultations.consultation',
+        ])->where('id', $post['id_order'])
+        ->where('outlet_id', $outlet['id'])
+        ->where('send_to_transaction', 0)
+        ->where('is_submited', 1)
+        ->where('is_submited_doctor', 0)
+        ->whereHas('order_consultations')
+        ->latest()
+        ->first();
 
         if(!$order){
             return $this->error('Order not found');
         }
 
-        foreach($post['order_products'] ?? [] as $order_product){
+        DB::beginTransaction();
+        $add_prod = [];
+        foreach($post['order_products'] ?? [] as $post_order_product){
 
+            $product = Product::with([
+                'global_price','outlet_price' => function($outlet_price) use ($outlet){
+                    $outlet_price->where('outlet_id',$outlet['id']);
+                }, 'outlet_stock' => function($outlet_stock) use ($outlet){
+                    $outlet_stock->where('outlet_id',$outlet['id']);
+                }
+            ])->where('id', $post_order_product['id'])->first();
+
+            if(!$product){
+                $is_error = true;
+                $errors[] = 'Product not found';
+                continue;
+            }
+
+            $price = ($product['outlet_price'][0]['price'] ?? $product['global_price']['price']) ?? 0;
+            $stock = $product['outlet_stock'][0]['stock'] ?? 0;
+
+            if($post_order_product['qty'] > $stock){
+                $is_error = true;
+                $errors[] = $product['product_name']. ' out of stock';
+                continue;
+            }
+
+            $order_product = OrderProduct::where('order_id', $order['id'])->where('product_id', $product['id'])->first();
+            if($order_product){
+
+                if($post_order_product['qty']>$order_product['qty']){
+
+                    $old_order_product = clone $order_product;
+                    $order_product->update([
+                        'qty'                      => $post_order_product['qty'],
+                        'order_product_subtotal'   => ($post_order_product['qty']*$order_product['order_product_price']),
+                        'order_product_grandtotal' => ($post_order_product['qty']*$order_product['order_product_price']),
+                    ]);
+
+                    $update_order = $order->update([
+                        'order_subtotal'   => $order_product['order']['order_subtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_subtotal']),
+                        'order_gross'      => $order_product['order']['order_gross'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_subtotal']),
+                        'order_grandtotal' => $order_product['order']['order_grandtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_grandtotal']),
+                    ]);
+
+                }elseif($post_order_product['qty']<$order_product['qty']){
+
+                    $old_order_product = clone $order_product;
+                    $order_product->update([
+                        'qty'                      => $post_order_product['qty'],
+                        'order_product_subtotal'   => ($post_order_product['qty']*$order_product['order_product_price']),
+                        'order_product_grandtotal' => ($post_order_product['qty']*$order_product['order_product_price']),
+                    ]);
+
+                    $update_order = $order->update([
+                        'order_subtotal'   => $order_product['order']['order_subtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_subtotal']),
+                        'order_gross'      => $order_product['order']['order_gross'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_subtotal']),
+                        'order_grandtotal' => $order_product['order']['order_grandtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_grandtotal']),
+                    ]);
+
+                }elseif($post_order_product['qty']==$order_product['qty']){
+                    $add_prod[] = $product['id'];
+                    continue;
+                }
+
+                if(!$update_order){
+                    $is_error = true;
+                    $errors[] = 'Failed to order '.$product['product_name'];
+                    continue;
+                }
+
+                $stock = ProductOutletStock::where('product_id', $product['id'])->where('outlet_id', $outlet['id'])->first();
+                if($stock){
+                    $old_stock = clone $stock;
+                    if($post_order_product['qty']>$old_order_product['qty']){
+                        $qty = $post_order_product['qty'] - $old_order_product['qty'];
+                        $qty_log = -$qty;
+                        $stock->update([
+                            'stock' =>  $stock['stock']-$qty
+                        ]);
+                    }elseif($post_order_product['qty']<$old_order_product['qty']){
+                        $qty = $old_order_product['qty'] - $post_order_product['qty'];
+                        $qty_log = $qty;
+                        $stock->update([
+                            'stock' =>  $stock['stock']+$qty
+                        ]);
+                    }
+
+                    if(!$stock){
+                        $is_error = true;
+                        $errors[] = 'Failed to update stock '.$product['product_name'];
+                        continue;
+                    }
+                    (new ProductController)->addLogProductStockLog($old_stock['id'], $qty_log, $old_stock['stock'], $stock['stock'], 'Update Booking Order', null);
+                }
+                $add_prod[] = $product['id'];
+
+            }else{
+                $store_order_product = OrderProduct::create([
+                    'order_id'                 => $order['id'],
+                    'product_id'               => $product['id'],
+                    'type'                     => 'Product',
+                    'qty'                      => $post_order_product['qty'],
+                    'order_product_price'      => $price,
+                    'order_product_subtotal'   => $post_order_product['qty']*$price,
+                    'order_product_grandtotal' => $post_order_product['qty']*$price,
+                ]);
+
+                $price_to_order = ($post_order_product['qty']*$price);
+                if(!$store_order_product){
+                    $is_error = true;
+                    $errors[] = 'Failed to order '.$product['product_name'];
+                    continue;
+                }
+
+                $stock = ProductOutletStock::where('product_id', $product['id'])->where('outlet_id', $outlet['id'])->first();
+                if($stock){
+                    $old_stock = clone $stock;
+                    $stock->update([
+                        'stock' =>  $stock['stock']-$post_order_product['qty']
+                    ]);
+
+                    if(!$stock){
+                        $is_error = true;
+                        $errors[] = 'Failed to update stock '.$product['product_name'];
+                        continue;
+                    }
+
+                    (new ProductController)->addLogProductStockLog($old_stock['id'], -$post_order_product['qty'], $old_stock['stock'], $stock['stock'], 'Booking Order', null);
+                }
+
+                $order->update([
+                    'order_subtotal'   => $order['order_subtotal'] + $price_to_order,
+                    'order_gross'      => $order['order_gross'] + $price_to_order,
+                    'order_grandtotal' => $order['order_grandtotal'] + $price_to_order,
+                ]);
+                $add_prod[] = $product['id'];
+            }
+        }
+
+        if($add_prod && !$is_error){
+            $other_order_products = OrderProduct::where('order_id', $order['id'])->whereNotIn('product_id', $add_prod)->where('type', 'Product')->get()->toArray();
+
+            foreach($other_order_products ?? [] as $other_order_product){
+                $delete = $this->deleteOrderData([
+                    'outlet' => $outlet,
+                    'type' => 'product',
+                    'post' => [
+                        'id_order' => $order['id'],
+                        'id' => $other_order_product['id']
+                    ]
+                ], $delete_errors);
+                if(!$delete){
+                    $is_error = true;
+                    $errors[] = $delete_errors;
+                    continue;
+                }
+            }
+        }
+
+        $add_treat = [];
+        foreach($post['order_treatments'] ?? [] as $post_order_treatment){
+            $treatment = Product::with([
+                'global_price','outlet_price' => function($outlet_price) use ($outlet){
+                    $outlet_price->where('outlet_id',$outlet['id']);
+                }
+            ])->where('id', $post_order_treatment['id'])->first();
+
+            if(!$treatment){
+                $is_error = true;
+                $errors[] = 'Treatment not found';
+                continue;
+            }
+
+            $price = $treatment['outlet_price'][0]['price'] ?? $treatment['global_price']['price'];
+
+            $get_order_treatment = OrderProduct::where('order_id', $order['id'])->where('product_id', $treatment['id'])->whereDate('schedule_date',$post_order_treatment['date'])->where('type', 'Treatment')->first();
+            if($get_order_treatment){
+                if(isset($post_order_treatment['continue'])){
+                    $delete = $this->deleteOrderData([
+                        'outlet' => $outlet,
+                        'type' => 'treatment',
+                        'post' => [
+                            'id_order' => $order['id'],
+                            'id' => $get_order_treatment['id']
+                        ]
+                    ], $delete_errors);
+                    if(!$delete){
+                        $is_error = true;
+                        $errors[] = $delete_errors;
+                        continue;
+                    }
+
+
+                }else{
+                    $add_treat[] = $treatment['id'];
+                    continue;
+                }
+            }
+
+            if(($post_order_treatment['continue']??false) == 1){
+                $customerPatient = TreatmentPatient::where('patient_id', $order['patient_id'])
+                ->where('treatment_id', $treatment['id'])
+                ->where('status', '<>', 'Finished')
+                ->whereDate('expired_date', '>=', date('y-m-d', strtotime($post_order_treatment['date'])))
+                ->first();
+
+            }else{
+                if(!isset($post_order_treatment['record'])){
+                    $is_error = true;
+                    $errors[] = 'Record not found';
+                    continue;
+                }
+                $expired = '+'.$post_order_treatment['record']['time_frame'].' '.strtolower($post_order_treatment['record']['type']).'s';
+                $customerPatient = TreatmentPatient::create([
+                    'treatment_id' => $product['id'],
+                    'patient_id' => $order['patient_id'],
+                    'doctor_id' => $doctor['id'],
+                    'step' => $post_order_treatment['record']['qty'],
+                    'progress' => 0,
+                    'status' => 'On Progress',
+                    'start_date' => date('Y-m-d H:i:s'),
+                    'timeframe' => $post_order_treatment['record']['time_frame'],
+                    'timeframe_type' => $post_order_treatment['record']['type'],
+                    'expired_date' => date('Y-m-d H:i:s', strtotime($expired)),
+                    'suggestion' => $post_order_treatment['record']['notes'],
+                ]);
+            }
+
+            if(!$customerPatient){
+                $is_error = true;
+                $errors[] = 'Invalid error';
+                continue;
+            }
+
+            $existcustomerPatientStep = TreatmentPatientStep::where('treatment_patient_id', $customerPatient['id'])->max('step') ?? 0;
+            if(($existcustomerPatientStep+1) > $customerPatient['step']){
+                $is_error = true;
+                $errors[] = 'Step cannot exceed those specified';
+                continue;
+            }
+
+            $customerPatientStep = TreatmentPatientStep::create([
+                'treatment_patient_id' => $customerPatient['id'],
+                'step'                 => $existcustomerPatientStep + 1,
+                'date'                 => $post_order_treatment['date'],
+            ]);
+
+            if(!$customerPatientStep){
+                $is_error = true;
+                $errors[] = 'Invalid error';
+                continue;
+            }
+
+            $create_order_product = OrderProduct::create([
+                'order_id'                  => $order['id'],
+                'product_id'                => $product['id'],
+                'type'                      => $product['type'],
+                'schedule_date'             => $post_order_treatment['date'],
+                'treatment_patient_id'      => $customerPatient['id'] ?? null,
+                'treatment_patient_step_id' => $customerPatientStep['id'] ?? null,
+                'qty'                       => 1,
+                'order_product_price'       => $price,
+                'order_product_subtotal'    => $price,
+                'order_product_grandtotal'  => $price,
+            ]);
+            $price_to_order = $price;
+
+            if(!$create_order_product){
+                $is_error = true;
+                $errors[] = 'Treatment not found';
+                continue;
+            }
+
+            $order->update([
+                'order_subtotal'   => $order['order_subtotal'] + $price_to_order,
+                'order_gross'      => $order['order_gross'] + $price_to_order,
+                'order_grandtotal' => $order['order_grandtotal'] + $price_to_order,
+            ]);
+
+            $add_treat[] = $treatment['id'];
 
         }
 
-        foreach($post['order_treatments'] ?? [] as $order_treatment){
+        if($add_treat && !$is_error){
+            $other_order_products = OrderProduct::where('order_id', $order['id'])->whereNotIn('product_id', $add_treat)->where('type', 'Treatment')->get()->toArray();
 
-
+            foreach($other_order_products ?? [] as $other_order_product){
+                $delete = $this->deleteOrderData([
+                    'outlet' => $outlet,
+                    'type' => 'treatment',
+                    'post' => [
+                        'id_order' => $order['id'],
+                        'id' => $other_order_product['id']
+                    ]
+                ], $delete_errors);
+                if(!$delete){
+                    $is_error = true;
+                    $errors[] = $delete_errors;
+                    continue;
+                }
+            }
         }
 
         foreach($post['order_prescriptions'] ?? [] as $order_prescription){

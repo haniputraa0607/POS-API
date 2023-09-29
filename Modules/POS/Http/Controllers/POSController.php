@@ -56,9 +56,9 @@ class POSController extends Controller
             $consultation = null;
 
             $make_new = false;
-            $check_json = file_exists(storage_path() . "\json\outlet_status.json");
+            $check_json = file_exists(storage_path() . "/json/outlet_status.json");
             if($check_json){
-                $config = json_decode(file_get_contents(storage_path() . "\json\outlet_status.json"), true);
+                $config = json_decode(file_get_contents(storage_path() . "/json/outlet_status.json"), true);
                 if(isset($config[$outlet['id']]['schedule'][date('l')])){
                     if(date('Y-m-d H:i', strtotime($config[$outlet['id']]['schedule'][date('l')]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
                         $make_new = true;
@@ -86,7 +86,7 @@ class POSController extends Controller
                     ];
                 }
 
-                file_put_contents(storage_path('json\outlet_status.json'), json_encode($config));
+                file_put_contents(storage_path('/json/outlet_status.json'), json_encode($config));
             }
 
             $config = $config[$outlet['id']]['schedule'][date('l')] ?? [];
@@ -154,9 +154,9 @@ class POSController extends Controller
     {
         $data = [];
         $make_new = false;
-        $check_json = file_exists(storage_path() . "\json\splash.json");
+        $check_json = file_exists(storage_path() . "/json/splash.json");
         if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "\json\splash.json"), true);
+            $config = json_decode(file_get_contents(storage_path() . "/json/splash.json"), true);
             if(isset($config['pos'])){
                 if(date('Y-m-d H:i', strtotime($config['pos']['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
                     $make_new = true;
@@ -189,7 +189,7 @@ class POSController extends Controller
                 ]
             ];
 
-            file_put_contents(storage_path('json\splash.json'), json_encode($config));
+            file_put_contents(storage_path('/json/splash.json'), json_encode($config));
 
         }
         $config = $config['pos'] ?? [];
@@ -305,6 +305,7 @@ class POSController extends Controller
                         'product_id'       => $ord_pro['product']['id'],
                         'product_name'     => $ord_pro['product']['product_name'],
                         'schedule_date'    => date('d F Y', strtotime($ord_pro['schedule_date'])),
+                        'schedule'         => date('Y-m-d', strtotime($ord_pro['schedule_date'])),
                         'price_total'      => $ord_pro['order_product_grandtotal'],
                         'queue'            => $ord_pro['queue_code'],
                         'progress'         => $progress
@@ -1054,7 +1055,7 @@ class POSController extends Controller
 
                 $price = $treatment['outlet_price'][0]['price'] ?? $treatment['global_price']['price'];
 
-                $get_order_treatment = OrderProduct::where('order_id', $order_treatment['id'])->where('product_id', $treatment['id'])->whereDate('schedule_date',$order_treatment['date'])->where('type', 'Treatment')->first();
+                $get_order_treatment = OrderProduct::where('order_id', $order['id'])->where('product_id', $treatment['id'])->whereDate('schedule_date',$order_treatment['date'])->where('type', 'Treatment')->first();
                 if($get_order_treatment){
                     $is_error = true;
                     $errors[] = 'Treatment already exist in order';
