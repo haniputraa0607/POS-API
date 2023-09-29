@@ -65,6 +65,7 @@ class GenerateQueueOrder implements ShouldQueue
                     ->where('type', 'Treatment')
                     ->max('queue') + 1;
 
+
                     if ($queue < 10) {
                         $queue_code = 'T00' . $queue;
                     } elseif ($queue < 100) {
@@ -91,6 +92,7 @@ class GenerateQueueOrder implements ShouldQueue
                 } else {
                     $queue_code = 'C' . $queue;
                 }
+
 
                 $update = OrderConsultation::where('id', $order_consultation['id'])->update(['queue' => $queue,'queue_code' => $queue_code]);
             }
