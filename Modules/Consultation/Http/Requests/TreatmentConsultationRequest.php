@@ -16,8 +16,7 @@ class TreatmentConsultationRequest extends FormRequest
         return [
             'title' => 'required',
             'description' => 'required',
-            'image_front' => 'required|mimes:png',
-            'image_behind' => 'required|mimes:png'
+            'image' => 'required|mimes:png'
         ];
     }
 

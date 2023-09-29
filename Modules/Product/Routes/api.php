@@ -81,6 +81,7 @@ Route::prefix('landing-page')->group(function(){
         Route::post('list', 'list');
         Route::get('detail/{id}', 'detail');
         Route::get('trending', 'product_trending');
+        Route::get('finest', 'product_finest');
     });
     Route::prefix('treatment')->controller(LandingPageController::class)->group(function(){
         Route::post('list', 'treatment');

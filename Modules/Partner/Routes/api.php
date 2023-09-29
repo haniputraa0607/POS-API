@@ -30,6 +30,7 @@ Route::middleware(['auth:api','scopes:be'])->prefix('webhook')->group(function()
 Route::prefix('landing-page')->group(function(){
     Route::prefix('official-partner')->controller(PartnerController::class)->group(function(){
         Route::get('', 'official_partner');
+        Route::get('home', 'official_partner_home');
     });
 });
 

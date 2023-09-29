@@ -17,13 +17,11 @@ class TreatmentConsultationController extends Controller
 
     public function update(TreatmentConsultationRequest $request)//: JsonResponse
     {
-        $upload_front = $request->file('image_front')->storeAs('public/treatment_consultation', 'image_front.png');
-        $upload_behind = $request->file('image_behind')->storeAs('public/treatment_consultation', 'image_behind.png');
+        $upload_front = $request->file('image')->storeAs('public/treatment_consultation', 'image.png');;
         $payload = [
             'title' => $request->title,
             'description' => $request->description,
-            'image_front' => 'storage/treatment_consultation/image_front.png',
-            'image_behind' => 'storage/treatment_consultation/image_behind.png',
+            'image' => 'storage/treatment_consultation/image.png',
         ];
         $payloadJson = json_encode($payload);
         Storage::put('public/treatment_consultation/payload.json', $payloadJson);
@@ -36,8 +34,7 @@ class TreatmentConsultationController extends Controller
             return $this->error('Treatment and Consultation not set yet');
         } else {
             $data = json_decode($fileContents);
-            $data->image_front = asset($data->image_front);
-            $data->image_behind = asset($data->image_behind);
+            $data->image = asset($data->image);
             return $this->ok('success', $data);
         }
     }

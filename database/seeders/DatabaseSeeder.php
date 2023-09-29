@@ -16,6 +16,7 @@ use Database\Seeders\FeaturesTableSeeder;
 use Database\Seeders\SettingTableSeeder;
 use Modules\Article\Database\Seeders\ArticleDatabaseSeeder;
 use Modules\Banner\Database\Seeders\BannerDatabaseSeeder;
+use Modules\Contact\Database\Seeders\ContactDatabaseSeeder;
 use Modules\Partner\Database\Seeders\PartnerDatabaseSeeder;
 use Modules\Product\Database\Seeders\ProductDatabaseSeeder;
 
@@ -25,6 +26,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             IndonesiaDatabaseSeeder::class,
+            PartnerDatabaseSeeder::class,
             OutletDatabaseSeeder::class,
             UserDatabaseSeeder::class,
             GrievanceDatabaseSeeder::class,
@@ -37,7 +39,7 @@ class DatabaseSeeder extends Seeder
             ProductDatabaseSeeder::class,
             BannerDatabaseSeeder::class,
             ArticleDatabaseSeeder::class,
-            PartnerDatabaseSeeder::class,
+            ContactDatabaseSeeder::class,
         ]);
 
     }
