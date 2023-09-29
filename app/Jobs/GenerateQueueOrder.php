@@ -39,10 +39,8 @@ class GenerateQueueOrder implements ShouldQueue
             'order_consultations',
         ])->where('id', $this->data['id'])->first();
 
-        if($order){
-
-            foreach($order['order_products'] ?? [] as $order_product){
-
+        if ($order) {
+            foreach ($order['order_products'] ?? [] as $order_product) {
                 if ($order_product['type'] == 'Product') {
                     $queue = OrderProduct::whereHas('order', function ($ord) use ($order) {
                         $ord->where('id', '<>', $order['id']);
@@ -59,9 +57,7 @@ class GenerateQueueOrder implements ShouldQueue
                     }
 
                     $update = OrderProduct::where('id', $order_product['id'])->update(['queue' => $queue,'queue_code' => $queue_code]);
-
-                }elseif ($order_product['type'] == 'Treatment') {
-
+                } elseif ($order_product['type'] == 'Treatment') {
                     $queue = OrderProduct::whereHas('order', function ($ord) use ($order) {
                         $ord->where('id', '<>', $order['id']);
                         $ord->where('outlet_id', $order['outlet_id']);
@@ -79,10 +75,9 @@ class GenerateQueueOrder implements ShouldQueue
 
                     $update = OrderProduct::where('id', $order_product['id'])->update(['queue' => $queue,'queue_code' => $queue_code]);
                 }
-
             }
 
-            foreach($order['order_consultations'] ?? [] as $order_consultation){
+            foreach ($order['order_consultations'] ?? [] as $order_consultation) {
                 $queue = OrderConsultation::whereHas('order', function ($ord) use ($order) {
                     $ord->where('id', '<>', $order['id']);
                     $ord->where('outlet_id', $order['outlet_id']);
