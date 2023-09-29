@@ -25,8 +25,10 @@ class Product extends Model
     protected $fillable = [
         'product_category_id',
         'equal_id',
+        'equal_id_category',
         'product_code',
         'product_name',
+        'product_groups',
         'equal_name',
         'type',
         'description',
@@ -45,9 +47,9 @@ class Product extends Model
         return $this->hasMany(ProductTrending::class, 'product_id');
     }
 
-    public function product_package(){
-        return $this->hasMany(ProductPackage::class, 'product_id');
-    }
+    // public function product_package(){
+    //     return $this->hasMany(ProductPackage::class, 'product_id');
+    // }
 
     public function scopeProduct(Builder $query): Builder
     {

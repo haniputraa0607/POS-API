@@ -19,7 +19,7 @@ class PartnerEqual extends Model
         'phone',
         'type',
         'city_code',
-        'image',
+        'images',
         'id_member',
         'is_suspended',
     ];

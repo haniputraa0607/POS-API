@@ -60,7 +60,7 @@ class ArticleController extends Controller
             'top_article' => $topArticle,
             'recommended_articles' => $recommendedArticles,
         ];
-        return response()->json($response);
+        return $this->ok("success", $response);
     }
 
 }

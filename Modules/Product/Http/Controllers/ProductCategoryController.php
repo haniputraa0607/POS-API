@@ -10,6 +10,9 @@ use Modules\Product\Entities\ProductCategory;
 use Modules\Outlet\Http\Controllers\OutletController;
 use Modules\Product\Http\Requests\Webhook\ProductCategory\Create;
 use Modules\Product\Http\Requests\Webhook\ProductCategory\Update;
+use Modules\Product\Http\Requests\ProductCategoryWebHookCreateRequest;
+use Modules\Product\Http\Requests\ProductCategoryWebHookCreateBulkRequest;
+use Modules\Product\Http\Requests\ProductCategoryWebHookUpdateRequest;
 
 class ProductCategoryController extends Controller
 {
@@ -73,13 +76,13 @@ class ProductCategoryController extends Controller
         return $this->ok('success', $return);
     }
 
-    public function webHookCreate(Create $request)
+    public function webHookCreate(ProductCategoryWebHookCreateRequest $request)
     {
         $product = ProductCategory::create($request->all());
         return $this->ok("succes", $product);
     }
 
-    public function webHookUpdate(Update $request)
+    public function webHookUpdate(ProductCategoryWebHookUpdateRequest $request)
     {
         $product = ProductCategory::where(['equal_id' => $request->equal_id])->update($request->all());
         return $this->ok("succes", $product);
@@ -90,5 +93,27 @@ class ProductCategoryController extends Controller
         ProductCategory::where(['equal_id' => $request->id_item_category])->delete();
         return $this->ok("success","");
     }
+
+    public function webHookCreateBulk(ProductCategoryWebHookCreateBulkRequest $request)
+    {
+        $data = $request->validated();
+        $createdCategories = [];
+        foreach ($data as $categoryData) {
+            $category = ProductCategory::create([
+                'equal_id' => $categoryData['equal_id'],
+                'equal_code' => $categoryData['equal_code'],
+                'product_category_name' => $categoryData['product_category_name'],
+                'equal_name' => $categoryData['product_category_name'],
+                'equal_parent_id' => $categoryData['equal_parent_id'],
+                'product_category_photo' => $categoryData['product_category_photo'],
+                'is_active' => 1
+            ]);
+
+            $createdCategories[] = $category;
+        }
+
+        return $this->ok("success", $createdCategories);
+    }
+
 }
 

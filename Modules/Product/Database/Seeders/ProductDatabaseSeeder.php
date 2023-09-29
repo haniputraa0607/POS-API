@@ -8,7 +8,6 @@ use Modules\Product\Entities\Product;
 use Modules\Product\Entities\ProductCategory;
 use Modules\Product\Entities\ProductFinest;
 use Modules\Product\Entities\ProductFinestList;
-use Modules\Product\Entities\ProductPackage;
 use Modules\Product\Entities\ProductTrending;
 
 class ProductDatabaseSeeder extends Seeder
@@ -64,7 +63,7 @@ class ProductDatabaseSeeder extends Seeder
             'Paket Glowing Series',
             'Paket Gold Series',
             'Paket Acne Series',
-            'Paket Acne Series'
+            'Paket Acne Series 2'
         ];
         $trending = [1,2,3,4];
         $product_finest = [1,2,3,4];
@@ -108,15 +107,26 @@ class ProductDatabaseSeeder extends Seeder
                 'description' => 'Lorem ipsum dolor sit amet, consectetur adipisicing elit.',
                 'is_active' =>  rand(0, 1),
                 'need_recipe_status' =>  rand(0, 1),
+                'product_groups' => json_encode([
+                    [
+                        'id' => 1,
+                    ],
+                    [
+                        'id' => 2,
+                    ],
+                    [
+                        'id' => 3,
+                    ]
+                ])
             ]);
             $id_package = $product->id;
-            $data_packages = [1, 2, 3];
-            foreach($data_packages as $data_package){
-                $product_package = ProductPackage::create([
-                    'package_id' => $id_package,
-                    'product_id' => $data_package
-                ]);
-            }
+            // $data_packages = [1, 2, 3];
+            // foreach($data_packages as $data_package){
+            //     $product_package = ProductPackage::create([
+            //         'package_id' => $id_package,
+            //         'product_id' => $data_package
+            //     ]);
+            // }
         }
 
         foreach($trending as $key){
