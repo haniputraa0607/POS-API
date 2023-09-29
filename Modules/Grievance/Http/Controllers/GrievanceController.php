@@ -88,8 +88,32 @@ class GrievanceController extends Controller
 
     public function show(Request $request): JsonResponse
     {
-        $grievance = Grievance::select('id', 'grievance_name')->orderBy('grievance_name', 'asc')->get()->toArray();
-        return $this->ok("success", $grievance);
+        $return = [];
+        $make_new = false;
+        $check_json = file_exists(storage_path() . "\json\grievances.json");
+        if($check_json){
+            $config = json_decode(file_get_contents(storage_path() . "\json\grievances.json"), true);
+            if(date('Y-m-d H:i', strtotime($config['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
+                $make_new = true;
+            }
+        }else{
+            $make_new = true;
+        }
+
+        if($make_new){
+            $grievance = Grievance::select('id', 'grievance_name')->orderBy('grievance_name', 'asc')->get()->toArray();
+            if($grievance){
+                $config = [
+                    'updated_at' => date('Y-m-d H:i'),
+                    'data'       => $grievance
+                ];
+                file_put_contents(storage_path('json\grievances.json'), json_encode($config));
+
+            }
+        }
+        $return = $config['data'] ?? [];
+
+        return $this->ok("success", $return);
     }
 
     public function addGrievancePatient(Request $request): JsonResponse
@@ -220,7 +244,7 @@ class GrievanceController extends Controller
         }
 
         DB::commit();
-        return (new POSController)->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $order_consul['order']['patient_id']], 'Succes to add update grievances');
+        return (new POSController)->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $order_consul['order']['patient_id']], 'Success to add update grievances');
 
     }
 }

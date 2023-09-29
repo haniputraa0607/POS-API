@@ -37,7 +37,7 @@ class ProductCategoryController extends Controller
         return $this->ok('success', $store);
     }
 
-    public function list(Request $request):JsonResponse
+    public function list(Request $request):mixed
     {
         $post = $request->json()->all();
         $cashier = $request->user();
@@ -47,11 +47,33 @@ class ProductCategoryController extends Controller
             return $this->error('Outlet not found');
         }
 
-        $productCategories = ProductCategory::select('id','product_category_name')->get()->toArray();
-        if(!$productCategories){
-            return $this->error('Something Error');
+        $return = [];
+        $make_new = false;
+        $check_json = file_exists(storage_path() . "\json\product_category.json");
+        if($check_json){
+            $config = json_decode(file_get_contents(storage_path() . "\json\product_category.json"), true);
+            if(date('Y-m-d H:i', strtotime($config['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
+                $make_new = true;
+            }
+        }else{
+            $make_new = true;
         }
-        return $this->ok('success', $productCategories);
+
+        if($make_new){
+            $productCategories = ProductCategory::select('id','product_category_name')->get()->toArray();
+            if($productCategories){
+                $config = [
+                    'updated_at' => date('Y-m-d H:i'),
+                    'data'       => $productCategories
+                ];
+                file_put_contents(storage_path('json\product_category.json'), json_encode($config));
+
+            }
+        }
+
+        $return = $config['data'] ?? [];
+
+        return $this->ok('success', $return);
     }
 
     public function webHookCreate(ProductCategoryWebHookCreateRequest $request)

@@ -92,7 +92,7 @@ class ProductController extends Controller
 
     }
 
-    public function list(Request $request):JsonResponse
+    public function list(Request $request):mixed
     {
         $post = $request->json()->all();
         $cashier = $request->user();
@@ -102,27 +102,52 @@ class ProductController extends Controller
             return $this->error('Outlet not found');
         }
 
-        $product = Product::with([
-            'global_price',
-            'outlet_price' => function($outlet_price) use ($outlet){
-                $outlet_price->where('outlet_id',$outlet['id']);
-            }, 'outlet_stock' => function($outlet_stock) use ($outlet){
-                $outlet_stock->where('outlet_id',$outlet['id']);
+        $products = [];
+        $make_new = false;
+        $check_json = file_exists(storage_path() . "\json\get_product.json");
+        if($check_json){
+            $config = json_decode(file_get_contents(storage_path() . "\json\get_product.json"), true);
+            if(isset($config[$post['id']][$outlet['id']])){
+                if(date('Y-m-d H:i', strtotime($config[$post['id']][$outlet['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
+                    $make_new = true;
+                }
+            }else{
+                $make_new = true;
             }
-        ])->whereHas('outlet_stock', function($outlet_stock) use ($outlet){
-            $outlet_stock->where('outlet_id',$outlet['id']);
-        })
-        ->where('product_category_id', $post['id']);
-
-        if(isset($post['search']) && !empty($post['search'])){
-            $product = $product->where('product_name', 'like', '%'.$post['search'].'%');
+        }else{
+            $make_new = true;
         }
 
-        $product = $product->select('id','product_name', 'image')
-        ->product()->get()->toArray();
-        if(!$product){
-            return $this->error('Something Error');
+        if($make_new){
+            $product = Product::with([
+                'global_price',
+                'outlet_price' => function($outlet_price) use ($outlet){
+                    $outlet_price->where('outlet_id',$outlet['id']);
+                }, 'outlet_stock' => function($outlet_stock) use ($outlet){
+                    $outlet_stock->where('outlet_id',$outlet['id']);
+                }
+            ])->whereHas('outlet_stock', function($outlet_stock) use ($outlet){
+                $outlet_stock->where('outlet_id',$outlet['id']);
+            })
+            ->where('product_category_id', $post['id']);
+
+            if(isset($post['search']) && !empty($post['search'])){
+                $product = $product->where('product_name', 'like', '%'.$post['search'].'%');
+            }
+
+            $product = $product->select('id','product_name', 'image')
+            ->product()->get()->toArray();
+
+            $config[$post['id']][$outlet['id']] = [
+                'updated_at' => date('Y-m-d H:i'),
+                'data'       => $product
+            ];
+            file_put_contents(storage_path('json\get_product.json'), json_encode($config));
+
         }
+        $config = $config[$post['id']][$outlet['id']] ?? [];
+
+        $products = $config['data'] ?? [];
 
         $order_products = [];
         if(isset($post['id_customer'])){
@@ -135,10 +160,20 @@ class ProductController extends Controller
             foreach($order['order_products'] ?? [] as $ord_pro){
                 $order_products[$ord_pro['product_id']] = $ord_pro['qty'];
             }
+        }elseif(isset($post['id_order'])){
+            $order = Order::with([
+                'order_products'
+            ])->where('id', $post['id_order'])
+            ->where('outlet_id', $outlet['id'])
+            ->where('send_to_transaction', 0)->latest()->first();
+
+            foreach($order['order_products'] ?? [] as $ord_pro){
+                $order_products[$ord_pro['product_id']] = $ord_pro['qty'];
+            }
         }
 
         $data_pro = [];
-        foreach($product ?? [] as $value){
+        foreach($products ?? [] as $value){
 
             if(isset($value['outlet_price'][0]['price']) ?? false){
                 $price = $value['outlet_price'][0]['price'] ?? null;
@@ -148,18 +183,20 @@ class ProductController extends Controller
 
             $stock = ($value['outlet_stock'][0]['stock'] ?? 0) + ($order_products[$value['id']] ?? 0);
             if($stock > 0){
+                // $image_url = json_decode($value['image'] , true) ?? [];
                 $data_pro[] = [
                     'id'           => $value['id'],
                     'product_name' => $value['product_name'],
                     'image_url'    => isset($value['image']) ? env('STORAGE_URL_API').$value['image'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
+                    // 'image_url'    => $image_url[0] ?? env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
                     'price'        => $price,
                     'stock'        => $stock
                 ];
             }
         }
-        $product = $data_pro;
+        $products = $data_pro;
 
-        return $this->ok('success', $product);
+        return $this->ok('success', $products);
     }
 
     public function destroy(Request $request, $id): JsonResponse

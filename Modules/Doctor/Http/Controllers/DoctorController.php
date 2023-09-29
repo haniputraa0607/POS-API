@@ -40,43 +40,124 @@ class DoctorController extends Controller
         date_default_timezone_set('Asia/Jakarta');
     }
 
-    public function home(Request $request):JsonResponse
+    public function home(Request $request):mixed
     {
 
         $doctor = $request->user();
         $outlet = $doctor->outlet;
 
         $status_outlet = true;
-        $status_doctor = true;
         $order = [];
+
+        $make_new = false;
+        $check_json = file_exists(storage_path() . "\json\outlet_status.json");
         $schedule = $outlet->outlet_schedule->where('day', date('l'))->first();
-        if(!$schedule){
-            $status_outlet = false;
-        }elseif($schedule['is_closed'] == 1){
-            $status_outlet = false;
-        }elseif(($schedule['open'] && date('H:i') < date('H:i', strtotime($schedule['open']))) || ($schedule['close'] && date('H:i') > date('H:i', strtotime($schedule['close'])))){
+
+        if($check_json){
+            $config = json_decode(file_get_contents(storage_path() . "\json\outlet_status.json"), true);
+            if(isset($config[$outlet['id']]['schedule'][date('l')])){
+                if(date('Y-m-d H:i', strtotime($config[$outlet['id']]['schedule'][date('l')]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
+                    $make_new = true;
+                }
+            }else{
+                $make_new = true;
+            }
+        }else{
+            $make_new = true;
+        }
+
+        if($make_new){
+            $schedule = $outlet->outlet_schedule->where('day', date('l'))->first();
+            if(!$schedule){
+                $config[$outlet['id']]['schedule'][date('l')] = [
+                    'updated_at' => date('Y-m-d H:i'),
+                    'status' => false
+                ];
+            }else{
+                $config[$outlet['id']]['schedule'][date('l')] = [
+                    'updated_at' => date('Y-m-d H:i'),
+                    'status' => $schedule['is_closed'] == 1 ? false : true,
+                    'open'   => $schedule['open'],
+                    'close'  => $schedule['close'],
+                ];
+            }
+
+            file_put_contents(storage_path('json\outlet_status.json'), json_encode($config));
+        }
+        $config = $config[$outlet['id']]['schedule'][date('l')] ?? [];
+
+        $status_outlet = $config['status'] ?? false;
+
+        if($status_outlet && (($schedule['open'] && date('H:i') < date('H:i', strtotime($schedule['open']))) || ($schedule['close'] && date('H:i') > date('H:i', strtotime($schedule['close']))))){
             $status_outlet = false;
         }
 
-        $schedule_doc = DoctorScheduleDate::whereHas('doctor_schedule', function($sch) use($doctor){
-            $sch->where('user_id', $doctor['id']);
-        })->whereDate('date', date('Y-m-d'))->first();
-        if(!$schedule_doc){
+        $make_new = false;
+        $check_json = file_exists(storage_path() . "\json\doctor_schedule.json");
+        $schedule = $outlet->outlet_schedule->where('day', date('l'))->first();
+        $config = [];
+        if($check_json){
+            $config = json_decode(file_get_contents(storage_path() . "\json\doctor_schedule.json"), true);
+            if(isset($config[$doctor['id']])){
+                if(date('Y-m-d H:i', strtotime($config[$doctor['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
+                    $make_new = true;
+                }
+            }else{
+                $make_new = true;
+            }
+        }else{
+            $make_new = true;
+        }
+
+        if($make_new){
+            $schedule_doc = DoctorScheduleDate::whereHas('doctor_schedule', function($sch) use($doctor){
+                $sch->where('user_id', $doctor['id']);
+            })->whereDate('date', date('Y-m-d'))->first();
+            if(!$schedule_doc){
+                $config[$doctor['id']] = [
+                    'updated_at' => date('Y-m-d H:i'),
+                    'data' => [
+                        'status' => false
+                    ],
+                ];
+            }else{
+                $shift = DoctorShift::whereHas('users', function($users) use($doctor){
+                    $users->where('user_id', $doctor['id']);
+                })->where('day', date('l'))
+                ->get()->toArray();
+                $config[$doctor['id']] = [
+                    'updated_at' => date('Y-m-d H:i'),
+                    'data' => [
+                        'status' => true,
+                        'shift' => $shift ?? []
+                    ],
+                ];
+            }
+
+            file_put_contents(storage_path('json\doctor_schedule.json'), json_encode($config));
+
+        }
+
+        $config = $config[$doctor['id']] ?? [];
+
+        $schedule_doc = $config['data'] ?? [];
+
+        $status_doctor = true;
+        $shift = false;
+
+        if(!$schedule_doc['status']){
             $status_doctor = false;
+        }else{
+            foreach($schedule_doc['shift'] ?? [] as $sh){
+                if(date('H:i') >= date('H:i', strtotime($sh['start'])) && date('H:i') <= date('H:i', strtotime($sh['end']))){
+                    $shift = $sh;
+                }
+            }
+            if(!$shift){
+                $status_doctor = false;
+            }
         }
 
-        $shift = DoctorShift::whereHas('users', function($users) use($doctor){
-            $users->where('user_id', $doctor['id']);
-        })->where('day', date('l'))->whereTime('start', '<=', date('H:i'))->whereTime('end', '>=', date('H:i'))->first();
-        if(!$shift){
-            $status_doctor = false;
-        }
-
-        if(date('H:i') < date('H:i', strtotime($shift['end']))){
-            // return 123;
-        }
-
-        $timezone = $outlet->district->province['timezone'] ?? 7;
         $on_progress = false;
         $queue = null;
         $id_order = null;
@@ -177,21 +258,52 @@ class DoctorController extends Controller
 
     public function splash(Request $request):JsonResponse
     {
-        $splash = Setting::where('key', '=', 'splash_doctor_apps')->first();
-        $duration = Setting::where('key', '=', 'splash_doctor_apps_duration')->pluck('value')->first();
-
-        if(!empty($splash)){
-            $splash = env('STORAGE_URL_API').$splash['value'];
-        } else {
-            $splash = null;
+        $data = [];
+        $make_new = false;
+        $check_json = file_exists(storage_path() . "\json\splash.json");
+        if($check_json){
+            $config = json_decode(file_get_contents(storage_path() . "\json\splash.json"), true);
+            if(isset($config['doctor'])){
+                if(date('Y-m-d H:i', strtotime($config['doctor']['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
+                    $make_new = true;
+                }
+            }else{
+                $make_new = true;
+            }
+        }else{
+            $make_new = true;
         }
-        $ext=explode('.', $splash);
-        $result = [
-            'splash_screen_url' => $splash."?update=".time(),
-            'splash_screen_duration' => (int)($duration??5),
-            'splash_screen_ext' => '.'.end($ext)
-        ];
-        return $this->ok('', $result);
+
+        if($make_new){
+
+            $splash = Setting::where('key', '=', 'splash_doctor_apps')->first();
+            $duration = Setting::where('key', '=', 'splash_doctor_apps_duration')->pluck('value')->first();
+
+            if(!empty($splash)){
+                $splash = env('STORAGE_URL_API').$splash['value'];
+            } else {
+                $splash = null;
+            }
+
+            $ext=explode('.', $splash);
+            $config['doctor'] = [
+                'updated_at' => date('Y-m-d H:i'),
+                'data' => [
+                    'splash_screen_url' => isset($splash) ? $splash."?update=".time() : null,
+                    'splash_screen_duration' => (int)($duration??5),
+                    'splash_screen_ext' => '.'.end($ext)
+                ]
+            ];
+
+            file_put_contents(storage_path('json\splash.json'), json_encode($config));
+
+        }
+
+        $config = $config['pos'] ?? [];
+
+        $data = $config['data'] ?? [];
+
+        return $this->ok('', $data);
     }
 
     public function nextQueue(Request $request):JsonResponse
@@ -203,9 +315,71 @@ class DoctorController extends Controller
             return $this->error('Outlet not found');
         }
 
-        $shift = DoctorShift::whereHas('users', function($users) use($doctor){
-            $users->where('user_id', $doctor['id']);
-        })->where('day', date('l'))->whereTime('start', '<=', date('H:i'))->whereTime('end', '>=', date('H:i'))->first();
+        $make_new = false;
+        $check_json = file_exists(storage_path() . "\json\doctor_schedule.json");
+        $schedule = $outlet->outlet_schedule->where('day', date('l'))->first();
+
+        if($check_json){
+            $config = json_decode(file_get_contents(storage_path() . "\json\doctor_schedule.json"), true);
+            if(isset($config[$doctor['id']])){
+                if(date('Y-m-d H:i', strtotime($config[$doctor['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
+                    $make_new = true;
+                }
+            }else{
+                $make_new = true;
+            }
+        }else{
+            $make_new = true;
+        }
+
+        if($make_new){
+            $schedule_doc = DoctorScheduleDate::whereHas('doctor_schedule', function($sch) use($doctor){
+                $sch->where('user_id', $doctor['id']);
+            })->whereDate('date', date('Y-m-d'))->first();
+            if(!$schedule_doc){
+                $config[$doctor['id']] = [
+                    'updated_at' => date('Y-m-d H:i'),
+                    'data' => [
+                        'status' => false
+                    ],
+                ];
+            }else{
+                $shift = DoctorShift::whereHas('users', function($users) use($doctor){
+                    $users->where('user_id', $doctor['id']);
+                })->where('day', date('l'))
+                ->get()->toArray();
+                $config[$doctor['id']] = [
+                    'updated_at' => date('Y-m-d H:i'),
+                    'data' => [
+                        'status' => true,
+                        'shift' => $shift ?? []
+                    ],
+                ];
+            }
+
+            file_put_contents(storage_path('json\doctor_schedule.json'), json_encode($config));
+
+        }
+
+        $config = $config[$doctor['id']] ?? [];
+
+        $schedule_doc = $config['data'] ?? [];
+
+        $shift = false;
+
+        if(!$schedule_doc['status']){
+            $shift = false;
+        }else{
+            foreach($schedule_doc['shift'] ?? [] as $sh){
+                if(date('H:i') >= date('H:i', strtotime($sh['start'])) && date('H:i') <= date('H:i', strtotime($sh['end']))){
+                    $shift = $sh;
+                }
+            }
+            if(!$shift){
+                $status_doctor = false;
+            }
+        }
+
         if(!$shift){
             return $this->error('Shift not found');
         }
@@ -421,9 +595,9 @@ class DoctorController extends Controller
                 ],
                 'order_id'            => $order['id'],
                 'order_code'          => $order['order_code'],
+                'order_consultations' => $ord_consul,
                 'order_products'      => $ord_prod,
                 'order_treatments'    => $ord_treat,
-                'order_consultations' => $ord_consul,
                 'order_precriptions'  => $ord_prescriptions,
                 'summary'             => [
                     [
@@ -479,11 +653,11 @@ class DoctorController extends Controller
 
     }
 
-    public function getDoctor(Request $request):JsonResponse
+    public function getDoctor(Request $request):mixed
     {
         $post = $request->json()->all();
-        $doctor = $request->user();
-        $outlet =  $doctor->outlet;
+        $cashier = $request->user();
+        $outlet =  $cashier->outlet;
 
         if(!$outlet){
             return $this->error('Outlet not found');
@@ -494,38 +668,71 @@ class DoctorController extends Controller
         }
 
         $date = false;
+        $today = false;
         if($post['search']['filter'] == 'date'){
             $date = date('Y-m-d', strtotime($post['search']['value']));
-        }
-
-        $doctors = User::where('outlet_id', $outlet['id']);
-        if($date){
-            $doctor = $doctors->with(['doctor_schedules.schedule_dates' => function($query) use($date){
-                if($date){
-                    $query->where('doctor_schedule_dates.date', $date);
-                }
-            }])
-            ->whereHas('doctor_schedules.schedule_dates',function($query) use($date){
-                if($date){
-                    $query->where('schedule_month', date('m', strtotime($date)));
-                    $query->where('schedule_year', date('Y', strtotime($date)));
-                    $query->where('doctor_schedule_dates.date', $date);
-                }
-            });
-        }
-
-        if($post['search']['filter'] == 'name'){
-            if($post['search']['value'] == ''){
-                $doctors = $doctors->where('name', '');
-            }else{
-                $doctors = $doctors->where('name', 'like', '%'.$post['search']['value'].'%');
+            if($date == date('Y-m-d')){
+                $today = true;
             }
+        }elseif($post['search']['filter'] == 'name'){
+            return $this->getDoctorAll($outlet);
         }
 
-        $doctors = $doctors->doctor()->get()->toArray();
+        $get_doctors = [];
+        $make_new = false;
+        $check_json = file_exists(storage_path() . "\json\get_doctor.json");
+        if($check_json){
+            $config = json_decode(file_get_contents(storage_path() . "\json\get_doctor.json"), true);
+            if(isset($config[$outlet['id']])){
+                if(($date && !$today) || (date('Y-m-d H:i', strtotime($config[$outlet['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i'))){
+                    $make_new = true;
+                }
+            }else{
+                $make_new = true;
+            }
+        }else{
+            $make_new = true;
+        }
+
+        if($make_new){
+            $doctors = User::where('outlet_id', $outlet['id']);
+            if($date){
+                $doctor = $doctors->with(['doctor_schedules.schedule_dates' => function($query) use($date){
+                    if($date){
+                        $query->where('doctor_schedule_dates.date', $date);
+                    }
+                }])
+                ->whereHas('doctor_schedules.schedule_dates',function($query) use($date){
+                    if($date){
+                        $query->where('schedule_month', date('m', strtotime($date)));
+                        $query->where('schedule_year', date('Y', strtotime($date)));
+                        $query->where('doctor_schedule_dates.date', $date);
+                    }
+                });
+            }
+
+            if($post['search']['filter'] == 'name'){
+                if($post['search']['value'] == ''){
+                    $doctors = $doctors->where('name', '');
+                }else{
+                    $doctors = $doctors->where('name', 'like', '%'.$post['search']['value'].'%');
+                }
+            }
+
+            $doctors = $doctors->doctor()->get()->toArray();
+            $config[$outlet['id']] = [
+                'updated_at' => date('Y-m-d H:i'),
+                'data'       => $doctors
+            ];
+            file_put_contents(storage_path('json\get_doctor.json'), json_encode($config));
+
+        }
+        $config = $config[$outlet['id']] ?? [];
+
+        $get_doctors = $config['data'] ?? [];
 
         $list_doctors = [];
-        foreach($doctors ?? [] as $key => $doc){
+        foreach($get_doctors ?? [] as $key => $doc){
 
             $doc_shift = [];
             if($date){
@@ -574,7 +781,62 @@ class DoctorController extends Controller
 
     }
 
-    public function getDoctorDate(Request $request):JsonResponse
+    public function getDoctorAll($outlet):mixed
+    {
+
+        $get_doctors = [];
+        $make_new = false;
+        $check_json = file_exists(storage_path() . "\json\get_doctor_all.json");
+        if($check_json){
+            $config = json_decode(file_get_contents(storage_path() . "\json\get_doctor_all.json"), true);
+            if(isset($config[$outlet['id']])){
+                if(date('Y-m-d H:i', strtotime($config[$outlet['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
+                    $make_new = true;
+                }
+            }else{
+                $make_new = true;
+            }
+        }else{
+            $make_new = true;
+        }
+
+        if($make_new){
+            $doctors = User::where('outlet_id', $outlet['id']);
+
+            $doctors = $doctors->doctor()->get()->toArray();
+            $config[$outlet['id']] = [
+                'updated_at' => date('Y-m-d H:i'),
+                'data'       => $doctors
+            ];
+            file_put_contents(storage_path('json\get_doctor_all.json'), json_encode($config));
+
+        }
+        $config = $config[$outlet['id']] ?? [];
+
+        $get_doctors = $config['data'] ?? [];
+
+        $list_doctors = [];
+        foreach($get_doctors ?? [] as $key => $doc){
+
+            $doc_shift = [];
+            $list_doctors[] = [
+                'id_doctor' => $doc['id'],
+                'name'      => $doc['name'],
+                'image_url' => isset($doc['image_url']) ? env('STORAGE_URL_API').$doc['image_url'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_doctor.png',
+                'shifts'    => $doc_shift
+            ];
+
+        }
+        $return = [
+            'available'      => count($list_doctors),
+            'recent_history' => [],
+            'list_doctors'   => $list_doctors,
+        ];
+        return $this->ok('', $return);
+
+    }
+
+    public function getDoctorDate(Request $request):mixed
     {
         $post = $request->json()->all();
         $doctor = $request->user();
@@ -587,33 +849,63 @@ class DoctorController extends Controller
         $date_now = date('Y-m-d');
         $dates = MyHelper::getListDate(date('d'),date('m'),date('Y'));
 
-        $doctors = User::with(['doctor_schedules' => function($query) use($date_now, $dates){
-            $query->where('schedule_month', date('m', strtotime($date_now)));
-            $query->where('schedule_year', date('Y', strtotime($date_now)));
-            $query->with(['schedule_dates' => function($query2) use($date_now, $dates){
-                $query2->where('date', '>=' ,$dates['start']);
-                $query2->where('date', '<=' ,$dates['end']);
-            }]);
-        }])
-        ->whereHas('doctor_schedules.schedule_dates',function($query) use($date_now, $dates){
-            $query->where('schedule_month', date('m', strtotime($date_now)));
-            $query->where('schedule_year', date('Y', strtotime($date_now)));
-            $query->where('date', '>=' ,$dates);
-            $query->where('date', '<=' ,$dates);
-        })->where('outlet_id', $outlet['id'])
-        ->where('id', $post['id'])->doctor()->first();
+        $get_doctors = [];
+        $make_new = false;
+        $check_json = file_exists(storage_path() . "\json\get_doctor_date.json");
+        if($check_json){
+            $config = json_decode(file_get_contents(storage_path() . "\json\get_doctor_date.json"), true);
+            if(isset($config[$outlet['id']][$post['id']])){
+                if(date('Y-m-d H:i', strtotime($config[$outlet['id']][$post['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
+                    $make_new = true;
+                }
+            }else{
+                $make_new = true;
+            }
+        }else{
+            $make_new = true;
+        }
+
+        if($make_new){
+
+            $doctors = User::with(['doctor_schedules' => function($query) use($date_now, $dates){
+                $query->where('schedule_month', date('m', strtotime($date_now)));
+                $query->where('schedule_year', date('Y', strtotime($date_now)));
+                $query->with(['schedule_dates' => function($query2) use($date_now, $dates){
+                    $query2->where('date', '>=' ,$dates['start']);
+                    $query2->where('date', '<=' ,$dates['end']);
+                }]);
+            }])
+            ->whereHas('doctor_schedules.schedule_dates',function($query) use($date_now, $dates){
+                $query->where('schedule_month', date('m', strtotime($date_now)));
+                $query->where('schedule_year', date('Y', strtotime($date_now)));
+                $query->where('date', '>=' ,$dates);
+                $query->where('date', '<=' ,$dates);
+            })->where('outlet_id', $outlet['id'])
+            ->where('id', $post['id'])->doctor()->first();
+
+            $config[$outlet['id']][$post['id']] = [
+                'updated_at' => date('Y-m-d H:i'),
+                'data'       => $doctors ?? []
+            ];
+
+            file_put_contents(storage_path('json\get_doctor_date.json'), json_encode($config));
+
+        }
+        $config = $config[$outlet['id']][$post['id']] ?? [];
+
+        $get_doctors = $config['data'] ?? [];
 
         $list_doctors = [];
         $list_dates = [];
-        foreach($doctors['doctor_schedules'][0]['schedule_dates'] ?? [] as $key => $schedule_dates){
+        foreach($get_doctors['doctor_schedules'][0]['schedule_dates'] ?? [] as $key => $schedule_dates){
 
             $doc_shift = [];
             $day = date('l', strtotime($schedule_dates['date']));
             $shifts = DoctorShift::with([
                 'order_consultations' => function($order_consultation) use($schedule_dates){
                 $order_consultation->whereDate('schedule_date', $schedule_dates['date']);
-            }])->whereHas('users', function($users) use($doctors){
-                $users->where('user_id', $doctors['id']);
+            }])->whereHas('users', function($users) use($get_doctors){
+                $users->where('user_id', $get_doctors['id']);
             })
             ->where('day',$day)->get()->toArray();
 
@@ -624,13 +916,13 @@ class DoctorController extends Controller
                     'quote'           => count($shift['order_consultations'])
                 ];
             }
-            if(isset($doctors['doctor_schedules']) && !empty($doc_shift)){
+            if(isset($get_doctors['doctor_schedules']) && !empty($doc_shift)){
                 $list_doctors[] = [
-                    'id_doctor' => $doctors['id'],
-                    'name'      => $doctors['name'],
+                    'id_doctor' => $get_doctors['id'],
+                    'name'      => $get_doctors['name'],
                     'date_text' => date('d F Y', strtotime($schedule_dates['date'])),
                     'date'      => date('Y-m-d', strtotime($schedule_dates['date'])),
-                    'image_url' => isset($doctors['image_url']) ? env('STORAGE_URL_API').$doctors['image_url'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_doctor.png',
+                    'image_url' => isset($get_doctors['image_url']) ? env('STORAGE_URL_API').$get_doctors['image_url'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_doctor.png',
                     'shifts'    => $doc_shift
                 ];
                 $list_dates[] = date('Y-m-d', strtotime($schedule_dates['date']));
@@ -771,7 +1063,7 @@ class DoctorController extends Controller
                                     'order_id' => $order['id'],
                                     'outlet_id' => $outlet['id'],
                                     'order_consultation' => $order['order_consultations'][0]
-                                ],'Succes to add new order');
+                                ],'Success to add new order');
                             }
 
                             if(!$update_order){
@@ -809,7 +1101,7 @@ class DoctorController extends Controller
                                 'order_id' => $order['id'],
                                 'outlet_id' => $outlet['id'],
                                 'order_consultation' => $order['order_consultations'][0]
-                            ],'Succes to add new order');
+                            ],'Success to add new order');
                         }
 
                     }else{
@@ -953,7 +1245,7 @@ class DoctorController extends Controller
                     'order_id' => $order['id'],
                     'outlet_id' => $outlet['id'],
                     'order_consultation' => $order['order_consultations'][0]
-                ],'Succes to add new order');
+                ],'Success to add new order');
 
             }elseif(($post['type']??false) == 'prescription'){
                 $prescription = Prescription::with(['prescription_outlets' => function($outlet_price) use ($outlet){$outlet_price->where('outlet_id',$outlet['id']);}])
@@ -1021,7 +1313,7 @@ class DoctorController extends Controller
                                 'order_id' => $order['id'],
                                 'outlet_id' => $outlet['id'],
                                 'order_consultation' => $order['order_consultations'][0]
-                            ],'Succes to add new order');
+                            ],'Success to add new order');
                         }
 
                         if(!$update_order){
@@ -1059,7 +1351,7 @@ class DoctorController extends Controller
                             'order_id' => $order['id'],
                             'outlet_id' => $outlet['id'],
                             'order_consultation' => $order['order_consultations'][0]
-                        ],'Succes to add new order');
+                        ],'Success to add new order');
                     }
 
                 }else{
@@ -1105,7 +1397,7 @@ class DoctorController extends Controller
                     'order_id' => $order['id'],
                     'outlet_id' => $outlet['id'],
                     'order_consultation' => $order['order_consultations'][0]
-                ],'Succes to add new order');
+                ],'Success to add new order');
 
             }elseif(($post['type']??false) == 'prescription_custom'){
                 $prescription = Prescription::with([
@@ -1189,7 +1481,7 @@ class DoctorController extends Controller
                                 'order_id' => $order['id'],
                                 'outlet_id' => $outlet['id'],
                                 'order_consultation' => $order['order_consultations'][0]
-                            ],'Succes to add new order');
+                            ],'Success to add new order');
                         }
 
                         if(!$update_order){
@@ -1259,7 +1551,7 @@ class DoctorController extends Controller
                             'order_id' => $order['id'],
                             'outlet_id' => $outlet['id'],
                             'order_consultation' => $order['order_consultations'][0]
-                        ],'Succes to add new order');
+                        ],'Success to add new order');
 
                     }
                 }else{
@@ -1327,7 +1619,7 @@ class DoctorController extends Controller
                     'order_id' => $order['id'],
                     'outlet_id' => $outlet['id'],
                     'order_consultation' => $order['order_consultations'][0]
-                ],'Succes to add new order');
+                ],'Success to add new order');
 
             }else{
                 return $this->error('Type is invalid');
@@ -1462,7 +1754,7 @@ class DoctorController extends Controller
                 'order_id' => $order_product['order']['id'],
                 'outlet_id' => $outlet['id'],
                 'order_consultation' => $order_product['order']['order_consultations'][0]
-            ],'Succes to delete order');
+            ],'Success to delete order');
 
         }elseif(($type??false) == 'prescription'){
 
@@ -1513,7 +1805,7 @@ class DoctorController extends Controller
                 'order_id' => $order_prescription['order']['id'],
                 'outlet_id' => $outlet['id'],
                 'order_consultation' => $order_prescription['order']['order_consultations'][0]
-            ],'Succes to delete order');
+            ],'Success to delete order');
 
         }elseif (($type??false) == 'prescription_custom') {
 
@@ -1589,14 +1881,14 @@ class DoctorController extends Controller
                 'order_id' => $order_prescription['order']['id'],
                 'outlet_id' => $outlet['id'],
                 'order_consultation' => $order_prescription['order']['order_consultations'][0]
-            ],'Succes to delete order');
+            ],'Success to delete order');
 
         }else{
             return $this->error('Type is invalid');
         }
     }
 
-    public function submitOrder(Request $request):JsonResponse
+    public function submitOrder(Request $request):mixed
     {
         $request->validate([
             'id_order' => 'required',
@@ -1624,6 +1916,22 @@ class DoctorController extends Controller
             return $this->error('Order not found');
         }
 
+        foreach($post['order_products'] ?? [] as $order_product){
+
+
+        }
+
+        foreach($post['order_treatments'] ?? [] as $order_treatment){
+
+
+        }
+
+        foreach($post['order_prescriptions'] ?? [] as $order_prescription){
+
+
+        }
+        return 123;
+
         if(($order['order_consultations'][0]['consultation']['session_end']??false) == 0){
             return $this->error('Consultation not completed');
         }
@@ -1638,8 +1946,10 @@ class DoctorController extends Controller
             return $this->error('Failed to submit order');
         }
 
+        $update_consul = OrderConsultation::where('id', $order['order_consultations'][0]['id'])->update(['status' => 'Finished']);
+
         DB::commit();
 
-        return $this->ok('Succes to submit order', []);
+        return $this->ok('Success to submit order', []);
     }
 }
