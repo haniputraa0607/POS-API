@@ -94,11 +94,13 @@ Route::prefix('landing-page')->group(function(){
 
 Route::middleware('client')->prefix('webhook')->group(function(){
     Route::prefix('product')->controller(ProductController::class)->group(function (){
+        Route::post('bulk_create', 'webHookCreateBulk');
         Route::post('create', 'webHookCreate');
         Route::patch('update', 'webHookUpdate');
         Route::delete('delete', 'webHookDelete');
     });
     Route::prefix('product-category')->controller(ProductCategoryController::class)->group(function (){
+        Route::post('bulk_create', 'webHookCreateBulk');
         Route::post('create', 'webHookCreate');
         Route::patch('update', 'webHookUpdate');
         Route::delete('delete', 'webHookDelete');

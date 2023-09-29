@@ -12,6 +12,9 @@ use Modules\Partner\Entities\PartnerStore;
 use Modules\Partner\Entities\OfficialPartner;
 use Modules\Partner\Entities\OfficialPartnerDetail;
 use Modules\Partner\Entities\OfficialPartnerHome;
+use Modules\Partner\Http\Requests\PartnerWebhookCreateBulkRequest;
+use Modules\Partner\Http\Requests\PartnerWebhookCreateRequest;
+use Modules\Partner\Http\Requests\PartnerWebhookUpdateRequest;
 
 class PartnerController extends Controller
 {
@@ -52,7 +55,6 @@ class PartnerController extends Controller
         return $this->ok('', $partners);
     }
 
-
     public function show(PartnerEqual $partner): JsonResponse
     {
         $partner_result = $partner->load('city.province', 'partner_store.partner_sosial_media');
@@ -66,8 +68,7 @@ class PartnerController extends Controller
         return $this->ok('success', $partner_result);
     }
 
-
-    public function webHookCreate(Request $request)
+    public function webHookCreate(PartnerWebhookCreateRequest $request)
     {
         $post = $request->json()->all();
         $payload_partner_equal = [
@@ -143,7 +144,7 @@ class PartnerController extends Controller
         return $this->ok("succes", $post);
     }
 
-    public function webHookUpdate(Request $request)
+    public function webHookUpdate(PartnerWebhookUpdateRequest $request)
     {
         $post = $request->json()->all();
         $payload_partner_equal = [
@@ -260,5 +261,65 @@ class PartnerController extends Controller
             return $item;
         });
         return $this->ok("success", $officialPartnerHome);
+    }
+
+    public function webHookCreateBulk(PartnerWebhookCreateBulkRequest $request)
+    {
+        $postData = $request->json(); // Mengambil data JSON dari permintaan
+        $data = $postData->all(); // Mendapatkan seluruh data dalam array
+
+        // Loop melalui setiap elemen dalam data yang diterima
+        foreach ($data as $item) {
+            $partner_equal = PartnerEqual::create([
+                'equal_id' => $item['id'],
+                'name' => $item['name'],
+                'email' => $item['email'],
+                'phone' => $item['phone'],
+                'id_member' => $item['id_member'],
+                'is_suspended' => $item['is_suspended'],
+            ]);
+
+            $mitra_store = $item['mitra_store']; // Mendapatkan data mitra toko dari elemen saat ini
+
+            // Mencari atau membuat entitas PartnerStore berdasarkan 'id' mitra toko
+            $partner_store = PartnerStore::firstOrNew(['equal_id' => $mitra_store['id']]);
+            $partner_store->partner_equal_id = $partner_equal->id;
+            $partner_store->store_name = $mitra_store['store_name'];
+            $partner_store->store_address = $mitra_store['store_address'];
+            $partner_store->store_city = $mitra_store['store_city'];
+            $partner_store->save();
+
+            // Loop melalui setiap sosial media toko
+            foreach ($mitra_store['social_media_stores'] as $social_media_store) {
+                $type = '';
+                switch ($social_media_store['type']) {
+                    case "1":
+                        $type = "Instagram";
+                        break;
+                    case "2":
+                        $type = "Tiktok";
+                        break;
+                    case "3":
+                        $type = "Tokopedia";
+                        break;
+                    case "4":
+                        $type = "Shopee";
+                        break;
+                    case "5":
+                        $type = "Bukalapak";
+                        break;
+                }
+                // Mencari atau membuat entitas PartnerSocialMedia berdasarkan 'id' sosial media
+                $partner_sosial_media = PartnerSosialMedia::firstOrNew([
+                    'equal_id' => $social_media_store['id'],
+                    'partner_store_id' => $partner_store->id,
+                ]);
+                $partner_sosial_media->type = $type;
+                $partner_sosial_media->url = $social_media_store['url'];
+                $partner_sosial_media->save();
+            }
+        }
+
+        return $this->ok("success", $data);
     }
 }

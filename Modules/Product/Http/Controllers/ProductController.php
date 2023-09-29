@@ -15,7 +15,9 @@ use App\Lib\MyHelper;
 use Illuminate\Support\Facades\DB;
 use Modules\Product\Entities\ProductCategory;
 use Modules\Order\Entities\Order;
-
+use Modules\Product\Http\Requests\ProductWebHookCreateRequest;
+use Modules\Product\Http\Requests\ProductWebHookUpdateRequest;
+use Modules\Product\Http\Requests\ProductWebHookBulkCreateRequest;
 class ProductController extends Controller
 {
     public function __construct()
@@ -216,7 +218,7 @@ class ProductController extends Controller
         ]);
     }
 
-    public function webHookCreate(Request $request)
+    public function webHookCreate(ProductWebHookCreateRequest $request)
     {
         $post = $request->json()->all();
         switch($post['item_type']){
@@ -232,6 +234,16 @@ class ProductController extends Controller
             default:
                 $type = "Product";
         }
+        $item_groups = [];
+        if($post['item_groups']){
+            foreach($post['item_groups'] as $key){
+                $product_item = Product::where(['equal_id' => $key['id_item_child']])->first();
+                $item_groups[] = [
+                    'id' => $product_item['id'],
+                    'equal_id' => $product_item['equal_id'],
+                ];
+            }
+        }
         $payload = [
             'equal_id' => $post['id_item'],
             'equal_name' => $post['item_name'],
@@ -240,21 +252,31 @@ class ProductController extends Controller
             'type' => $type,
             'description' => $post['description'],
             'image' => json_encode($post['item_photos']),
-            'product_groups' => json_encode($post['item_groups']),
             'is_active' => 1,
             'need_recipe_status' => 1,
         ];
+        if($item_groups){
+            $payload['product_groups'] = json_encode($item_groups);
+        }
         if($post['id_item_category']){
             $payload['equal_id_category'] = $post['id_item_category'];
             $category_db = ProductCategory::where(['equal_id' => $post['id_item_category']])->first();
             if($category_db)
                 $payload['product_category_id'] = $category_db->id;
+                $payload['equal_id_category'] = $post['id_item_category'];
         }
+
         $product = Product::create($payload);
+        if($product->image){
+            $product->image = json_decode($product->image);
+        }
+        if($product->product_groups){
+            $product->product_groups = json_decode($product->product_groups);
+        }
         return $this->ok("succes", $product);
     }
 
-    public function webHookUpdate(Request $request)
+    public function webHookUpdate(ProductWebHookUpdateRequest $request)
     {
 
         $post = $request->json()->all();
@@ -271,6 +293,16 @@ class ProductController extends Controller
             default:
                 $type = "Product";
         }
+        $item_groups = [];
+        if($post['item_groups']){
+            foreach($post['item_groups'] as $key){
+                $product_item = Product::where(['equal_id' => $key['id_item_child']])->first();
+                $item_groups[] = [
+                    'id' => $product_item['id'],
+                    'equal_id' => $product_item['equal_id'],
+                ];
+            }
+        }
         $payload = [
             'equal_id' => $post['id_item'],
             'equal_name' => $post['item_name'],
@@ -279,10 +311,12 @@ class ProductController extends Controller
             'type' => $type,
             'description' => $post['description'],
             'image' => json_encode($post['item_photos']),
-            'product_groups' => json_encode($post['item_groups']),
             'is_active' => 1,
             'need_recipe_status' => 1,
         ];
+        if($item_groups){
+            $payload['product_groups'] = json_encode($item_groups);
+        }
         if($post['id_item_category']){
             $payload['equal_id_category'] = $post['id_item_category'];
             $category_db = ProductCategory::where(['equal_id' => $post['id_item_category']])->first();
@@ -290,6 +324,13 @@ class ProductController extends Controller
                 $payload['product_category_id'] = $category_db->id;
         }
         $product = Product::where(['equal_id' => $post['id_item']])->update($payload);
+
+        if($payload['image']){
+            $payload['image'] = json_decode($payload['image']);
+        }
+        if($payload['product_groups']){
+            $payload['product_groups'] = json_decode($payload['product_groups']);
+        }
         return $this->ok("succes", $payload);
     }
 
@@ -299,4 +340,72 @@ class ProductController extends Controller
         $product = Product::where(['equal_id' => $post['id_item']])->delete();
         return $this->ok("success","");
     }
+
+    public function webHookCreateBulk(ProductWebHookBulkCreateRequest $request)
+    {
+        $posts = $request->json()->all(); // Mengambil semua item dari permintaan JSON
+
+        $createdProducts = [];
+
+        foreach ($posts as $post) {
+            switch ($post['item_type']) {
+                case "1":
+                    $type = "Product";
+                    break;
+                case "3":
+                    $type = "Package";
+                    break;
+                case "4":
+                    $type = "Treatment";
+                    break;
+                default:
+                    $type = "Product";
+            }
+
+            $item_groups = [];
+            if (!empty($post['item_groups'])) {
+                foreach ($post['item_groups'] as $key) {
+                    $product_item = Product::where(['equal_id' => $key['id_item_child']])->first();
+                    if ($product_item) {
+                        $item_groups[] = [
+                            'id' => $product_item->id,
+                            'equal_id' => $product_item->equal_id,
+                        ];
+                    }
+                }
+            }
+
+            $payload = [
+                'equal_id' => $post['id_item'],
+                'equal_name' => $post['item_name'],
+                'product_code' => $post['item_code'],
+                'product_name' => $post['item_name'],
+                'type' => $type,
+                'description' => $post['description'],
+                'image' => json_encode($post['item_photos']),
+                'is_active' => 1,
+                'need_recipe_status' => 1,
+            ];
+
+            if (!empty($item_groups)) {
+                $payload['product_groups'] = json_encode($item_groups);
+            }
+
+            if (!empty($post['id_item_category'])) {
+                $payload['equal_id_category'] = $post['id_item_category'];
+                $category_db = ProductCategory::where(['equal_id' => $post['id_item_category']])->first();
+                if ($category_db) {
+                    $payload['product_category_id'] = $category_db->id;
+                    $payload['equal_id_category'] = $post['id_item_category'];
+                }
+            }
+
+            $product = Product::create($payload);
+            $createdProducts[] = $product;
+        }
+
+        return $this->ok("Bulk Create Product Success", $createdProducts);
+    }
+
+
 }
