@@ -49,8 +49,34 @@ class DiagnosticController extends Controller
 
     public function show(Request $request): JsonResponse
     {
-        $diagnostic = Diagnostic::select('id', 'diagnostic_name')->orderBy('diagnostic_name', 'asc')->get()->toArray();
-        return $this->ok("success", $diagnostic);
+        $return = [];
+        $make_new = false;
+        $check_json = file_exists(storage_path() . "\json\diagnostics.json");
+        if($check_json){
+            $config = json_decode(file_get_contents(storage_path() . "\json\diagnostics.json"), true);
+            if(date('Y-m-d H:i', strtotime($config['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
+                $make_new = true;
+            }
+        }else{
+            $make_new = true;
+        }
+
+        if($make_new){
+            $diagnostic = Diagnostic::select('id', 'diagnostic_name')->orderBy('diagnostic_name', 'asc')->get()->toArray();
+            if($diagnostic){
+                $config = [
+                    'updated_at' => date('Y-m-d H:i'),
+                    'data'       => $diagnostic
+                ];
+                file_put_contents(storage_path('json\diagnostics.json'), json_encode($config));
+
+            }
+
+        }
+
+        $return = $config['data'] ?? [];
+
+        return $this->ok("success", $return);
     }
 
     public function getOrderDiagnostic(Request $request): JsonResponse

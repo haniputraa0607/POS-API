@@ -182,7 +182,7 @@ class TransactionController extends Controller
             'url'            => $url,
             'price_total'    => $trx['transaction_grandtotal']
         ];
-        return $this->ok('Succes to confirm transaction', $return);
+        return $this->ok('Success to confirm transaction', $return);
 
     }
 
@@ -226,7 +226,7 @@ class TransactionController extends Controller
 
             if($ord_pro['type'] == 'Product'){
 
-                $data['detail']['product'] = [
+                $data['detail']['product'][] = [
                     'order_product_id' => $ord_pro['id'],
                     'product_name'     => $ord_pro['product']['product_name'],
                     'qty'              => $ord_pro['qty'],
@@ -243,7 +243,7 @@ class TransactionController extends Controller
 
             }elseif($ord_pro['type'] == 'Treatment'){
 
-                $data['detail']['treatment'] = [
+                $data['detail']['treatment'][] = [
                     'order_product_id' => $ord_pro['id'],
                     'product_name'     => $ord_pro['product']['product_name'],
                     'qty'              => 1,
@@ -264,7 +264,7 @@ class TransactionController extends Controller
 
         foreach($transaction['order']['order_consultations'] ?? [] as $key => $ord_con){
 
-            $data['detail']['consultation'] = [
+            $data['detail']['consultation'][] = [
                 'order_consultation_id'    => $ord_con['id'],
                 'doctor_name'              => $ord_con['doctor']['name'],
                 'schedule_date'            => date('d F Y', strtotime($ord_con['schedule_date'])),
