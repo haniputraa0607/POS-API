@@ -52,7 +52,6 @@ class PartnerController extends Controller
         return $this->ok('', $partners);
     }
 
-
     public function show(PartnerEqual $partner): JsonResponse
     {
         $partner_result = $partner->load('city.province', 'partner_store.partner_sosial_media');
@@ -65,7 +64,6 @@ class PartnerController extends Controller
         $partner_result->images = $imageUrl;
         return $this->ok('success', $partner_result);
     }
-
 
     public function webHookCreate(Request $request)
     {

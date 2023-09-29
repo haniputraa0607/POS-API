@@ -1,10 +1,10 @@
 <?php
 
-namespace Modules\Product\Http\Requests\Webhook\ProductCategory;
+namespace Modules\Product\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class Update extends FormRequest
+class ProductCategoryWebHookUpdateRequest extends FormRequest
 {
     /**
      * Get the validation rules that apply to the request.
@@ -31,7 +31,7 @@ class Update extends FormRequest
             'product_category_name' => $this->item_category_name,
             'product_category_photo' => $this->photo_path,
         ];
-        
+
         $this->replace($payload);
     }
 

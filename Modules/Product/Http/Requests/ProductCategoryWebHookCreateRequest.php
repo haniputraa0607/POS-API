@@ -1,10 +1,10 @@
 <?php
 
-namespace Modules\Product\Http\Requests\Webhook\ProductCategory;
+namespace Modules\Product\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class Create extends FormRequest
+class ProductCategoryWebHookCreateRequest extends FormRequest
 {
     /**
      * Get the validation rules that apply to the request.

@@ -19,7 +19,7 @@ Route::middleware('auth:api')->get('/partner', function (Request $request) {
 });
 
 
-Route::middleware(['auth:api','scopes:be'])->prefix('webhook')->group(function(){
+Route::middleware('client')->prefix('webhook')->group(function(){
     Route::prefix('partner')->controller(PartnerController::class)->group(function (){
         Route::post('create', 'webHookCreate');
         Route::patch('update', 'webHookUpdate');
