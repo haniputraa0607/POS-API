@@ -14,7 +14,9 @@ class BannerController extends Controller
     {
         $data = Banner::with(['product:id,product_name,description,image,product_category_id', 'product.product_category:id,product_category_name'])->get();
         foreach ($data as $item) {
-            $item->product->image = json_decode($item->product->image);
+            if($item->product->image && is_string($item->product->image)){
+                $item->product->image = json_decode($item->product->image);
+            }
         }
         return $this->ok('Banner List', $data);
     }

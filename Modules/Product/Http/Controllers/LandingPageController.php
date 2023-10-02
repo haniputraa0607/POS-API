@@ -124,16 +124,17 @@ class LandingPageController extends Controller
 
     public function detail(Request $request, $id): JsonResponse
     {
-        $products = Product::with(['global_price', 'product_category'])->where('id', $id)->firstOrFail();
-        $productGroups = json_decode($products->product_groups, true);
-        $productGroupDetails = [];
-        foreach ($productGroups as $productGroup) {
-            $id = $productGroup['id'];
-            $equalId = $productGroup['equal_id'];
-            $productGroupDetails[] = Product::find($id)->first();
+        $products = Product::with(['global_price', 'product_category'])->where('id', $id)->first();
+        if($products->product_groups){
+            $productGroups = json_decode($products->product_groups, true);
+            $productGroupDetails = [];
+            foreach ($productGroups as $productGroup) {
+                $id = $productGroup['id'];
+                $equalId = $productGroup['equal_id'];
+                $productGroupDetails[] = Product::find($id)->first();
+            }
+            $products->product_groups = $productGroupDetails;
         }
-        $products->product_groups = $productGroupDetails;
-
         $category_id = $products->product_category->id;
         $other_products = Product::with(['global_price', 'product_category'])
             ->where('product_category_id', $category_id)
