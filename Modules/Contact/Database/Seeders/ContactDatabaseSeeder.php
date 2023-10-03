@@ -61,5 +61,17 @@ class ContactDatabaseSeeder extends Seeder
                 'Saturday & Sunday : 09.00 - 12.00'
             ])
         ]);
+        ContactOfficial::create([
+            'official_name' => 'Consultation & Ordering',
+            'official_value' => json_encode([
+                [
+                    "contact" => [
+                        ["name" => "Admin1", "telp" => "6282321323123"],
+                        ["name" => "Admin2", "telp" => "6282321323123"],
+                    ],
+                ],
+                ["service_hours" => "08:00 - 12:00"],
+            ])
+        ]);
     }
 }
