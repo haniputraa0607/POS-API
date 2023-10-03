@@ -21,5 +21,6 @@ Route::prefix('landing-page')->group(function(){
     Route::prefix('contact')->group(function(){
         Route::post('send_message', [ContactController::class, 'send_message']);
         Route::get('official', [ContactController::class, 'official']);
+        Route::get("consultation_ordering", [ContactController::class, 'consultation_ordering']);
     });
 });
