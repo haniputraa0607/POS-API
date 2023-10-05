@@ -22,7 +22,7 @@ class TreatmentController extends Controller
         date_default_timezone_set('Asia/Jakarta');
     }
 
-    public function list(Request $request):JsonResponse
+    public function list(Request $request):mixed
     {
         $post = $request->json()->all();
         $cashier = $request->user();
@@ -38,19 +38,19 @@ class TreatmentController extends Controller
 
         $custom = [];
         $all_products = 1;
-        $today = false;
+        $today_month = false;
 
         if($post['search']['filter'] == 'date'){
+
             $date = date('Y-m-d', strtotime($post['search']['value']));
-            if($date == date('Y-m-d')){
-                $today = true;
+            if(date('m', strtotime($date)) == date('m')){
+                $today_month = true;
             }
-            $outlet_schedule = $outlet->outlet_schedule->where('day', date('l', strtotime($date)))->first();
-            $all_products = $outlet_schedule['all_products'];
-            $custom = json_decode($outlet_schedule['custom_products'], true) ?? [];
         }elseif($post['search']['filter'] == 'name'){
             return $this->listAll($outlet);
         }
+
+        $dates = MyHelper::getListDate(date('d'),date('m'),date('Y'));
 
         $get_treatments = [];
         $make_new = false;
@@ -58,7 +58,7 @@ class TreatmentController extends Controller
         if($check_json){
             $config = json_decode(file_get_contents(storage_path() . "/json/get_treatment.json"), true);
             if(isset($config[$outlet['id']])){
-                if(($date && !$today) || (date('Y-m-d H:i', strtotime($config[$outlet['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i'))){
+                if(($date && !$today_month) || (date('Y-m-d H:i', strtotime($config[$outlet['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i'))){
                     $make_new = true;
                 }
             }else{
@@ -75,18 +75,7 @@ class TreatmentController extends Controller
             }])->whereHas('outlet_treatment', function($outlet_treatment) use ($outlet, $all_products, $custom){
 
                 $outlet_treatment->where('outlet_id',$outlet['id']);
-                if(count($custom) > 0 && $all_products == 0){
-                    $outlet_treatment->whereIn('treatment_id',$custom);
-                }
             });
-
-            if($post['search']['filter'] == 'name'){
-                if($post['search']['value'] == ''){
-                    $products = $products->where('product_name', '');
-                }else{
-                    $products = $products->where('product_name', 'like', '%'.$post['search']['value'].'%');
-                }
-            }
 
             $products = $products->treatment()->get()->toArray();
 
@@ -118,17 +107,8 @@ class TreatmentController extends Controller
                 'total_history' => 0,
                 'record_history' => []
             ];
-            if($post['search']['filter'] == 'date'){
-                $data['date'] = date('Y-m-d', strtotime($post['search']['value']));
-                $data['date_text'] = date('d F Y', strtotime($data['date']));
-            }
             return $data;
         },$get_treatments ?? []);
-
-        $return = [
-            'available' => count($products),
-            'treatment' => $products,
-        ];
 
         if(isset($post['id_customer'])){
             $customerPatient = TreatmentPatient::with(['steps' => function($steps){
@@ -138,7 +118,7 @@ class TreatmentController extends Controller
             ->where('status', '<>', 'Finished')
             ->get()->toArray();
 
-            $return['treatment'] = array_map(function($value) use($customerPatient){
+            $products = array_map(function($value) use($customerPatient){
 
                 foreach($customerPatient ?? [] as $cp){
                     if($value['id'] == $cp['treatment_id'] && (date('Y-m-d',strtotime($cp['expired_date'])) >= date('Y-m-d',strtotime($value['date'] ?? date('Y-m-d'))))){
@@ -155,7 +135,7 @@ class TreatmentController extends Controller
                 $value['total_history'] = count($customerPatient);
 
                 return $value;
-            },$return['treatment'] ?? []);
+            },$products ?? []);
 
         }elseif(isset($post['id_order'])){
             $order = Order::where('id', $post['id_order'])->first();
@@ -170,7 +150,7 @@ class TreatmentController extends Controller
             ->where('status', '<>', 'Finished')
             ->get()->toArray();
 
-            $return['treatment'] = array_map(function($value) use($customerPatient){
+            $products = array_map(function($value) use($customerPatient){
 
                 foreach($customerPatient ?? [] as $cp){
                     if($value['id'] == $cp['treatment_id'] && (date('Y-m-d',strtotime($cp['expired_date'])) >= date('Y-m-d',strtotime($value['date'] ?? date('Y-m-d'))))){
@@ -187,10 +167,46 @@ class TreatmentController extends Controller
                 $value['total_history'] = count($customerPatient);
 
                 return $value;
-            },$return['treatment'] ?? []);
+            },$products ?? []);
         }
 
-        return $this->ok('success', $return);
+        $list_date_return = [];
+        foreach($dates['list'] ?? [] as $date_list){
+
+            $list_date_return[$date_list] = [
+                'available' => 0,
+                'treatment' => [],
+            ];
+            $outlet_schedule = $outlet->outlet_schedule->where('day', date('l', strtotime($date_list)))->where('is_closed', 0)->first();
+            if(!$outlet_schedule){
+                continue;
+            }
+            foreach($products ?? [] as $prod){
+
+                if($outlet_schedule['all_products'] == 0){
+                    $custom = json_decode($outlet_schedule['custom_products'], true) ?? [];
+                    if(!in_array($prod['id'], $custom)){
+                        continue;
+                    }
+                }
+
+                $list_date_return[$date_list]['treatment'][] =[
+                    'id' => $prod['id'],
+                    'treatment_name' => $prod['treatment_name'],
+                    'price' => $prod['price'],
+                    'can_continue' => $prod['can_continue'],
+                    'can_new' => $prod['can_new'],
+                    'date_text' => date('d F Y', strtotime($date_list)),
+                    'date' => date('Y-m-d', strtotime($date_list)),
+                    'total_history' => $prod['total_history'],
+                    'record_history' => $prod['record_history']
+                ];
+            }
+            $list_date_return[$date_list]['available'] = count($list_date_return[$date_list]['treatment']);
+
+        }
+
+        return $this->ok('success', $list_date_return);
     }
 
     public function listAll($outlet):JsonResponse
