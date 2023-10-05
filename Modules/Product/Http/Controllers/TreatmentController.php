@@ -41,7 +41,7 @@ class TreatmentController extends Controller
         $today = false;
 
         if($post['search']['filter'] == 'date'){
-            $date = date('y-m-d', strtotime($post['search']['value']));
+            $date = date('Y-m-d', strtotime($post['search']['value']));
             if($date == date('Y-m-d')){
                 $today = true;
             }
@@ -119,7 +119,7 @@ class TreatmentController extends Controller
                 'record_history' => []
             ];
             if($post['search']['filter'] == 'date'){
-                $data['date'] = date('y-m-d', strtotime($post['search']['value']));
+                $data['date'] = date('Y-m-d', strtotime($post['search']['value']));
                 $data['date_text'] = date('d F Y', strtotime($data['date']));
             }
             return $data;
@@ -141,7 +141,7 @@ class TreatmentController extends Controller
             $return['treatment'] = array_map(function($value) use($customerPatient){
 
                 foreach($customerPatient ?? [] as $cp){
-                    if($value['id'] == $cp['treatment_id'] && (date('y-m-d',strtotime($cp['expired_date'])) >= date('y-m-d',strtotime($value['date'] ?? date('y-m-d'))))){
+                    if($value['id'] == $cp['treatment_id'] && (date('Y-m-d',strtotime($cp['expired_date'])) >= date('Y-m-d',strtotime($value['date'] ?? date('Y-m-d'))))){
                         if($cp['steps'][0]['step'] < $cp['step']){
                             $value['can_continue'] = true;
                             $value['record_history'] = [
@@ -173,7 +173,7 @@ class TreatmentController extends Controller
             $return['treatment'] = array_map(function($value) use($customerPatient){
 
                 foreach($customerPatient ?? [] as $cp){
-                    if($value['id'] == $cp['treatment_id'] && (date('y-m-d',strtotime($cp['expired_date'])) >= date('y-m-d',strtotime($value['date'] ?? date('y-m-d'))))){
+                    if($value['id'] == $cp['treatment_id'] && (date('Y-m-d',strtotime($cp['expired_date'])) >= date('Y-m-d',strtotime($value['date'] ?? date('Y-m-d'))))){
                         if($cp['steps'][0]['step'] < $cp['step']){
                             $value['can_continue'] = true;
                             $value['record_history'] = [
@@ -280,7 +280,7 @@ class TreatmentController extends Controller
             return $this->error('Outlet not found');
         }
 
-        $date_now = date('y-m-d');
+        $date_now = date('Y-m-d');
         $dates = MyHelper::getListDate(date('d'),date('m'),date('Y'));
 
         $products = Product::with(['global_price','outlet_price' => function($outlet_price) use ($outlet){
@@ -334,7 +334,7 @@ class TreatmentController extends Controller
                 'can_new' => $data['can_new'],
                 'total_history' => 0,
                 'date_text' => date('d F Y', strtotime($date)),
-                'date' => date('y-m-d', strtotime($date)),
+                'date' => date('Y-m-d', strtotime($date)),
                 'record_history' => []
             ];
             $list_dates[] = $date;
@@ -357,7 +357,7 @@ class TreatmentController extends Controller
             $return['treatment'] = array_map(function($value) use($customerPatient){
 
                 foreach($customerPatient ?? [] as $cp){
-                    if($value['id'] == $cp['treatment_id'] && (date('y-m-d',strtotime($cp['expired_date'])) >= date('y-m-d',strtotime($value['date'])))){
+                    if($value['id'] == $cp['treatment_id'] && (date('Y-m-d',strtotime($cp['expired_date'])) >= date('Y-m-d',strtotime($value['date'])))){
                         if($cp['steps'][0]['step'] < $cp['step']){
                             $value['can_continue'] = true;
                             $value['record_history'] = [
@@ -388,7 +388,7 @@ class TreatmentController extends Controller
             $return['treatment'] = array_map(function($value) use($customerPatient){
 
                 foreach($customerPatient ?? [] as $cp){
-                    if($value['id'] == $cp['treatment_id'] && (date('y-m-d',strtotime($cp['expired_date'])) >= date('y-m-d',strtotime($value['date'])))){
+                    if($value['id'] == $cp['treatment_id'] && (date('Y-m-d',strtotime($cp['expired_date'])) >= date('Y-m-d',strtotime($value['date'])))){
                         if($cp['steps'][0]['step'] < $cp['step']){
                             $value['can_continue'] = true;
                             $value['record_history'] = [
@@ -488,7 +488,7 @@ class TreatmentController extends Controller
             if($history['status'] == 'Finished'){
                 $continue = false;
             }
-            if(date('y-m-d', strtotime($history['expired_date'])) < date('y-m-d')){
+            if(date('Y-m-d', strtotime($history['expired_date'])) < date('Y-m-d')){
                 $continue = false;
             }
             if($history['steps'][0]['step'] >= $history['step']){
@@ -499,9 +499,9 @@ class TreatmentController extends Controller
                 'id_treatment' => $history['treatment']['id'],
                 'treatment_name' => $history['treatment']['product_name'],
                 'doctor_name' => 'By '.$history['doctor']['name'],
-                'start_treatment' => date('y-m-d', strtotime($history['start_date'])),
+                'start_treatment' => date('Y-m-d', strtotime($history['start_date'])),
                 'start_treatment_text' => date('d F Y', strtotime($history['start_date'])),
-                'expired_treatment' => date('y-m-d', strtotime($history['expired_date'])),
+                'expired_treatment' => date('Y-m-d', strtotime($history['expired_date'])),
                 'expired_treatment_text' => date('d F Y', strtotime($history['expired_date'])),
                 'suggestion' => $history['suggestion'],
                 'progress' => $history['status'] == 'Finished' ? 'Finished' : $history['steps'][0]['step'].'/'. $history['step'].' Continue Treatment',
@@ -527,7 +527,7 @@ class TreatmentController extends Controller
             DB::beginTransaction();
 
             foreach($treatment_patients ?? [] as $key => $treatment_patient){
-                if(date('y-m-d', strtotime($treatment_patient['expired_date'])) < date('y-m-d')){
+                if(date('Y-m-d', strtotime($treatment_patient['expired_date'])) < date('Y-m-d')){
 
                     foreach($treatment_patient['steps'] ?? [] as $key_2 => $step){
                         $delete_step = $step->delete();

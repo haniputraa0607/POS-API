@@ -111,7 +111,7 @@ class DiagnosticController extends Controller
                 'id' => $patient_diagnostic['id'],
                 'id_diagnostic' => $patient_diagnostic['diagnostic']['id'],
                 'diagnostic_name' => $patient_diagnostic['diagnostic']['diagnostic_name'],
-                'notes' => $patient_diagnostic['notes'] ?? $patient_diagnostic['diagnostic']['description'],
+                'notes' => $patient_diagnostic['notes'] ?? null,
             ];
         }
         return $this->ok($message, $return);

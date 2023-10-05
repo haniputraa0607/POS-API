@@ -32,6 +32,9 @@ use Modules\Prescription\Entities\PrescriptionOutlet;
 use Modules\Prescription\Entities\PrescriptionOutletLog;
 use Modules\Prescription\Entities\ContainerStock;
 use Modules\Prescription\Entities\SubstanceStock;
+use Modules\PatientGrievance\Entities\PatientGrievance;
+use Modules\PatientDiagnostic\Entities\PatientDiagnostic;
+use Modules\Consultation\Entities\Consultation;
 
 class DoctorController extends Controller
 {
@@ -492,12 +495,14 @@ class DoctorController extends Controller
                     }else{
                         $price = $ord_pro['product']['global_price']['price'] ?? null;
                     }
+                    $image_url = json_decode($ord_pro['product']['image'] ?? '' , true) ?? [];
 
                     $ord_prod[] = [
                         'order_product_id' => $ord_pro['id'],
                         'product_id'       => $ord_pro['product']['id'],
                         'product_name'     => $ord_pro['product']['product_name'],
-                        'image_url'        => isset($ord_pro['product']['image']) ? env('STORAGE_URL_API').$ord_pro['product']['image'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
+                        // 'image_url'        => isset($ord_pro['product']['image']) ? env('STORAGE_URL_API').$ord_pro['product']['image'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
+                        'image_url'        => isset($ord_pro['product']['image']) ? ($image_url[0] ?? null) : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
                         'qty'              => $ord_pro['qty'],
                         'current_qty'      => $ord_pro['qty'],
                         'stock'            => ($ord_pro['product']['outlet_stock'][0]['stock'] ?? 0) + $ord_pro['qty'],
@@ -1912,10 +1917,67 @@ class DoctorController extends Controller
         ->first();
 
         if(!$order){
+            DB::rollBack();
             return $this->error('Order not found');
         }
 
         DB::beginTransaction();
+
+        if($post['order_consultations']??false){
+            $order_consultations = $order['order_consultations'][0];
+            $consultation = $order_consultations['consultation'] ?? null;
+            if(!$consultation){
+                $consultation = Consultation::create([
+                    'order_consultation_id' => $order_consultations['id'],
+                ]);
+            }
+
+            $patient_grievance = [];
+            foreach($post['order_consultations']['grievance'] ?? [] as $post_grievance){
+                $patient_grievance[] = [
+                    'consultation_id' => $consultation['id'],
+                    'grievance_id'    => $post_grievance['id'],
+                    'notes'           => $post_grievance['notes'],
+                    'created_at'      => date('Y-m-d H:i:s'),
+                    'updated_at'      => date('Y-m-d H:i:s'),
+                ];
+            }
+            if($patient_grievance){
+                $insert_patient_grievance = PatientGrievance::insert($patient_grievance);
+                if(!$insert_patient_grievance){
+                    DB::rollBack();
+                    return $this->error('Grievance error');
+                }
+            }
+
+            $patient_diagnostics = [];
+            foreach($post['order_consultations']['diagnostic'] ?? [] as $post_diagnostic){
+                $patient_diagnostics[] = [
+                    'consultation_id' => $consultation['id'],
+                    'diagnostic_id'   => $post_diagnostic['id'],
+                    'notes'           => $post_diagnostic['notes'],
+                    'created_at'      => date('Y-m-d H:i:s'),
+                    'updated_at'      => date('Y-m-d H:i:s'),
+                ];
+            }
+            if($patient_diagnostics){
+                $insert_patient_diagnostics = PatientDiagnostic::insert($patient_diagnostics);
+                if(!$insert_patient_diagnostics){
+                    DB::rollBack();
+                    return $this->error('Diagnostic error');
+                }
+            }
+
+            $update_consultation = Consultation::where('id', $consultation['id'])->update([
+                'session_end' => 1,
+                'treatment_recomendation' => $post['order_consultations']['treatment_recommendation'] ?? null,
+            ]);
+
+        }else{
+            DB::rollBack();
+            return $this->error('Order Consultation not found');
+        }
+
         $add_prod = [];
         foreach($post['order_products'] ?? [] as $post_order_product){
 
@@ -2219,30 +2281,172 @@ class DoctorController extends Controller
             }
         }
 
-        foreach($post['order_prescriptions'] ?? [] as $order_prescription){
+        foreach($post['order_prescriptions'] ?? [] as $post_order_prescription){
+            $prescription = Prescription::with([
+                'prescription_outlets' => function($outlet_price) use ($outlet){
+                    $outlet_price->where('outlet_id',$outlet['id']);
+                },
+                'prescription_container.container.stocks' => function($container) use ($outlet){
+                    $container->where('outlet_id', $outlet['id']);
+                },
+                'prescription_substances.substance.stocks' => function($substance) use ($outlet){
+                    $substance->where('outlet_id', $outlet['id']);
+                },
+                'category'
+            ])->where('id', $post_order_prescription['id'])
+            ->where('is_active', 1)->first();
 
+            if(!$prescription){
+                $is_error = true;
+                $errors[] = 'Prescription not found';
+                continue;
+            }
 
+            if($prescription['is_custom'] == 0){
+
+                $price = ($prescription['prescription_outlets'][0]['price'] ?? $prescription['price']) ?? 0;
+                $stock = $prescription['prescription_outlets'][0]['stock'] ?? 0;
+
+                if($post_order_prescription['qty'] > $stock){
+                    $is_error = true;
+                    $errors[] = $prescription['prescription_name']. ' out of stock';
+                    continue;
+                }
+
+                $create_order_prescription = OrderPrescription::create([
+                    'order_id'                      => $order['id'],
+                    'prescription_id'               => $prescription['id'],
+                    'qty'                           => $post_order_prescription['qty'],
+                    'order_prescription_price'      => $price,
+                    'order_prescription_subtotal'   => $post_order_prescription['qty']*$price,
+                    'order_prescription_grandtotal' => $post_order_prescription['qty']*$price,
+                ]);
+
+                if(!$create_order_prescription){
+                    $is_error = true;
+                    $errors[] = 'Failed to order prescription';
+                    continue;
+                }
+
+                $price_to_order = ($post_order_prescription['qty']*$price);
+                $stock = PrescriptionOutlet::where('prescription_id', $prescription['id'])->where('outlet_id', $outlet['id'])->first();
+
+                if($stock){
+                    $old_stock = clone $stock;
+                    $stock->update([
+                        'stock' =>  $stock['stock']-$post_order_prescription['qty']
+                    ]);
+
+                    if(!$stock){
+                        $is_error = true;
+                        $errors[] = 'Failed to update stock';
+                        continue;
+                    }
+
+                    (new PrescriptionController)->addLogPrescriptionStockLog($old_stock['id'], -$post_order_prescription['qty'], $old_stock['stock'], $stock['stock'], 'Booking Order', null);
+                }
+
+                $order->update([
+                    'order_subtotal'   => $order['order_subtotal'] + $price_to_order,
+                    'order_gross'      => $order['order_gross'] + $price_to_order,
+                    'order_grandtotal' => $order['order_grandtotal'] + $price_to_order,
+                ]);
+
+            }else{
+                $price = $prescription['price'];
+                $create_order_prescription = OrderPrescription::create([
+                    'order_id'                      => $order['id'],
+                    'prescription_id'               => $prescription['id'],
+                    'qty'                           => $post_order_prescription['qty'],
+                    'order_prescription_price'      => $price,
+                    'order_prescription_subtotal'   => $post_order_prescription['qty']*$price,
+                    'order_prescription_grandtotal' => $post_order_prescription['qty']*$price,
+                ]);
+
+                if(!$create_order_prescription){
+                    $is_error = true;
+                    $errors[] = 'Failed to order prescription';
+                    continue;
+                }
+
+                $price_to_order = ($post_order_prescription['qty']*$price);
+                if($prescription['prescription_container'] ?? false){
+                    $stock = ContainerStock::where('container_id', $prescription['prescription_container']['container']['id'])->where('outlet_id', $outlet['id'])->first();
+
+                    if($stock){
+                        if($post_order_prescription['qty'] > $stock['qty']){
+                            $is_error = true;
+                            $errors[] = $prescription['prescription_name']. ' out of stock';
+                            continue;
+                        }
+
+                        $old_stock = clone $stock;
+                        $stock->update([
+                            'qty' =>  $stock['qty']-$post_order_prescription['qty']
+                        ]);
+
+                        if(!$stock){
+                            $is_error = true;
+                            $errors[] = 'Failed to update stock';
+                            continue;
+                        }
+
+                        (new PrescriptionController)->addLogContainerStockLog($old_stock['id'], -$post_order_prescription['qty'], $old_stock['qty'], $stock['qty'], 'Booking Order', null);
+                    }
+                }
+
+                foreach($prescription['prescription_substances'] ?? [] as $key_sub => $sub){
+
+                    $stock = SubstanceStock::where('substance_id', $sub['substance']['id'])->where('outlet_id', $outlet['id'])->first();
+
+                    if($stock){
+                        if(($post_order_prescription['qty']*$sub['qty']) > $stock['qty']){
+                            $is_error = true;
+                            $errors[] = $prescription['prescription_name']. ' out of stock';
+                            continue;
+                        }
+
+                        $old_stock = clone $stock;
+                        $stock->update([
+                            'qty' =>  $stock['qty']-($post_order_prescription['qty']*$sub['qty'])
+                        ]);
+
+                        if(!$stock){
+                            DB::rollBack();
+                            return $this->error('Failed to update stock');
+                        }
+
+                        (new PrescriptionController)->addLogSubstanceStockLog($old_stock['id'], -($post_order_prescription['qty']*$sub['qty']), $old_stock['qty'], $stock['qty'], 'Booking Order', null);
+                    }
+                }
+
+                $order->update([
+                    'order_subtotal'   => $order['order_subtotal'] + $price_to_order,
+                    'order_gross'      => $order['order_gross'] + $price_to_order,
+                    'order_grandtotal' => $order['order_grandtotal'] + $price_to_order,
+                ]);
+            }
         }
-        return 123;
 
-        if(($order['order_consultations'][0]['consultation']['session_end']??false) == 0){
-            return $this->error('Consultation not completed');
-        }
-
-        DB::beginTransaction();
-        $update = $order->update([
-            'is_submited_doctor' => 1,
-        ]);
-
-        if(!$update){
+        if($is_error){
             DB::rollBack();
-            return $this->error('Failed to submit order');
+            return $this->error($errors);
+        }else{
+            $update = $order->update([
+                'is_submited_doctor' => 1,
+            ]);
+
+            if(!$update){
+                DB::rollBack();
+                return $this->error('Failed to submit order');
+            }
+
+            $update_consul = OrderConsultation::where('id', $order['order_consultations'][0]['id'])->update(['status' => 'Finished']);
+
+            DB::commit();
+
+            return $this->ok('Success to submit order', []);
         }
 
-        $update_consul = OrderConsultation::where('id', $order['order_consultations'][0]['id'])->update(['status' => 'Finished']);
-
-        DB::commit();
-
-        return $this->ok('Success to submit order', []);
     }
 }

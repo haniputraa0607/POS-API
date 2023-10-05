@@ -277,14 +277,14 @@ class POSController extends Controller
                     }else{
                         $price = $ord_pro['product']['global_price']['price'] ?? null;
                     }
-                    // $image_url = json_decode($ord_pro['product']['image'] ?? '' , true) ?? [];
+                    $image_url = json_decode($ord_pro['product']['image'] ?? '' , true) ?? [];
 
                     $ord_prod[] = [
                         'order_product_id' => $ord_pro['id'],
                         'product_id'       => $ord_pro['product']['id'],
                         'product_name'     => $ord_pro['product']['product_name'],
-                        'image_url'        => isset($ord_pro['product']['image']) ? env('STORAGE_URL_API').$ord_pro['product']['image'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
-                        // 'image_url'        => isset($ord_pro['product']['image']) ? ($image_url[0] ?? null) : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
+                        // 'image_url'        => isset($ord_pro['product']['image']) ? env('STORAGE_URL_API').$ord_pro['product']['image'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
+                        'image_url'        => isset($ord_pro['product']['image']) ? ($image_url[0] ?? null) : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_product.png',
                         'qty'              => $ord_pro['qty'],
                         'current_qty'      => $ord_pro['qty'],
                         'stock'            => ($ord_pro['product']['outlet_stock'][0]['stock'] ?? 0) + $ord_pro['qty'],

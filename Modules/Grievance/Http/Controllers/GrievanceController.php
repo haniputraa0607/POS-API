@@ -79,7 +79,7 @@ class GrievanceController extends Controller
                 'id' => $patient_grievance['id'],
                 'id_grievance' => $patient_grievance['grievance']['id'],
                 'grievance_name' => $patient_grievance['grievance']['grievance_name'],
-                'notes' => $patient_grievance['notes'] ?? $patient_grievance['grievance']['description'],
+                'notes' => $patient_grievance['notes'] ?? null,
             ];
         }
         return $this->ok($message, $return);
