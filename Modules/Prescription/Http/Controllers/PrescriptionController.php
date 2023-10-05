@@ -44,9 +44,9 @@ class PrescriptionController extends Controller
 
         $data = [];
         $make_new = false;
-        $check_json = file_exists(storage_path() . "\json\get_prescription.json");
+        $check_json = file_exists(storage_path() . "/json/get_prescription.json");
         if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "\json\get_prescription.json"), true);
+            $config = json_decode(file_get_contents(storage_path() . "/json/get_prescription.json"), true);
             if(isset($config[$outlet['id']])){
                 if(date('Y-m-d H:i', strtotime($config[$outlet['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
                     $make_new = true;
@@ -77,7 +77,7 @@ class PrescriptionController extends Controller
                 'updated_at' => date('Y-m-d H:i'),
                 'data'       => $prescriptions
             ];
-            file_put_contents(storage_path('json\get_prescription.json'), json_encode($config));
+            file_put_contents(storage_path('/json/get_prescription.json'), json_encode($config));
         }
         $config = $config[$outlet['id']] ?? [];
 
@@ -151,9 +151,9 @@ class PrescriptionController extends Controller
 
         $return = [];
         $make_new = false;
-        $check_json = file_exists(storage_path() . "\json\prescription_categories.json");
+        $check_json = file_exists(storage_path() . "/json/prescription_categories.json");
         if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "\json\prescription_categories.json"), true);
+            $config = json_decode(file_get_contents(storage_path() . "/json/prescription_categories.json"), true);
             if(date('Y-m-d H:i', strtotime($config['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
                 $make_new = true;
             }
@@ -169,7 +169,7 @@ class PrescriptionController extends Controller
                     'updated_at' => date('Y-m-d H:i'),
                     'data'       => $prescriptionCategories
                 ];
-                file_put_contents(storage_path('json\prescription_categories.json'), json_encode($config));
+                file_put_contents(storage_path('/json/prescription_categories.json'), json_encode($config));
 
             }
         }
@@ -247,9 +247,9 @@ class PrescriptionController extends Controller
 
         $data = [];
         $make_new = false;
-        $check_json = file_exists(storage_path() . "\json\get_containers.json");
+        $check_json = file_exists(storage_path() . "/json/get_containers.json");
         if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "\json\get_containers.json"), true);
+            $config = json_decode(file_get_contents(storage_path() . "/json/get_containers.json"), true);
             if(isset($config[$outlet['id']][$prescription['prescription_category_id']])){
                 if(date('Y-m-d H:i', strtotime($config[$outlet['id']][$prescription['prescription_category_id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
                     $make_new = true;
@@ -277,7 +277,7 @@ class PrescriptionController extends Controller
                 'updated_at' => date('Y-m-d H:i'),
                 'data'       => $containers
             ];
-            file_put_contents(storage_path('json\get_containers.json'), json_encode($config));
+            file_put_contents(storage_path('/json/get_containers.json'), json_encode($config));
         }
 
         $config = $config[$outlet['id']][$prescription['prescription_category_id']] ?? [];
@@ -317,9 +317,9 @@ class PrescriptionController extends Controller
 
         $data = [];
         $make_new = false;
-        $check_json = file_exists(storage_path() . "\json\get_substances.json");
+        $check_json = file_exists(storage_path() . "/json/get_substances.json");
         if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "\json\get_substances.json"), true);
+            $config = json_decode(file_get_contents(storage_path() . "/json/get_substances.json"), true);
             if(isset($config[$outlet['id']][$prescription['prescription_category_id']])){
                 if(date('Y-m-d H:i', strtotime($config[$outlet['id']][$prescription['prescription_category_id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
                     $make_new = true;
@@ -356,7 +356,7 @@ class PrescriptionController extends Controller
                 'updated_at' => date('Y-m-d H:i'),
                 'data'       => $substances
             ];
-            file_put_contents(storage_path('json\get_substances.json'), json_encode($config));
+            file_put_contents(storage_path('/json/get_substances.json'), json_encode($config));
         }
 
         $config = $config[$outlet['id']][$prescription['prescription_category_id']] ?? [];

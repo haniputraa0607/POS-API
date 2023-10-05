@@ -49,9 +49,9 @@ class ProductCategoryController extends Controller
 
         $return = [];
         $make_new = false;
-        $check_json = file_exists(storage_path() . "\json\product_category.json");
+        $check_json = file_exists(storage_path() . "/json/product_category.json");
         if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "\json\product_category.json"), true);
+            $config = json_decode(file_get_contents(storage_path() . "/json/product_category.json"), true);
             if(date('Y-m-d H:i', strtotime($config['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
                 $make_new = true;
             }
@@ -66,7 +66,7 @@ class ProductCategoryController extends Controller
                     'updated_at' => date('Y-m-d H:i'),
                     'data'       => $productCategories
                 ];
-                file_put_contents(storage_path('json\product_category.json'), json_encode($config));
+                file_put_contents(storage_path('/json/product_category.json'), json_encode($config));
 
             }
         }

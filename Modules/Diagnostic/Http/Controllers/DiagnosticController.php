@@ -51,9 +51,9 @@ class DiagnosticController extends Controller
     {
         $return = [];
         $make_new = false;
-        $check_json = file_exists(storage_path() . "\json\diagnostics.json");
+        $check_json = file_exists(storage_path() . "/json/diagnostics.json");
         if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "\json\diagnostics.json"), true);
+            $config = json_decode(file_get_contents(storage_path() . "/json/diagnostics.json"), true);
             if(date('Y-m-d H:i', strtotime($config['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
                 $make_new = true;
             }
@@ -68,7 +68,7 @@ class DiagnosticController extends Controller
                     'updated_at' => date('Y-m-d H:i'),
                     'data'       => $diagnostic
                 ];
-                file_put_contents(storage_path('json\diagnostics.json'), json_encode($config));
+                file_put_contents(storage_path('/json/diagnostics.json'), json_encode($config));
 
             }
 
@@ -111,7 +111,7 @@ class DiagnosticController extends Controller
                 'id' => $patient_diagnostic['id'],
                 'id_diagnostic' => $patient_diagnostic['diagnostic']['id'],
                 'diagnostic_name' => $patient_diagnostic['diagnostic']['diagnostic_name'],
-                'notes' => $patient_diagnostic['notes'] ?? $patient_diagnostic['diagnostic']['description'],
+                'notes' => $patient_diagnostic['notes'] ?? null,
             ];
         }
         return $this->ok($message, $return);

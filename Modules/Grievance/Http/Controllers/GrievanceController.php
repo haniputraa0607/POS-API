@@ -79,7 +79,7 @@ class GrievanceController extends Controller
                 'id' => $patient_grievance['id'],
                 'id_grievance' => $patient_grievance['grievance']['id'],
                 'grievance_name' => $patient_grievance['grievance']['grievance_name'],
-                'notes' => $patient_grievance['notes'] ?? $patient_grievance['grievance']['description'],
+                'notes' => $patient_grievance['notes'] ?? null,
             ];
         }
         return $this->ok($message, $return);
@@ -90,9 +90,9 @@ class GrievanceController extends Controller
     {
         $return = [];
         $make_new = false;
-        $check_json = file_exists(storage_path() . "\json\grievances.json");
+        $check_json = file_exists(storage_path() . "/json/grievances.json");
         if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "\json\grievances.json"), true);
+            $config = json_decode(file_get_contents(storage_path() . "/json/grievances.json"), true);
             if(date('Y-m-d H:i', strtotime($config['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
                 $make_new = true;
             }
@@ -107,7 +107,7 @@ class GrievanceController extends Controller
                     'updated_at' => date('Y-m-d H:i'),
                     'data'       => $grievance
                 ];
-                file_put_contents(storage_path('json\grievances.json'), json_encode($config));
+                file_put_contents(storage_path('/json/grievances.json'), json_encode($config));
 
             }
         }
