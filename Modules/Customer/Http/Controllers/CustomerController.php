@@ -47,9 +47,9 @@ class CustomerController extends Controller
     {
         $get_customer = [];
         $make_new = false;
-        $check_json = file_exists(storage_path() . "\json\get_customer.json");
+        $check_json = file_exists(storage_path() . "/json/get_customer.json");
         if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "\json\get_customer.json"), true);
+            $config = json_decode(file_get_contents(storage_path() . "/json/get_customer.json"), true);
             if(isset($config[(string)$request->phone])){
                 if(date('Y-m-d H:i', strtotime($config[(string)$request->phone]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
                     $make_new = true;
@@ -82,7 +82,7 @@ class CustomerController extends Controller
                 'data'       => $data
             ];
 
-            file_put_contents(storage_path('json\get_customer.json'), json_encode($config));
+            file_put_contents(storage_path('/json/get_customer.json'), json_encode($config));
 
         }
 
