@@ -1244,7 +1244,7 @@ class POSController extends Controller
 
                     $return = [
                         'consultation' => true,
-                        'list_payment' => []
+                        'list_payment' => $this->availablePayment($order) ?? []
                     ];
 
                     return $this->ok('Success to submit order', $return);

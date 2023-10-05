@@ -674,15 +674,16 @@ class DoctorController extends Controller
         }
 
         $date = false;
-        $today = false;
+        $today_month = false;
         if($post['search']['filter'] == 'date'){
             $date = date('Y-m-d', strtotime($post['search']['value']));
-            if($date == date('Y-m-d')){
-                $today = true;
+            if(date('m', strtotime($date)) == date('m')){
+                $today_month = true;
             }
         }elseif($post['search']['filter'] == 'name'){
             return $this->getDoctorAll($outlet);
         }
+        $dates = MyHelper::getListDate(date('d'),date('m'),date('Y'));
 
         $get_doctors = [];
         $make_new = false;
@@ -690,7 +691,7 @@ class DoctorController extends Controller
         if($check_json){
             $config = json_decode(file_get_contents(storage_path() . "/json/get_doctor.json"), true);
             if(isset($config[$outlet['id']])){
-                if(($date && !$today) || (date('Y-m-d H:i', strtotime($config[$outlet['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i'))){
+                if(($date && !$today_month) || (date('Y-m-d H:i', strtotime($config[$outlet['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i'))){
                     $make_new = true;
                 }
             }else{
@@ -701,21 +702,20 @@ class DoctorController extends Controller
         }
 
         if($make_new){
-            $doctors = User::where('outlet_id', $outlet['id']);
-            if($date){
-                $doctor = $doctors->with(['doctor_schedules.schedule_dates' => function($query) use($date){
-                    if($date){
-                        $query->where('doctor_schedule_dates.date', $date);
-                    }
-                }])
-                ->whereHas('doctor_schedules.schedule_dates',function($query) use($date){
-                    if($date){
-                        $query->where('schedule_month', date('m', strtotime($date)));
-                        $query->where('schedule_year', date('Y', strtotime($date)));
-                        $query->where('doctor_schedule_dates.date', $date);
-                    }
-                });
-            }
+            $doctors = User::with(['doctor_schedules' => function($query) use($date, $dates){
+                $query->where('schedule_month', date('m', strtotime($date)));
+                $query->where('schedule_year', date('Y', strtotime($date)));
+                $query->with(['schedule_dates' => function($query2) use($date, $dates){
+                    $query2->where('date', '>=' ,$dates['start']);
+                    $query2->where('date', '<=' ,$dates['end']);
+                }]);
+            }])
+            ->whereHas('doctor_schedules.schedule_dates',function($query) use($date, $dates){
+                $query->where('schedule_month', date('m', strtotime($date)));
+                $query->where('schedule_year', date('Y', strtotime($date)));
+                $query->where('date', '>=' ,$dates['start']);
+                $query->where('date', '<=' ,$dates['end']);
+            });
 
             if($post['search']['filter'] == 'name'){
                 if($post['search']['value'] == ''){
@@ -738,52 +738,60 @@ class DoctorController extends Controller
         $get_doctors = $config['data'] ?? [];
 
         $list_doctors = [];
-        foreach($get_doctors ?? [] as $key => $doc){
+        foreach($dates['list'] ?? [] as $date_list){
 
-            $doc_shift = [];
-            if($date){
-                $day = date('l', strtotime($date));
-                $shifts = DoctorShift::with([
-                    'order_consultations' => function($order_consultation) use($date){
-                    $order_consultation->whereDate('schedule_date', $date);
-                }])->whereHas('users', function($users) use($doc){
-                    $users->where('user_id', $doc['id']);
-                })
-                ->where('day',$day)->get()->toArray();
-                foreach($shifts ?? [] as $key_2 =>$shift){
-                    $doc_shift[] = [
-                        'id_doctor_shift' => $shift['id'],
-                        'time'            => date('H:i',strtotime($shift['start'])).' - '.date('H:i',strtotime($shift['end'])),
-                        'price'           => $shift['price'],
-                        'quote'           => count($shift['order_consultations'])
-                    ];
-                }
+            $list_doctors[$date_list] = [
+                'available' => 0,
+                'list_doctors' => [],
+            ];
+            foreach($get_doctors ?? [] as $key => $doc){
+                if(array_search($date_list, array_column($doc['doctor_schedules'][0]['schedule_dates'], 'date')) !== false){
 
-                if(isset($doc['doctor_schedules']) && !empty($doc_shift)){
-                    $list_doctors[] = [
-                        'id_doctor' => $doc['id'],
-                        'name'      => $doc['name'],
-                        'date_text' => date('d F Y', strtotime($date)),
-                        'date'      => date('Y-m-d', strtotime($date)),
-                        'image_url' => isset($doc['image_url']) ? env('STORAGE_URL_API').$doc['image_url'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_doctor.png',
-                        'shifts'    => $doc_shift
-                    ];
+                    $doc_shift = [];
+                    if($date){
+                        $day = date('l', strtotime($date_list));
+                        $shifts = DoctorShift::with([
+                            'order_consultations' => function($order_consultation) use($date){
+                            $order_consultation->whereDate('schedule_date', $date);
+                        }])->whereHas('users', function($users) use($doc){
+                            $users->where('user_id', $doc['id']);
+                        })
+                        ->where('day',$day)->get()->toArray();
+                        foreach($shifts ?? [] as $key_2 =>$shift){
+                            $doc_shift[] = [
+                                'id_doctor_shift' => $shift['id'],
+                                'time'            => date('H:i',strtotime($shift['start'])).' - '.date('H:i',strtotime($shift['end'])),
+                                'price'           => $shift['price'],
+                                'quote'           => count($shift['order_consultations'])
+                            ];
+                        }
+
+                        if(isset($doc['doctor_schedules']) && !empty($doc_shift)){
+                            $list_doctors[$date_list]['list_doctors'][] = [
+                                'id_doctor' => $doc['id'],
+                                'name'      => $doc['name'],
+                                'date_text' => date('d F Y', strtotime($date_list)),
+                                'date'      => date('Y-m-d', strtotime($date_list)),
+                                'image_url' => isset($doc['image_url']) ? env('STORAGE_URL_API').$doc['image_url'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_doctor.png',
+                                'shifts'    => $doc_shift
+                            ];
+                        }
+                    }else{
+                        $list_doctors[$date_list]['list_doctors'][] = [
+                            'id_doctor' => $doc['id'],
+                            'name'      => $doc['name'],
+                            'image_url' => isset($doc['image_url']) ? env('STORAGE_URL_API').$doc['image_url'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_doctor.png',
+                            'shifts'    => $doc_shift
+                        ];
+                    }
                 }
-            }else{
-                $list_doctors[] = [
-                    'id_doctor' => $doc['id'],
-                    'name'      => $doc['name'],
-                    'image_url' => isset($doc['image_url']) ? env('STORAGE_URL_API').$doc['image_url'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_doctor.png',
-                    'shifts'    => $doc_shift
-                ];
+                $list_doctors[$date_list]['available'] = count($list_doctors[$date_list]['list_doctors']);
             }
 
+
         }
-        $return = [
-            'available'    => count($list_doctors),
-            'list_doctors' => $list_doctors,
-        ];
-        return $this->ok('', $return);
+
+        return $this->ok('', $list_doctors);
 
     }
 
@@ -919,6 +927,7 @@ class DoctorController extends Controller
                 $doc_shift[] = [
                     'id_doctor_shift' => $shift['id'],
                     'time'            => date('H:i',strtotime($shift['start'])).' - '.date('H:i',strtotime($shift['end'])),
+                    'price'           => $shift['price'],
                     'quote'           => count($shift['order_consultations'])
                 ];
             }
