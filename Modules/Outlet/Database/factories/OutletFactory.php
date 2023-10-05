@@ -37,6 +37,7 @@ class OutletFactory extends Factory
             'district_code' => District::InRandomOrder()->first()->code,
             'postal_code' => $this->faker->postcode(),
             'coordinates' => json_encode($this->faker->localCoordinates()),
+            'google_maps_link' => 'https://maps.app.goo.gl/rfXksG4bpUr4urzH8',
             'images' => json_encode("img/outlet/outlet_room.jpg")
         ];
     }
