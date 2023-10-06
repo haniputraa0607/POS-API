@@ -737,13 +737,10 @@ class DoctorController extends Controller
 
         $get_doctors = $config['data'] ?? [];
 
-        $list_doctors = [];
+        $list_doctors['data'] = [];
         foreach($dates['list'] ?? [] as $date_list){
 
-            $list_doctors[$date_list] = [
-                'available' => 0,
-                'list_doctors' => [],
-            ];
+            $doctor_list_date = [];
             foreach($get_doctors ?? [] as $key => $doc){
                 if(array_search($date_list, array_column($doc['doctor_schedules'][0]['schedule_dates'], 'date')) !== false){
 
@@ -767,7 +764,7 @@ class DoctorController extends Controller
                         }
 
                         if(isset($doc['doctor_schedules']) && !empty($doc_shift)){
-                            $list_doctors[$date_list]['list_doctors'][] = [
+                            $doctor_list_date[] = [
                                 'id_doctor' => $doc['id'],
                                 'name'      => $doc['name'],
                                 'date_text' => date('d F Y', strtotime($date_list)),
@@ -777,7 +774,7 @@ class DoctorController extends Controller
                             ];
                         }
                     }else{
-                        $list_doctors[$date_list]['list_doctors'][] = [
+                        $doctor_list_date[] = [
                             'id_doctor' => $doc['id'],
                             'name'      => $doc['name'],
                             'image_url' => isset($doc['image_url']) ? env('STORAGE_URL_API').$doc['image_url'] : env('STORAGE_URL_DEFAULT_IMAGE').'default_image/default_doctor.png',
@@ -785,10 +782,13 @@ class DoctorController extends Controller
                         ];
                     }
                 }
-                $list_doctors[$date_list]['available'] = count($list_doctors[$date_list]['list_doctors']);
             }
 
-
+            $list_doctors['data'][] = [
+                'date'      => $date_list,
+                'available' => count($doctor_list_date),
+                'treatment' => $doctor_list_date
+            ];
         }
 
         return $this->ok('', $list_doctors);
@@ -1931,7 +1931,7 @@ class DoctorController extends Controller
         }
 
         DB::beginTransaction();
-
+        $total_price_check = [];
         if($post['order_consultations']??false){
             $order_consultations = $order['order_consultations'][0];
             $consultation = $order_consultations['consultation'] ?? null;
@@ -1952,6 +1952,7 @@ class DoctorController extends Controller
                 ];
             }
             if($patient_grievance){
+                $delete_patient_grievance = PatientGrievance::where('consultation_id', $consultation['id'])->delete();
                 $insert_patient_grievance = PatientGrievance::insert($patient_grievance);
                 if(!$insert_patient_grievance){
                     DB::rollBack();
@@ -1970,6 +1971,7 @@ class DoctorController extends Controller
                 ];
             }
             if($patient_diagnostics){
+                $delete_patient_diagnostics = PatientDiagnostic::where('consultation_id', $consultation['id'])->delete();
                 $insert_patient_diagnostics = PatientDiagnostic::insert($patient_diagnostics);
                 if(!$insert_patient_diagnostics){
                     DB::rollBack();
@@ -2123,6 +2125,7 @@ class DoctorController extends Controller
                     'order_grandtotal' => $order['order_grandtotal'] + $price_to_order,
                 ]);
                 $add_prod[] = $product['id'];
+                $total_price_check[] = $price_to_order;
             }
         }
 
@@ -2143,11 +2146,14 @@ class DoctorController extends Controller
                     $errors[] = $delete_errors;
                     continue;
                 }
+                $order = Order::with([
+                    'order_consultations.consultation',
+                ])->where('id', $post['id_order'])->first();
             }
         }
 
         $add_treat = [];
-        foreach($post['order_treatments'] ?? [] as $post_order_treatment){
+        foreach($post['order_treatments'] ?? [] as $keyuu => $post_order_treatment){
             $treatment = Product::with([
                 'global_price','outlet_price' => function($outlet_price) use ($outlet){
                     $outlet_price->where('outlet_id',$outlet['id']);
@@ -2178,7 +2184,9 @@ class DoctorController extends Controller
                         $errors[] = $delete_errors;
                         continue;
                     }
-
+                    $order = Order::with([
+                        'order_consultations.consultation',
+                    ])->where('id', $post['id_order'])->first();
 
                 }else{
                     $add_treat[] = $treatment['id'];
@@ -2201,7 +2209,7 @@ class DoctorController extends Controller
                 }
                 $expired = '+'.$post_order_treatment['record']['time_frame'].' '.strtolower($post_order_treatment['record']['type']).'s';
                 $customerPatient = TreatmentPatient::create([
-                    'treatment_id' => $product['id'],
+                    'treatment_id' => $treatment['id'],
                     'patient_id' => $order['patient_id'],
                     'doctor_id' => $doctor['id'],
                     'step' => $post_order_treatment['record']['qty'],
@@ -2242,8 +2250,8 @@ class DoctorController extends Controller
 
             $create_order_product = OrderProduct::create([
                 'order_id'                  => $order['id'],
-                'product_id'                => $product['id'],
-                'type'                      => $product['type'],
+                'product_id'                => $treatment['id'],
+                'type'                      => $treatment['type'],
                 'schedule_date'             => $post_order_treatment['date'],
                 'treatment_patient_id'      => $customerPatient['id'] ?? null,
                 'treatment_patient_step_id' => $customerPatientStep['id'] ?? null,
@@ -2266,6 +2274,8 @@ class DoctorController extends Controller
                 'order_grandtotal' => $order['order_grandtotal'] + $price_to_order,
             ]);
 
+            $total_price_check[] = $price_to_order;
+
             $add_treat[] = $treatment['id'];
 
         }
@@ -2287,6 +2297,9 @@ class DoctorController extends Controller
                     $errors[] = $delete_errors;
                     continue;
                 }
+                $order = Order::with([
+                    'order_consultations.consultation',
+                ])->where('id', $post['id_order'])->first();
             }
         }
 
@@ -2360,6 +2373,7 @@ class DoctorController extends Controller
                     'order_gross'      => $order['order_gross'] + $price_to_order,
                     'order_grandtotal' => $order['order_grandtotal'] + $price_to_order,
                 ]);
+                $total_price_check[] = $price_to_order;
 
             }else{
                 $price = $prescription['price'];
@@ -2434,6 +2448,8 @@ class DoctorController extends Controller
                     'order_gross'      => $order['order_gross'] + $price_to_order,
                     'order_grandtotal' => $order['order_grandtotal'] + $price_to_order,
                 ]);
+                $total_price_check[] = $price_to_order;
+
             }
         }
 
@@ -2451,6 +2467,7 @@ class DoctorController extends Controller
             }
 
             $update_consul = OrderConsultation::where('id', $order['order_consultations'][0]['id'])->update(['status' => 'Finished']);
+            $generate = GenerateQueueOrder::dispatch($order)->onConnection('generatequeueorder');
 
             DB::commit();
 

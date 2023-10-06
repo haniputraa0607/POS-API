@@ -23,7 +23,9 @@ class OrderPrescription extends Model
         'order_prescription_subtotal',
         'order_prescription_discount',
         'order_prescription_tax',
-        'order_prescription_grandtotal'
+        'order_prescription_grandtotal',
+        'queue',
+        'queue_code',
     ];
 
     public function prescription(): BelongsTo

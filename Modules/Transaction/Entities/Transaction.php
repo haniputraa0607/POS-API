@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Transaction\Entities\TransactionCash;
 use Modules\Order\Entities\Order;
+use Modules\Customer\Entities\Customer;
 
 class Transaction extends Model
 {
@@ -43,5 +44,10 @@ class Transaction extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class, 'order_id', 'id');
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'customer_id', 'id');
     }
 }
