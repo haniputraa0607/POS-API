@@ -2,6 +2,7 @@
 
 namespace Modules\Setting\Database\Seeders;
 
+use App\Http\Models\Setting;
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -16,6 +17,9 @@ class SettingDatabaseSeeder extends Seeder
     {
         Model::unguard();
 
-        // $this->call("OthersTableSeeder");
+        Setting::create([
+            'key' => 'doctor_commission',
+            'value' => 0.0
+        ]);
     }
 }
