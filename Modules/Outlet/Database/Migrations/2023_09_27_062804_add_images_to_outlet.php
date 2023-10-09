@@ -16,7 +16,8 @@ return new class extends Migration
         Schema::table('outlets', function (Blueprint $table) {
             $table->after('outlet_code', function (Blueprint $table) {
                 $table->json('images')->nullable(true);
-                $table->foreignId('partner_equal_id')->constrained('partner_equals')->default(0);
+                // $table->foreignId('partner_equal_id')->constrained('partner_equals')->default(0);
+                $table->foreignId('partner_equal_id')->default(0)->constrained('partner_equals');
             });
         });
     }
