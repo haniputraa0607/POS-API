@@ -125,6 +125,8 @@ class TreatmentController extends Controller
                         if($cp['steps'][0]['step'] < $cp['step']){
                             $value['can_continue'] = true;
                             $value['record_history'] = [
+                                'start' => $cp['steps'][0]['step'],
+                                'total' => $cp['step'],
                                 'from' => $cp['steps'][0]['step'].'/'.$cp['step'],
                                 'to' => ($cp['steps'][0]['step']+1).'/'.$cp['step'],
                             ];

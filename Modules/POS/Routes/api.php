@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Modules\POS\Http\Controllers\POSController;
+use Modules\POS\Http\Controllers\OrderListController;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,5 +33,11 @@ Route::middleware(['auth:api','scopes:pos'])->controller(POSController::class)->
         Route::post('submit', 'submitOrder');
         Route::post('save', 'saveOrder');
         Route::post('ticket', 'ticket');
+
+    });
+
+    Route::prefix('order')->controller(OrderListController::class)->group(function () {
+        Route::post('list', 'list');
+
     });
 });
