@@ -170,18 +170,17 @@ class TreatmentController extends Controller
             },$products ?? []);
         }
 
-        $list_date_return = [];
+        $list_date_return['data'] = [];
+
         foreach($dates['list'] ?? [] as $date_list){
 
-            $list_date_return[$date_list] = [
-                'available' => 0,
-                'treatment' => [],
-            ];
-            $outlet_schedule = $outlet->outlet_schedule->where('day', date('l', strtotime($date_list)))->where('is_closed', 0)->first();
-            if(!$outlet_schedule){
-                continue;
-            }
+
+            $treatment_list_date = [];
             foreach($products ?? [] as $prod){
+                $outlet_schedule = $outlet->outlet_schedule->where('day', date('l', strtotime($date_list)))->where('is_closed', 0)->first();
+                if(!$outlet_schedule){
+                    continue;
+                }
 
                 if($outlet_schedule['all_products'] == 0){
                     $custom = json_decode($outlet_schedule['custom_products'], true) ?? [];
@@ -190,7 +189,7 @@ class TreatmentController extends Controller
                     }
                 }
 
-                $list_date_return[$date_list]['treatment'][] =[
+                $treatment_list_date[] =[
                     'id' => $prod['id'],
                     'treatment_name' => $prod['treatment_name'],
                     'price' => $prod['price'],
@@ -202,7 +201,11 @@ class TreatmentController extends Controller
                     'record_history' => $prod['record_history']
                 ];
             }
-            $list_date_return[$date_list]['available'] = count($list_date_return[$date_list]['treatment']);
+            $list_date_return['data'][] = [
+                'date'      => $date_list,
+                'available' => count($treatment_list_date),
+                'treatment' => $treatment_list_date
+            ];
 
         }
 

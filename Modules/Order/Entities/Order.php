@@ -34,6 +34,7 @@ class Order extends Model
         'send_to_transaction',
         'is_submited',
         'is_submited_doctor',
+        'parent_id'
     ];
 
     public function order_products(): HasMany
@@ -59,6 +60,11 @@ class Order extends Model
     public function patient(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'patient_id', 'id');
+    }
+
+    public function child(): HasOne
+    {
+        return $this->hasOne(Order::class, 'parent_id', 'id');
     }
 
 
