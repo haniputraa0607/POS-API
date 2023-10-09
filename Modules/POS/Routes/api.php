@@ -30,6 +30,7 @@ Route::middleware(['auth:api','scopes:pos'])->controller(POSController::class)->
         Route::post('add', 'addOrder');
         Route::post('delete', 'deleteOrder');
         Route::post('submit', 'submitOrder');
+        Route::post('save', 'saveOrder');
         Route::post('ticket', 'ticket');
     });
 });

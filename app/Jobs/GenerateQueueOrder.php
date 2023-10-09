@@ -11,6 +11,7 @@ use Illuminate\Queue\SerializesModels;
 use Modules\Order\Entities\Order;
 use Modules\Order\Entities\OrderConsultation;
 use Modules\Order\Entities\OrderProduct;
+use Modules\Order\Entities\OrderPrescription;
 
 class GenerateQueueOrder implements ShouldQueue
 {
@@ -37,27 +38,12 @@ class GenerateQueueOrder implements ShouldQueue
         $order = Order::with([
             'order_products',
             'order_consultations',
+            'order_prescriptions',
         ])->where('id', $this->data['id'])->first();
 
         if ($order) {
             foreach ($order['order_products'] ?? [] as $order_product) {
-                if ($order_product['type'] == 'Product') {
-                    $queue = OrderProduct::whereHas('order', function ($ord) use ($order) {
-                        $ord->where('id', '<>', $order['id']);
-                        $ord->whereDate('order_date', date('Y-m-d'));
-                        $ord->where('outlet_id', $order['outlet_id']);
-                    })->where('type', 'Product')->max('queue') + 1;
-
-                    if ($queue < 10) {
-                        $queue_code = 'P00' . $queue;
-                    } elseif ($queue < 100) {
-                        $queue_code = 'P0' . $queue;
-                    } else {
-                        $queue_code = 'P' . $queue;
-                    }
-
-                    $update = OrderProduct::where('id', $order_product['id'])->update(['queue' => $queue,'queue_code' => $queue_code]);
-                } elseif ($order_product['type'] == 'Treatment') {
+                if ($order_product['type'] == 'Treatment') {
                     $queue = OrderProduct::whereHas('order', function ($ord) use ($order) {
                         $ord->where('id', '<>', $order['id']);
                         $ord->where('outlet_id', $order['outlet_id']);
@@ -95,6 +81,24 @@ class GenerateQueueOrder implements ShouldQueue
 
 
                 $update = OrderConsultation::where('id', $order_consultation['id'])->update(['queue' => $queue,'queue_code' => $queue_code]);
+            }
+
+            foreach ($order['order_prescriptions'] ?? [] as $order_prescription) {
+                $queue = OrderPrescription::whereHas('order', function ($ord) use ($order) {
+                    $ord->where('id', '<>', $order['id']);
+                    $ord->whereDate('order_date', date('Y-m-d'));
+                    $ord->where('outlet_id', $order['outlet_id']);
+                })->max('queue') + 1;
+
+                if ($queue < 10) {
+                    $queue_code = 'P00' . $queue;
+                } elseif ($queue < 100) {
+                    $queue_code = 'P0' . $queue;
+                } else {
+                    $queue_code = 'P' . $queue;
+                }
+
+                $update = OrderPrescription::where('id', $order_prescription['id'])->update(['queue' => $queue,'queue_code' => $queue_code]);
             }
         }
     }

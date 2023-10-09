@@ -21,7 +21,7 @@ class TransactionController extends Controller
         date_default_timezone_set('Asia/Jakarta');
     }
 
-    public function confirm(Request $request):JsonResponse
+    public function confirm(Request $request):mixed
     {
         $cashier = $request->user();
         $outlet = $cashier->outlet;
@@ -41,6 +41,12 @@ class TransactionController extends Controller
         ->where('patient_id', $post['id_customer'])
         ->where('outlet_id', $outlet['id'])
         ->where('send_to_transaction', 0)
+        ->where(function($where1){
+            $where1->where('is_submited', 0);
+            $where1->orWhere(function($where2){
+                $where2->where('is_submited', 1)->where('is_submited_doctor', 1);
+            });
+        })
         ->latest()->first();
 
         if(!$order){
@@ -186,7 +192,7 @@ class TransactionController extends Controller
 
     }
 
-    public function done(Request $request):JsonResponse
+    public function done(Request $request):mixed
     {
         $cashier = $request->user();
         $outlet = $cashier->outlet;
@@ -202,11 +208,14 @@ class TransactionController extends Controller
         }
 
         $transaction = Transaction::with([
+            'customer',
             'transaction_cash',
             'order.order_products.product',
             'order.order_prescriptions.prescription',
             'order.order_consultations.shift',
             'order.order_consultations.doctor',
+            'order.child.order_consultations.shift',
+            'order.child.order_consultations.doctor',
         ])
         ->where('id', $post['id_transaction'])
         ->whereNotNull('completed_at')
@@ -231,14 +240,6 @@ class TransactionController extends Controller
                     'product_name'     => $ord_pro['product']['product_name'],
                     'qty'              => $ord_pro['qty'],
                     'price_total'      => $ord_pro['order_product_grandtotal'],
-                ];
-
-                $data['ticket'][] = [
-                    'type' => 'product',
-                    'type_text' => 'PRODUCT',
-                    'product_name'     => $ord_pro['product']['product_name'],
-                    'qty'              => $ord_pro['qty'],
-                    'queue'              => $ord_pro['queue_code'],
                 ];
 
             }elseif($ord_pro['type'] == 'Treatment'){
@@ -282,6 +283,20 @@ class TransactionController extends Controller
             ];
         }
 
+        foreach($transaction['order']['child']['order_consultations'] ?? [] as $key => $ord_con){
+
+            $data['ticket'][] = [
+                'type' => 'consultation',
+                'type_text' => 'CONSULTATION',
+                'doctor_name'              => $ord_con['doctor']['name'],
+                'schedule_date'            => date('d F Y', strtotime($ord_con['schedule_date'])),
+                'time'                     => date('H:i', strtotime($ord_con['shift']['start'])).' - '.date('H:i', strtotime($ord_con['shift']['end'])),
+                'queue'              => $ord_con['queue_code'],
+            ];
+        }
+
+        $total_prescription = 0;
+        $queue_prescription = null;
         foreach($transaction['order']['order_prescriptions'] ?? [] as $key => $ord_pres){
 
             $ord_prescriptions[] = [
@@ -292,6 +307,20 @@ class TransactionController extends Controller
                 'qty'                   => $ord_pres['qty'],
                 'price_total'           => $ord_pres['order_prescription_grandtotal'],
             ];
+            $total_prescription = $total_prescription + 1;
+            $queue_prescription = $ord_pres['queue_code'];
+
+        }
+        if($total_prescription > 0){
+            $data['ticket'][] = [
+                'type' => 'prescription',
+                'type_text' => 'PRESCRIPTION',
+                'schedule_date' => date('d F Y', strtotime($transaction['order']['order_date'])),
+                'qty' => $total_prescription.' item prescription',
+                'customer' => $transaction['customer']['name'],
+                'queue' => $queue_prescription
+            ];
+
         }
 
         if($transaction['transaction_cash']){
