@@ -34,7 +34,9 @@ class Order extends Model
         'send_to_transaction',
         'is_submited',
         'is_submited_doctor',
-        'parent_id'
+        'parent_id',
+        'status',
+        'cancel_date'
     ];
 
     public function order_products(): HasMany

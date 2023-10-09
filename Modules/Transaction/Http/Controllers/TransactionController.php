@@ -172,7 +172,8 @@ class TransactionController extends Controller
         }
 
         $update_order = $order->update([
-            'send_to_transaction' => 1
+            'send_to_transaction' => 1,
+            'status' => 'Finished'
         ]);
 
         if(!$update_order){

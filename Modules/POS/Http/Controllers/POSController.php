@@ -1353,9 +1353,11 @@ class POSController extends Controller
         $log = MyHelper::logCron('Delete Order');
         try {
 
-            $orders = Order::with(['order_products', 'order_consultations', 'order_prescriptions'])
+            $orders = Order::with(['order_products', 'order_consultations', 'order_prescriptions', 'child.order_consultations'])
             ->whereDate('order_date', '<' ,date('Y-m-d'))
             ->where('send_to_transaction', 0)
+            ->where('status', 'Pending')
+            ->orderBy('id', 'desc')
             ->get();
 
             DB::beginTransaction();
@@ -1395,10 +1397,16 @@ class POSController extends Controller
                             $consultation->delete();
                         }
 
-                        $delete_order_consultation = OrderConsultation::where('id', $order_consultation['id'])->delete();
-                        if(!$delete_order_consultation){
-                            $log->fail('Failed to delete order consultation');
-                        }
+                        // $delete_order_consultation = OrderConsultation::where('id', $order_consultation['id'])->delete();
+                        // if(!$delete_order_consultation){
+                        //     $log->fail('Failed to delete order consultation');
+                        // }
+                    }
+                }
+
+                foreach($order['child']['order_consultations'] ?? [] as $child_order_consultation){
+                    if(date('Y-m-d', strtotime($child_order_consultation['schedule_date'])) >= date('Y-m-d')){
+                        continue 2;
                     }
                 }
 
@@ -1468,15 +1476,15 @@ class POSController extends Controller
                                 }
                             }else{
                                 DB::rollBack();
-                                return $this->error('Failed to get treatment patient step');
+                                $log->error('Failed to get treatment patient step');
                             }
 
                         }
 
-                        $delete_order_product = OrderProduct::where('id', $order_product['id'])->delete();
-                        if(!$delete_order_product){
-                            $log->fail('Failed to delete order product');
-                        }
+                        // $delete_order_product = OrderProduct::where('id', $order_product['id'])->delete();
+                        // if(!$delete_order_product){
+                        //     $log->fail('Failed to delete order product');
+                        // }
                     }
 
                 }
@@ -1557,10 +1565,10 @@ class POSController extends Controller
                                 }
                             }
 
-                            $delete_order_prescription = OrderPrescription::where('id', $order_prescription['id'])->delete();
-                            if(!$delete_order_prescription){
-                                $log->fail('Failed to delete order precription');
-                            }
+                            // $delete_order_prescription = OrderPrescription::where('id', $order_prescription['id'])->delete();
+                            // if(!$delete_order_prescription){
+                            //     $log->fail('Failed to delete order precription');
+                            // }
 
                         }else{
                             DB::rollBack();
@@ -1569,7 +1577,10 @@ class POSController extends Controller
                     }
                 }
 
-                $delete_order = $order->delete();
+                $delete_order = $order->update([
+                    'status' => 'Cancelled',
+                    'cancel_date' => date('Y-m-d H:i:s'),
+                ]);
                 if(!$delete_order){
                     $log->fail('Failed to delete order');
                 }
