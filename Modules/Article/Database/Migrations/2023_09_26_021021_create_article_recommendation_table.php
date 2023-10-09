@@ -15,8 +15,8 @@ return new class extends Migration
     {
         Schema::create('article_recommendations', function (Blueprint $table) {
             $table->id();
-            $table->integer('article_top');
-            $table->json('article_recommendation');
+            $table->integer('article_top')->nullable();
+            $table->json('article_recommendation')->nullable();
             $table->timestamps();
         });
     }
