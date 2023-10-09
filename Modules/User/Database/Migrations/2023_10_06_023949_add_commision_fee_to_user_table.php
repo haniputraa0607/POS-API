@@ -13,11 +13,14 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->after('type', function (Blueprint $table){
-                $table->float('commission_fee')->nullable();
+        if (!Schema::hasColumn('users', 'commission_fee')) {
+            # code...
+            Schema::table('users', function (Blueprint $table) {
+                $table->after('type', function (Blueprint $table){
+                    $table->float('commission_fee')->nullable();
+                });
             });
-        });
+        }
     }
 
     /**

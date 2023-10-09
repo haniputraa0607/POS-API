@@ -13,12 +13,15 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('order_prescriptions', function (Blueprint $table) {
-            $table->after('order_prescription_grandtotal', function (Blueprint $table) {
-                $table->integer('queue')->nullable();
-                $table->string('queue_code')->nullable();
+        if (!Schema::hasColumns('order_prescriptions', ['queue', 'queue_code'])) {
+            # code...
+            Schema::table('order_prescriptions', function (Blueprint $table) {
+                $table->after('order_prescription_grandtotal', function (Blueprint $table) {
+                    $table->integer('queue')->nullable();
+                    $table->string('queue_code')->nullable();
+                });
             });
-        });
+        }
     }
 
     /**

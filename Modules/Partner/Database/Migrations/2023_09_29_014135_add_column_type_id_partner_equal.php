@@ -13,11 +13,19 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('partner_equals', function (Blueprint $table) {
-            $table->after('phone', function (Blueprint $table) {
-                $table->enum('type', config('partner_equal_type'))->nullable();
+        if (!Schema::hasColumn('partner_equals', 'type')) {
+            Schema::table('partner_equals', function (Blueprint $table) {
+                $table->after('phone', function (Blueprint $table) {
+                    $table->enum('type', config('partner_equal_type'))->nullable();
+                });
             });
-        });
+        } else {
+            Schema::table('partner_equals', function (Blueprint $table) {
+                $table->after('phone', function (Blueprint $table) {
+                    $table->enum('type', config('partner_equal_type'))->nullable()->change();
+                });
+            });
+        }
     }
 
     /**

@@ -13,12 +13,14 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('outlets', function (Blueprint $table) {
-            $table->after('coordinates', function (Blueprint $table) {
-                $table->string('google_maps_link')->nullable(true);
+        if (!Schema::hasColumn('outlets', 'google_maps_link')) {
+            Schema::table('outlets', function (Blueprint $table) {
+                $table->after('coordinates', function (Blueprint $table) {
+                    $table->string('google_maps_link')->nullable(true);
+                });
+                
             });
-
-        });
+        }
     }
 
     /**

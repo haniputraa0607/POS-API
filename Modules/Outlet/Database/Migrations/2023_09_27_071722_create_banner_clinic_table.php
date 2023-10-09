@@ -13,11 +13,14 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('banner_clinics', function (Blueprint $table) {
-            $table->id();
-            $table->string('image');
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('banner_clinics')) {
+            # code...
+            Schema::create('banner_clinics', function (Blueprint $table) {
+                $table->id();
+                $table->string('image');
+                $table->timestamps();
+            });
+        }
     }
 
     /**

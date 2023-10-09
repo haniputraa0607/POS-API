@@ -13,11 +13,14 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->after('is_submited_doctor', function (Blueprint $table) {
-                $table->foreignId('parent_id')->nullable()->constrained('orders');
+        if (!Schema::hasColumn('orders', 'parent_id')) {
+            # code...
+            Schema::table('orders', function (Blueprint $table) {
+                $table->after('is_submited_doctor', function (Blueprint $table) {
+                    $table->foreignId('parent_id')->nullable()->constrained('orders');
+                });
             });
-        });
+        }
     }
 
     /**
