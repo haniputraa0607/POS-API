@@ -13,13 +13,20 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('outlets', function (Blueprint $table) {
-            $table->after('outlet_code', function (Blueprint $table) {
-                $table->json('images')->nullable(true);
-                // $table->foreignId('partner_equal_id')->constrained('partner_equals')->default(0);
-                $table->foreignId('partner_equal_id')->default(0)->constrained('partner_equals');
+        if (!Schema::hasColumns('outlets', ['images', 'partner_equal_id'])) {
+            Schema::table('outlets', function (Blueprint $table) {
+                $table->after('outlet_code', function (Blueprint $table) {
+                    $table->json('images')->nullable(true);
+                    $table->foreignId('partner_equal_id')->default(0)->constrained('partner_equals');
+                });
             });
-        });
+        } else {
+            Schema::table('outlets', function (Blueprint $table) {
+                $table->json('images')->nullable(true)->change();
+                // $table->foreignId('partner_equal_id')->default(0)->constrained('partner_equals')->change();
+            });
+
+        }
     }
 
     /**

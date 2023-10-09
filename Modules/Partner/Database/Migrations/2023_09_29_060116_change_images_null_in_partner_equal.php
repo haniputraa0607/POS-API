@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up()
     {
+
         // Hapus konstrain kunci asing yang merujuk ke kolom "city_code"
         Schema::table('partner_equals', function (Blueprint $table) {
             $table->dropForeign('partner_equals_city_code_foreign');
@@ -33,5 +34,4 @@ return new class extends Migration
             $table->foreign('city_code')->references('code')->on('cities');
         });
     }
-
 };

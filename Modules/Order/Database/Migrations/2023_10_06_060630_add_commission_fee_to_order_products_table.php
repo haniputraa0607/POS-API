@@ -13,11 +13,14 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('order_products', function (Blueprint $table) {
-            $table->after('qty', function (Blueprint $table){
-                $table->float('commission_fee')->nullable();
+        if (!Schema::hasColumn('order_products', 'commission_fee')) {
+            # code...
+            Schema::table('order_products', function (Blueprint $table) {
+                $table->after('qty', function (Blueprint $table){
+                    $table->float('commission_fee')->nullable();
+                });
             });
-        });
+        }
     }
 
     /**
