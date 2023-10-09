@@ -30,7 +30,7 @@ class ArticleController extends Controller
 
     public function show($id): JsonResponse
     {
-        $article = Article::find($id)->first();
+        $article = Article::where('id', $id)->first();
         $other_article = Article::whereNotIn('id', [$id])->inRandomOrder()->limit(3)->get();
         $payload = [
             'detail' => $article,
@@ -53,8 +53,17 @@ class ArticleController extends Controller
     public function recommendationArticle()
     {
         $recommendation = ArticleRecommendation::first();
+        if (!$recommendation) {
+            // Jika $recommendation adalah null, Anda bisa mengembalikan respons sesuai
+            return $this->error("No recommended articles found");
+        }
         $topArticle = $recommendation->topArticle;
         $recommendedArticleIds = json_decode($recommendation->article_recommendation, true);
+
+        if (!$topArticle || !$recommendedArticleIds) {
+            // Jika $topArticle atau $recommendedArticleIds adalah null, Anda bisa mengembalikan respons sesuai
+            return $this->error("Article recommendation data is incomplete");
+        }
         $recommendedArticles = Article::whereIn('id', $recommendedArticleIds)->get();
         $response = [
             'top_article' => $topArticle,
@@ -62,5 +71,6 @@ class ArticleController extends Controller
         ];
         return $this->ok("success", $response);
     }
+
 
 }
