@@ -1743,8 +1743,6 @@ class DoctorController extends Controller
             $order_product = OrderProduct::with(['order.order_consultations'])->whereHas('order', function($order) use($post){
                 $order->where('order_id', $post['id_order']);
                 $order->where('send_to_transaction', 0);
-                $order->where('is_submited', 1);
-                $order->where('is_submited_doctor', 0);
             })->whereHas('product')
             ->where('id', $post['id'])->first();
 
@@ -1828,14 +1826,12 @@ class DoctorController extends Controller
             $order_prescription = OrderPrescription::with(['order.order_consultations'])->whereHas('order', function($order) use($post){
                 $order->where('order_id', $post['id_order']);
                 $order->where('send_to_transaction', 0);
-                $order->where('is_submited', 1);
-                $order->where('is_submited_doctor', 0);
             })->whereHas('prescription')
             ->where('id', $post['id'])->first();
 
             if(!$order_prescription){
-                DB::rollBack();
-                return $this->error('Order not found');
+                $delete_errors = 'Order not found';
+                return false;
             }
 
             $order = Order::where('id', $order_prescription['order_id'])->update([
@@ -1845,8 +1841,8 @@ class DoctorController extends Controller
             ]);
 
             if(!$order){
-                DB::rollBack();
-                return $this->error('Order not found');
+                $delete_errors = 'Order not found';
+                return false;
             }
 
             $stock = PrescriptionOutlet::where('prescription_id', $order_prescription['prescription_id'])->where('outlet_id', $outlet['id'])->first();
@@ -1858,8 +1854,8 @@ class DoctorController extends Controller
                 ]);
 
                 if(!$stock){
-                    DB::rollBack();
-                    return $this->error('Failed to update stock');
+                    $delete_errors = 'Failed to update stock';
+                    return false;
                 }
 
                 (new PrescriptionController)->addLogPrescriptionStockLog($old_stock['id'], $order_prescription['qty'], $old_stock['stock'], $stock['stock'], 'Cancel Booking Order', null);
@@ -1867,12 +1863,7 @@ class DoctorController extends Controller
             }
 
             $delete_order_prescription = $order_prescription->delete();
-            DB::commit();
-            return $this->getDataOrder(true, [
-                'order_id' => $order_prescription['order']['id'],
-                'outlet_id' => $outlet['id'],
-                'order_consultation' => $order_prescription['order']['order_consultations'][0]
-            ],'Success to delete order');
+            return true;
 
         }elseif (($type??false) == 'prescription_custom') {
 
@@ -1883,14 +1874,12 @@ class DoctorController extends Controller
                 ])->whereHas('order', function($order) use($post){
                 $order->where('order_id', $post['id_order']);
                 $order->where('send_to_transaction', 0);
-                $order->where('is_submited', 1);
-                $order->where('is_submited_doctor', 0);
             })->whereHas('prescription')
             ->where('id', $post['id'])->first();
 
             if(!$order_prescription){
-                DB::rollBack();
-                return $this->error('Order not found');
+                $delete_errors = 'Order not found';
+                return false;
             }
 
             $order = Order::where('id', $order_prescription['order_id'])->update([
@@ -1900,8 +1889,8 @@ class DoctorController extends Controller
             ]);
 
             if(!$order){
-                DB::rollBack();
-                return $this->error('Order not found');
+                $delete_errors = 'Order not found';
+                return false;
             }
 
             if($order_prescription['prescription']['prescription_container'] ?? false){
@@ -1914,8 +1903,8 @@ class DoctorController extends Controller
                     ]);
 
                     if(!$stock){
-                        DB::rollBack();
-                        return $this->error('Failed to update stock');
+                        $delete_errors = 'Failed to update stock';
+                        return false;
                     }
 
                     (new PrescriptionController)->addLogContainerStockLog($old_stock['id'], $order_prescription['qty'], $old_stock['qty'], $stock['qty'], 'Cancel Booking Order', null);
@@ -1933,8 +1922,8 @@ class DoctorController extends Controller
                     ]);
 
                     if(!$stock){
-                        DB::rollBack();
-                        return $this->error('Failed to update stock');
+                        $delete_errors = 'Failed to update stock';
+                        return false;
                     }
 
                     (new PrescriptionController)->addLogSubstanceStockLog($old_stock['id'], ($order_prescription['qty']*$sub['qty']), $old_stock['qty'], $stock['qty'], 'Cancel Booking Order', null);
@@ -1943,12 +1932,7 @@ class DoctorController extends Controller
             }
 
             $delete_order_prescription = $order_prescription->delete();
-            DB::commit();
-            return $this->getDataOrder(true, [
-                'order_id' => $order_prescription['order']['id'],
-                'outlet_id' => $outlet['id'],
-                'order_consultation' => $order_prescription['order']['order_consultations'][0]
-            ],'Success to delete order');
+            return true;
 
         }else{
             return $this->error('Type is invalid');

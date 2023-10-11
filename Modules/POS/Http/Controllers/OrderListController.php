@@ -202,7 +202,11 @@ class OrderListController extends Controller
             return $this->error('Invalid Type');
         }
 
-        $data = [];
+        $data[] = [
+            'date' => date('d F Y'),
+            'is_today' => 1,
+            'list' => []
+        ];
         if($post['type'] != 'ticket'){
             foreach($orders ?? [] as $order){
 
@@ -316,6 +320,7 @@ class OrderListController extends Controller
                 }else{
                     $data[] = [
                         'date' => date('d F Y', strtotime($date)),
+                        'is_today' => 0,
                         'list' => [
                             $new_list
                         ]
@@ -347,6 +352,7 @@ class OrderListController extends Controller
                         }else{
                             $data[] = [
                                 'date' => date('d F Y', strtotime($ticket['date'])),
+                                'is_today' => 0,
                                 'list' => [
                                     $ticket
                                 ]
@@ -377,6 +383,7 @@ class OrderListController extends Controller
                             }else{
                                 $data[] = [
                                     'date' => date('d F Y', strtotime($ticket['date'])),
+                                    'is_today' => 0,
                                     'list' => [
                                         $ticket
                                     ]
@@ -404,6 +411,7 @@ class OrderListController extends Controller
                             }else{
                                 $data[] = [
                                     'date' => date('d F Y', strtotime($ticket['date'])),
+                                    'is_today' => 0,
                                     'list' => [
                                         $ticket
                                     ]
