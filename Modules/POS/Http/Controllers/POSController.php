@@ -34,6 +34,7 @@ use Modules\Prescription\Entities\SubstanceStock;
 use Modules\Prescription\Http\Controllers\PrescriptionController;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
+use DateTime;
 
 class POSController extends Controller
 {
@@ -199,7 +200,7 @@ class POSController extends Controller
         return $this->ok('', $data);
     }
 
-    public function getOrder(Request $request):JsonResponse
+    public function getOrder(Request $request):mixed
     {
         $post = $request->json()->all();
         $cashier = $request->user();
@@ -209,18 +210,18 @@ class POSController extends Controller
             return $this->error('Outlet not found');
         }
 
-        if(isset($post['id_customer'])){
+        if(isset($post['id_order'])){
 
-            return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_customer' => $post['id_customer']],'');
+            return $this->getDataOrder(true, ['id_outlet' => $outlet['id'], 'id_order' => $post['id_order']],'');
         }
 
-        return $this->ok('', $return);
+        return $this->ok('', []);
 
     }
 
-    public function getDataOrder($status = true, $data, $message):JsonResponse
+    public function getDataOrder($status = true, $data, $message):mixed
     {
-        $id_customer = $data['id_customer'];
+        $id_order = $data['id_order'];
         $id_outlet = $data['id_outlet'];
 
         $return = [
@@ -241,6 +242,7 @@ class POSController extends Controller
         ];
 
         $order = Order::with([
+            'patient',
             'order_products.product.global_price',
             'order_products.product.outlet_price' => function($outlet_price) use($id_outlet){
                 $outlet_price->where('product_outlet_prices.outlet_id',$id_outlet);
@@ -248,17 +250,47 @@ class POSController extends Controller
             'order_products.product.outlet_stock' => function($outlet_stock) use($id_outlet){
                 $outlet_stock->where('product_outlet_stocks.outlet_id',$id_outlet);
             },
+            'order_prescriptions.prescription.category',
+            'order_consultations.consultation.patient_diagnostic.diagnostic',
+            'order_consultations.consultation.patient_grievance.grievance',
+            'order_consultations.shift',
+            'order_consultations.doctor',
+            'child.order_consultations.consultation.patient_grievance.grievance',
+            'child.order_consultations.shift',
+            'child.order_consultations.doctor',
             'order_products.treatment_patient',
             'order_products.step' => function($step) {
                 $step->where('status', 'Pending');
             },
-            'order_consultations.shift',
-            'order_consultations.doctor',
-            'order_consultations.consultation.patient_grievance.grievance',
-        ])->where('patient_id', $id_customer)
+        ])->where('id', $id_order)
         ->where('outlet_id', $id_outlet)
         ->where('send_to_transaction', 0)
+        ->where(function($where){
+            $where->where(function($where2){
+                $where2->where('is_submited', 1)->where('is_submited_doctor', 1);
+            });
+            $where->orWhere(function($where2){
+                $where2->where('is_submited', 0)->where('is_submited_doctor', 0);
+            });
+        })
         ->latest()->first();
+
+        $return = [
+            'summary' => [
+                [
+                    'label' => 'Subtotal',
+                    'value' => 0
+                ],
+                [
+                    'label' => 'Tax',
+                    'value' => 0
+                ],
+                [
+                    'label' => 'Payable Ammount',
+                    'value' => 0
+                ],
+            ],
+        ];
 
         if($order){
 
@@ -269,6 +301,7 @@ class POSController extends Controller
             $ord_prod = [];
             $ord_treat = [];
             $ord_consul = [];
+            $ord_prescriptions = [];
             foreach($order['order_products'] ?? [] as $key => $ord_pro){
 
                 if($ord_pro['type'] == 'Product'){
@@ -313,13 +346,57 @@ class POSController extends Controller
                 }
             }
 
-            foreach($order['order_consultations'] ?? [] as $key => $ord_con){
-                $consul = [];
-                $is_submit = 0;
-                $grievances = [];
+            if($order['child']['order_consultations']??false){
+                foreach($order['child']['order_consultations'] ?? [] as $key => $ord_con){
+                    $consul = [];
+                    $is_submit = 0;
+                    $grievances = [];
 
-                if($ord_con['consultation']){
-                    if($order['is_submited_doctor'] == 1 && ($ord_con['consultation']['session_end'] == 1 || $ord_con['consultation']['is_edit'] == 1)){
+                    if($ord_con['consultation']){
+                        $consul['queue_number']  = $ord_con['queue_code'];
+                        $consul['schedule_date'] = date('d F Y', strtotime($ord_con['schedule_date']));
+                        $consul['grievance'] = [];
+                        $consul['diagnostic'] = [];
+                        foreach($ord_con['consultation']['patient_grievance'] ?? [] as $grievance){
+                            if($grievance['from_pos'] == 1){
+                                $consul['grievance'][] = $grievance['grievance']['grievance_name'];
+                            }
+                        }
+                        $is_submit = $ord_con['consultation']['session_end'];
+                        $is_submit = 0;
+                    }
+
+                    foreach($ord_con['consultation']['patient_grievance'] ?? [] as $grievance){
+                        if($grievance['from_pos'] == 1){
+                            $grievances[] = [
+                                'id'             => $grievance['grievance']['id'],
+                                'grievance_name' => $grievance['grievance']['grievance_name'],
+                                'notes'          => $grievance['notes'] ?? null,
+                            ];
+                        }
+                    }
+
+                    $ord_consul[] = [
+                        'order_consultation_id' => $ord_con['id'],
+                        'doctor_id'             => $ord_con['doctor']['id'],
+                        'doctor_name'           => $ord_con['doctor']['name'],
+                        'schedule_date'         => date('d F Y', strtotime($ord_con['schedule_date'])),
+                        'time'                  => date('H:i', strtotime($ord_con['shift']['start'])).'-'.date('H:i', strtotime($ord_con['shift']['end'])),
+                        'price_total'           => $ord_con['order_consultation_grandtotal'],
+                        'queue'                 => $ord_con['queue_code'],
+                        'consultation'          => $consul,
+                        'grievances'            => $grievances,
+                        'submited_by_doctor'    => $is_submit,
+                        'read_only'             => false
+                    ];
+                }
+            }elseif($order['order_consultations']??false){
+                foreach($order['order_consultations'] ?? [] as $key => $ord_con){
+                    $consul = [];
+                    $is_submit = 0;
+                    $grievances = [];
+
+                    if($ord_con['consultation']){
                         $consul['queue_number']  = $ord_con['queue_code'];
                         $consul['schedule_date'] = date('d F Y', strtotime($ord_con['schedule_date']));
                         $consul['grievance'] = [];
@@ -333,39 +410,69 @@ class POSController extends Controller
                         $is_submit = $ord_con['consultation']['session_end'];
                         $is_submit = 0;
                     }
-                }
 
-
-                foreach($ord_con['consultation']['patient_grievance'] ?? [] as $grievance){
-                    if($grievance['from_pos'] == 1){
-                        $grievances[] = [
-                            'id'             => $grievance['grievance']['id'],
-                            'grievance_name' => $grievance['grievance']['grievance_name'],
-                            'notes'          => $grievance['notes'] ?? null,
-                        ];
+                    foreach($ord_con['consultation']['patient_grievance'] ?? [] as $grievance){
+                        if($grievance['from_pos'] == 1){
+                            $grievances[] = [
+                                'id'             => $grievance['grievance']['id'],
+                                'grievance_name' => $grievance['grievance']['grievance_name'],
+                                'notes'          => $grievance['notes'] ?? null,
+                            ];
+                        }
                     }
+
+                    $ord_consul[] = [
+                        'order_consultation_id' => $ord_con['id'],
+                        'doctor_id'             => $ord_con['doctor']['id'],
+                        'doctor_name'           => $ord_con['doctor']['name'],
+                        'schedule_date'         => date('d F Y', strtotime($ord_con['schedule_date'])),
+                        'time'                  => date('H:i', strtotime($ord_con['shift']['start'])).'-'.date('H:i', strtotime($ord_con['shift']['end'])),
+                        'price_total'           => $ord_con['order_consultation_grandtotal'],
+                        'queue'                 => $ord_con['queue_code'],
+                        'consultation'          => $consul,
+                        'grievances'            => $grievances,
+                        'submited_by_doctor'    => $is_submit,
+                        'read_only'             => true
+                    ];
                 }
 
-                $ord_consul[] = [
-                    'order_consultation_id' => $ord_con['id'],
-                    'doctor_id'             => $ord_con['doctor']['id'],
-                    'doctor_name'           => $ord_con['doctor']['name'],
-                    'schedule_date'         => date('d F Y', strtotime($ord_con['schedule_date'])),
-                    'time'                  => date('H:i', strtotime($ord_con['shift']['start'])).'-'.date('H:i', strtotime($ord_con['shift']['end'])),
-                    'price_total'           => $ord_con['order_consultation_grandtotal'],
-                    'queue'                 => $ord_con['queue_code'],
-                    'consultation'          => $consul,
-                    'grievances'            => $grievances,
-                    'submited_by_doctor'    => $is_submit
+            }
+
+            foreach($order['order_prescriptions'] ?? [] as $key => $ord_pres){
+
+                $ord_prescriptions[] = [
+                    'order_prescription_id' => $ord_pres['id'],
+                    'prescription_id'       => $ord_pres['prescription']['id'],
+                    'prescription_name'     => $ord_pres['prescription']['prescription_name'],
+                    'type'                  => $ord_pres['prescription']['category']['category_name'] ?? null,
+                    'unit'                  => $ord_pres['prescription']['unit'],
+                    'qty'                   => $ord_pres['qty'],
+                    'current_qty'           => $ord_pres['qty'],
+                    'price_total'           => $ord_pres['order_prescription_grandtotal'],
                 ];
             }
 
+            $bithdayDate = new DateTime($order['patient']['birth_date']);
+            $now = new DateTime();
+            $interval = $now->diff($bithdayDate)->y;
+
             $return = [
+                'user'                => [
+                    'id'    => $order['patient']['id'],
+                    'name'  => $order['patient']['name'],
+                    'gender'  => $order['patient']['gender'],
+                    'birth_date_text' => date('d F Y', strtotime($order['patient']['birth_date'])),
+                    'age'   => $interval.' years',
+                    'email' => substr_replace($order['patient']['email'], str_repeat('x', (strlen($order['patient']['email']) - 6)), 3, (strlen($order['patient']['email']) - 6)),
+                    'phone' => substr_replace($order['patient']['phone'], str_repeat('x', (strlen($order['patient']['phone']) - 7)), 4, (strlen($order['patient']['phone']) - 7)),
+                    'time' => 120
+                ],
                 'order_id'            => $order['id'],
                 'order_code'          => $order['order_code'],
                 'order_products'      => $ord_prod,
                 'order_treatments'    => $ord_treat,
                 'order_consultations' => $ord_consul,
+                'order_precriptions'  => $ord_prescriptions,
                 'summary'             => [
                     [
                         'label' => 'Subtotal',
@@ -381,13 +488,13 @@ class POSController extends Controller
                     ],
                 ],
             ];
+        }else{
+            return $this->error('ID not found');
         }
 
-        if($status){
-            return $this->ok($message, $return);
-        }else{
-            return $this->error($message, $return);
-        }
+
+        return $this->ok('', $return);
+
 
     }
 
@@ -1261,10 +1368,13 @@ class POSController extends Controller
                         $update = $order->update([
                             'is_submited' => 1,
                         ]);
+                        $value_consul = true;
                     }else{
                         $update = $order_sec->update([
                             'is_submited' => 1,
                         ]);
+                        $value_consul = false;
+
                     }
                     if(!$update){
 
@@ -1282,7 +1392,7 @@ class POSController extends Controller
                     DB::commit();
 
                     $return = [
-                        'consultation' => true,
+                        'consultation' => $value_consul,
                         'list_payment' => $this->availablePayment($order) ?? []
                     ];
 
@@ -1365,6 +1475,12 @@ class POSController extends Controller
 
                 if($order['order_consultations']){
 
+                    foreach($order['child']['order_consultations'] ?? [] as $child_order_consultation){
+                        if(date('Y-m-d', strtotime($child_order_consultation['schedule_date'])) >= date('Y-m-d')){
+                            continue 2;
+                        }
+                    }
+
                     foreach($order['order_consultations'] ?? [] as $key3 => $order_consultation){
 
                         if(date('Y-m-d', strtotime($order_consultation['schedule_date'])) >= date('Y-m-d')){
@@ -1401,12 +1517,6 @@ class POSController extends Controller
                         // if(!$delete_order_consultation){
                         //     $log->fail('Failed to delete order consultation');
                         // }
-                    }
-                }
-
-                foreach($order['child']['order_consultations'] ?? [] as $child_order_consultation){
-                    if(date('Y-m-d', strtotime($child_order_consultation['schedule_date'])) >= date('Y-m-d')){
-                        continue 2;
                     }
                 }
 
@@ -1476,7 +1586,7 @@ class POSController extends Controller
                                 }
                             }else{
                                 DB::rollBack();
-                                $log->error('Failed to get treatment patient step');
+                                $log->fail('Failed to get treatment patient step');
                             }
 
                         }

@@ -171,7 +171,16 @@ class DoctorController extends Controller
                 $order->where('outlet_id', $outlet['id'])
                 ->where('is_submited', 1)
                 ->where('is_submited_doctor', 0)
-                ->where('send_to_transaction', 0);
+                ->where('status', 'Pending')
+                ->where('send_to_transaction', 0)
+                ->where(function($where2){
+                    $where2->whereNull('parent_id')
+                    ->orWhere(function($where3){
+                        $where3->whereNotNull('parent_id')->whereHas('parent', function($parent){
+                            $parent->where('status', 'Finished');
+                        });
+                    });
+                });
             })
             ->whereDate('schedule_date', date('Y-m-d'))
             ->where('doctor_id', $doctor['id'])
@@ -185,7 +194,16 @@ class DoctorController extends Controller
                 $order->where('outlet_id', $outlet['id'])
                 ->where('is_submited', 1)
                 ->where('is_submited_doctor', 0)
-                ->where('send_to_transaction', 0);
+                ->where('status', 'Pending')
+                ->where('send_to_transaction', 0)
+                ->where(function($where2){
+                    $where2->whereNull('parent_id')
+                    ->orWhere(function($where3){
+                        $where3->whereNotNull('parent_id')->whereHas('parent', function($parent){
+                            $parent->where('status', 'Finished');
+                        });
+                    });
+                });
             })
             ->whereDate('schedule_date', date('Y-m-d'))
             ->where('doctor_id', $doctor['id'])
@@ -391,7 +409,16 @@ class DoctorController extends Controller
             $order->where('outlet_id', $outlet['id'])
             ->where('is_submited', 1)
             ->where('is_submited_doctor', 0)
-            ->where('send_to_transaction', 0);
+            ->where('status', 'Pending')
+            ->where('send_to_transaction', 0)
+            ->where(function($where2){
+                $where2->whereNull('parent_id')
+                ->orWhere(function($where3){
+                    $where3->whereNotNull('parent_id')->whereHas('parent', function($parent){
+                        $parent->where('status', 'Finished');
+                    });
+                });
+            });
         })
         ->whereDate('schedule_date', date('Y-m-d'))
         ->where('doctor_id', $doctor['id'])
@@ -405,7 +432,16 @@ class DoctorController extends Controller
                 $order->where('outlet_id', $outlet['id'])
                 ->where('is_submited', 1)
                 ->where('is_submited_doctor', 0)
-                ->where('send_to_transaction', 0);
+                ->where('status', 'Pending')
+                ->where('send_to_transaction', 0)
+                ->where(function($where2){
+                    $where2->whereNull('parent_id')
+                    ->orWhere(function($where3){
+                        $where3->whereNotNull('parent_id')->whereHas('parent', function($parent){
+                            $parent->where('status', 'Finished');
+                        });
+                    });
+                });
             })
             ->whereDate('schedule_date', date('Y-m-d'))
             ->where('doctor_id', $doctor['id'])
@@ -628,7 +664,29 @@ class DoctorController extends Controller
             DB::rollBack();
             return $this->error('Failed to get data order');
         }
-        $order_consultation_after = OrderConsultation::where('id', '<>', $order_consultation['id'])->where('doctor_id', $order_consultation['doctor_id'])->where('doctor_shift_id', $order_consultation['doctor_shift_id'])->whereDate('schedule_date', date('Y-m-d', strtotime($order_consultation['schedule_date'])))->where('status', 'Pending')->orderBy('queue', 'asc')->get()->toArray();
+        $order_consultation_after = OrderConsultation::with(['order'])->whereHas('order', function($order) use($id_outlet){
+            $order->where('outlet_id', $id_outlet)
+            ->where('is_submited', 1)
+            ->where('is_submited_doctor', 0)
+            ->where('status', 'Pending')
+            ->where('send_to_transaction', 0)
+            ->where(function($where2){
+                $where2->whereNull('parent_id')
+                ->orWhere(function($where3){
+                    $where3->whereNotNull('parent_id')->whereHas('parent', function($parent){
+                        $parent->where('status', 'Finished');
+                    });
+                });
+            });
+        })
+        ->where('id', '<>', $order_consultation['id'])
+        ->where('doctor_id', $order_consultation['doctor_id'])
+        ->where('doctor_shift_id', $order_consultation['doctor_shift_id'])
+        ->whereDate('schedule_date', date('Y-m-d', strtotime($order_consultation['schedule_date'])))
+        ->where('status', 'Pending')
+        ->orderBy('queue', 'asc')
+        ->get()->toArray();
+
         $check_after = false;
         if($order_consultation_after){
             foreach($order_consultation_after ?? [] as $key => $after){
