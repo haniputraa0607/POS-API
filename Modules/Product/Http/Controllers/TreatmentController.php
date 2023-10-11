@@ -159,6 +159,8 @@ class TreatmentController extends Controller
                         if($cp['steps'][0]['step'] < $cp['step']){
                             $value['can_continue'] = true;
                             $value['record_history'] = [
+                                'start' => $cp['steps'][0]['step'],
+                                'total' => $cp['step'],
                                 'from' => $cp['steps'][0]['step'].'/'.$cp['step'],
                                 'to' => ($cp['steps'][0]['step']+1).'/'.$cp['step'],
                             ];
@@ -382,6 +384,8 @@ class TreatmentController extends Controller
                         if($cp['steps'][0]['step'] < $cp['step']){
                             $value['can_continue'] = true;
                             $value['record_history'] = [
+                                'start' => $cp['steps'][0]['step'],
+                                'total' => $cp['step'],
                                 'from' => $cp['steps'][0]['step'].'/'.$cp['step'],
                                 'to' => ($cp['steps'][0]['step']+1).'/'.$cp['step'],
                             ];
@@ -413,6 +417,8 @@ class TreatmentController extends Controller
                         if($cp['steps'][0]['step'] < $cp['step']){
                             $value['can_continue'] = true;
                             $value['record_history'] = [
+                                'start' => $cp['steps'][0]['step'],
+                                'total' => $cp['step'],
                                 'from' => $cp['steps'][0]['step'].'/'.$cp['step'],
                                 'to' => ($cp['steps'][0]['step']+1).'/'.$cp['step'],
                             ];
@@ -452,48 +458,25 @@ class TreatmentController extends Controller
 
         }
 
-        $get_histories = [];
-        $make_new = false;
-        $check_json = file_exists(storage_path() . "/json/customer_histories.json");
-        if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "/json/customer_histories.json"), true);
-            if(isset($config[$customer_id])){
-                if(($date && !$today) || (date('Y-m-d H:i', strtotime($config[$customer_id]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i'))){
-                    $make_new = true;
-                }
-            }else{
-                $make_new = true;
-            }
-        }else{
-            $make_new = true;
-        }
+        $histories = TreatmentPatient::with([
+            'treatment',
+            'doctor',
+            'steps' => function($steps){
+                $steps->orderBy('step', 'desc');
+            },
+            'steps.order_product'
+        ])->whereHas('doctor')
+        ->whereNotNull('doctor_id')
+        ->where('patient_id', $customer_id)
+        ->get()->toArray();
 
-        if($make_new){
-            $histories = TreatmentPatient::with([
-                'treatment',
-                'doctor',
-                'steps' => function($steps){
-                    $steps->orderBy('step', 'desc');
-                },
-                'steps.order_product'
-            ])->whereHas('doctor')
-            ->whereNotNull('doctor_id')
-            ->where('patient_id', $customer_id)
-            ->get()->toArray();
-
-            $config[$customer_id] = [
-                'updated_at' => date('Y-m-d H:i'),
-                'data'       => $histories
-            ];
-            file_put_contents(storage_path('/json/customer_histories.json'), json_encode($config));
-        }
-
-        $config = $config[$customer_id] ?? [];
-
-        $get_histories = $config['data'] ?? [];
+        $config[$customer_id] = [
+            'updated_at' => date('Y-m-d H:i'),
+            'data'       => $histories
+        ];
 
         $return = [];
-        foreach($get_histories ?? [] as $key => $history){
+        foreach($histories ?? [] as $key => $history){
 
             $steps = [];
             foreach($history['steps'] as $key2 => $step){
