@@ -1487,16 +1487,16 @@ class POSController extends Controller
                             continue 2;
                         }
 
-                        $updateOrder = $order->update([
-                            'order_subtotal'   => $order['order_subtotal'] - $order_consultation['order_consultation_subtotal'],
-                            'order_gross'      => $order['order_gross'] - $order_consultation['order_consultation_subtotal'],
-                            'order_grandtotal' => $order['order_grandtotal'] - $order_consultation['order_consultation_grandtotal'],
-                        ]);
+                        // $updateOrder = $order->update([
+                        //     'order_subtotal'   => $order['order_subtotal'] - $order_consultation['order_consultation_subtotal'],
+                        //     'order_gross'      => $order['order_gross'] - $order_consultation['order_consultation_subtotal'],
+                        //     'order_grandtotal' => $order['order_grandtotal'] - $order_consultation['order_consultation_grandtotal'],
+                        // ]);
 
-                        if(!$updateOrder){
-                            DB::rollBack();
-                            $log->fail('Failed update order');
-                        }
+                        // if(!$updateOrder){
+                        //     DB::rollBack();
+                        //     $log->fail('Failed update order');
+                        // }
 
                         $consultation = Consultation::where('order_consultation_id', $order_consultation['id'])->first();
                         if($consultation){
@@ -1524,16 +1524,16 @@ class POSController extends Controller
 
                     foreach($order['order_products'] ?? [] as $key2 => $order_product){
 
-                        $updateOrder = $order->update([
-                            'order_subtotal'   => $order['order_subtotal'] - $order_product['order_product_subtotal'],
-                            'order_gross'      => $order['order_gross'] - $order_product['order_product_subtotal'],
-                            'order_grandtotal' => $order['order_grandtotal'] - $order_product['order_product_grandtotal'],
-                        ]);
+                        // $updateOrder = $order->update([
+                        //     'order_subtotal'   => $order['order_subtotal'] - $order_product['order_product_subtotal'],
+                        //     'order_gross'      => $order['order_gross'] - $order_product['order_product_subtotal'],
+                        //     'order_grandtotal' => $order['order_grandtotal'] - $order_product['order_product_grandtotal'],
+                        // ]);
 
-                        if(!$updateOrder){
-                            DB::rollBack();
-                            $log->fail('Failed update order');
-                        }
+                        // if(!$updateOrder){
+                        //     DB::rollBack();
+                        //     $log->fail('Failed update order');
+                        // }
 
                         if($order_product['type'] == 'Product'){
                             $stock = ProductOutletStock::where('product_id', $order_product['product_id'])->where('outlet_id', $order['outlet_id'])->first();
@@ -1603,16 +1603,16 @@ class POSController extends Controller
 
                     foreach($order['order_prescriptions'] ?? [] as $key3 => $order_prescription){
 
-                        $updateOrder = $order->update([
-                            'order_subtotal'   => $order['order_subtotal'] - $order_prescription['order_prescription_subtotal'],
-                            'order_gross'      => $order['order_gross'] - $order_prescription['order_prescription_subtotal'],
-                            'order_grandtotal' => $order['order_grandtotal'] - $order_prescription['order_prescription_grandtotal'],
-                        ]);
+                        // $updateOrder = $order->update([
+                        //     'order_subtotal'   => $order['order_subtotal'] - $order_prescription['order_prescription_subtotal'],
+                        //     'order_gross'      => $order['order_gross'] - $order_prescription['order_prescription_subtotal'],
+                        //     'order_grandtotal' => $order['order_grandtotal'] - $order_prescription['order_prescription_grandtotal'],
+                        // ]);
 
-                        if(!$updateOrder){
-                            DB::rollBack();
-                            $log->fail('Failed update order');
-                        }
+                        // if(!$updateOrder){
+                        //     DB::rollBack();
+                        //     $log->fail('Failed update order');
+                        // }
 
                         $prescription = Prescription::with(['prescription_container', 'prescription_substances'])->where('id', $order_prescription['prescription_id'])->first();
                         if($prescription){

@@ -338,6 +338,7 @@ class OrderListController extends Controller
                             'name' => $order['patient']['name'],
                             'date' => $order_product['schedule_date'],
                             'time' => date('H:i', strtotime($outlet_shift['open'])).'-'.date('H:i', strtotime($outlet_shift['close'])),
+                            'type' => 'treatment',
                             'detail' => $order_product['product']['product_name']
                         ];
                         $check = array_search(date('d F Y', strtotime($ticket['date'])), array_column($data??[], 'date'));
@@ -367,6 +368,7 @@ class OrderListController extends Controller
                                 'name' => $order['patient']['name'],
                                 'date' => $order_consultation['schedule_date'],
                                 'time' => date('H:i', strtotime($order_consultation['shift']['start'])).'-'.date('H:i', strtotime($order_consultation['shift']['end'])),
+                                'type' => 'consultation',
                                 'detail' => $order_consultation['doctor']['name']
                             ];
                             $check = array_search(date('d F Y', strtotime($ticket['date'])), array_column($data??[], 'date'));
@@ -393,6 +395,7 @@ class OrderListController extends Controller
                                 'name' => $order['patient']['name'],
                                 'date' => $order_consultation['schedule_date'],
                                 'time' => date('H:i', strtotime($order_consultation['shift']['start'])).'-'.date('H:i', strtotime($order_consultation['shift']['end'])),
+                                'type' => 'consultation',
                                 'detail' => $order_consultation['doctor']['name']
                             ];
                             $check = array_search(date('d F Y', strtotime($ticket['date'])), array_column($data??[], 'date'));
@@ -709,16 +712,16 @@ class OrderListController extends Controller
 
                 foreach($order['order_products'] ?? [] as $key2 => $order_product){
 
-                    $updateOrder = $order->update([
-                        'order_subtotal'   => $order['order_subtotal'] - $order_product['order_product_subtotal'],
-                        'order_gross'      => $order['order_gross'] - $order_product['order_product_subtotal'],
-                        'order_grandtotal' => $order['order_grandtotal'] - $order_product['order_product_grandtotal'],
-                    ]);
+                    // $updateOrder = $order->update([
+                    //     'order_subtotal'   => $order['order_subtotal'] - $order_product['order_product_subtotal'],
+                    //     'order_gross'      => $order['order_gross'] - $order_product['order_product_subtotal'],
+                    //     'order_grandtotal' => $order['order_grandtotal'] - $order_product['order_product_grandtotal'],
+                    // ]);
 
-                    if(!$updateOrder){
-                        DB::rollBack();
-                        return $this->error('Failed update order');
-                    }
+                    // if(!$updateOrder){
+                    //     DB::rollBack();
+                    //     return $this->error('Failed update order');
+                    // }
 
                     if($order_product['type'] == 'Product'){
                         $stock = ProductOutletStock::where('product_id', $order_product['product_id'])->where('outlet_id', $order['outlet_id'])->first();
@@ -780,7 +783,146 @@ class OrderListController extends Controller
 
             }
 
+            foreach($order['order_prescriptions'] ?? [] as $key3 => $order_prescription){
 
+                // $updateOrder = $order->update([
+                //     'order_subtotal'   => $order['order_subtotal'] - $order_prescription['order_prescription_subtotal'],
+                //     'order_gross'      => $order['order_gross'] - $order_prescription['order_prescription_subtotal'],
+                //     'order_grandtotal' => $order['order_grandtotal'] - $order_prescription['order_prescription_grandtotal'],
+                // ]);
+
+                // if(!$updateOrder){
+                //     DB::rollBack();
+                //     return $this->error('Failed update order');
+                // }
+
+                $prescription = Prescription::with(['prescription_container', 'prescription_substances'])->where('id', $order_prescription['prescription_id'])->first();
+                if($prescription){
+
+                    if($prescription['is_custom'] == 0){
+
+                        $stock = PrescriptionOutlet::where('prescription_id', $order_prescription['prescription_id'])->where('outlet_id', $order['outlet_id'])->first();
+
+                        if($stock){
+                            $old_stock = clone $stock;
+                            $stock->update([
+                                'stock' =>  $stock['stock']+$order_prescription['qty']
+                            ]);
+
+                            if(!$stock){
+                                DB::rollBack();
+                                return $this->error('Failed update stock');
+                            }
+
+                            (new PrescriptionController)->addLogPrescriptionStockLog($old_stock['id'], $order_prescription['qty'], $old_stock['stock'], $stock['stock'], 'Cancel Booking Order', null);
+
+                        }
+                    }else{
+                        if($prescription['prescription_container'] ?? false){
+                            $stock = ContainerStock::where('container_id', $prescription['prescription_container']['container']['id'])->where('outlet_id', $order['outlet_id'])->first();
+
+                            if($stock){
+                                $old_stock = clone $stock;
+                                $stock->update([
+                                    'qty' =>  $stock['qty']+$order_prescription['qty']
+                                ]);
+
+                                if(!$stock){
+                                    DB::rollBack();
+                                    return $this->error('Failed update stock');
+                                }
+
+                                (new PrescriptionController)->addLogContainerStockLog($old_stock['id'], $order_prescription['qty'], $old_stock['qty'], $stock['qty'], 'Cancel Booking Order', null);
+
+                            }
+                        }
+
+                        foreach($prescription['prescription_substances'] ?? [] as $key_sub => $sub){
+                            $stock = SubstanceStock::where('substance_id', $sub['substance']['id'])->where('outlet_id', $order['outlet_id'])->first();
+
+                            if($stock){
+                                $old_stock = clone $stock;
+                                $stock->update([
+                                    'qty' =>  $stock['qty']+($order_prescription['qty']*$sub['qty'])
+                                ]);
+
+                                if(!$stock){
+                                    DB::rollBack();
+                                    return $this->error('Failed update stock');
+                                }
+
+                                (new PrescriptionController)->addLogSubstanceStockLog($old_stock['id'], ($order_prescription['qty']*$sub['qty']), $old_stock['qty'], $stock['qty'], 'Cancel Booking Order', null);
+
+                            }
+                        }
+                    }
+
+                    // $delete_order_prescription = OrderPrescription::where('id', $order_prescription['id'])->delete();
+                    // if(!$delete_order_prescription){
+                    //     return $this->error('Failed to delete order precription');
+                    // }
+
+                }else{
+                    DB::rollBack();
+                    return $this->error('Prescription Not Found');
+                }
+            }
+
+            if($order['child']['order_consultations']??false){
+                foreach($order['child']['order_consultations'] ?? [] as $order_consultation){
+                    $consultation = Consultation::where('order_consultation_id', $order_consultation['id'])->first();
+                    if($consultation){
+                        $patient_grievances = PatientGrievance::where('consultation_id', $consultation['id'])->get();
+                        if($patient_grievances){
+                            $patient_grievances->each->delete();
+                        }
+
+                        $patient_diagnostics = PatientDiagnostic::where('consultation_id', $consultation['id'])->get();
+                        if($patient_diagnostics){
+                            $patient_diagnostics->each->delete();
+                        }
+
+                        $consultation->delete();
+                    }
+                }
+
+                $delete_sec_order = Order::where('id', $order['child']['id'])->update([
+                    'status' => 'Cancelled',
+                    'cancel_date' => date('Y-m-d H:i:s'),
+                ]);
+                if(!$delete_sec_order){
+                    return $this->error('Failed to delete order');
+                }
+
+            }elseif($order['order_consultations']??false){
+                foreach($order['order_consultations'] ?? [] as $order_consultation){
+                    $consultation = Consultation::where('order_consultation_id', $order_consultation['id'])->first();
+                    if($consultation){
+                        $patient_grievances = PatientGrievance::where('consultation_id', $consultation['id'])->get();
+                        if($patient_grievances){
+                            $patient_grievances->each->delete();
+                        }
+
+                        $patient_diagnostics = PatientDiagnostic::where('consultation_id', $consultation['id'])->get();
+                        if($patient_diagnostics){
+                            $patient_diagnostics->each->delete();
+                        }
+
+                        $consultation->delete();
+                    }
+                }
+            }
+
+            $delete_order = $order->update([
+                'status' => 'Cancelled',
+                'cancel_date' => date('Y-m-d H:i:s'),
+            ]);
+            if(!$delete_order){
+                return $this->error('Failed to delete order');
+            }
+
+            DB::commit();
+            return $this->ok('Success delete order data', []);
         }
 
         return $this->ok('', []);
