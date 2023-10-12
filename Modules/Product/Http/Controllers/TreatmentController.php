@@ -50,7 +50,7 @@ class TreatmentController extends Controller
             return $this->listAll($outlet);
         }
 
-        $dates = MyHelper::getListDate(date('d'),date('m'),date('Y'));
+        $dates = MyHelper::getListDate(date('d'),date('m',strtotime($date)),date('Y',strtotime($date)));
 
         $get_treatments = [];
         $make_new = false;
@@ -110,74 +110,30 @@ class TreatmentController extends Controller
             return $data;
         },$get_treatments ?? []);
 
-        if(isset($post['id_customer'])){
-            $customerPatient = TreatmentPatient::with(['steps' => function($steps){
-                $steps->latest('step');
-            }])
-            ->where('patient_id', $post['id_customer'])
-            ->where('status', '<>', 'Finished')
-            ->get()->toArray();
-
-            $products = array_map(function($value) use($customerPatient){
-
-                foreach($customerPatient ?? [] as $cp){
-                    if($value['id'] == $cp['treatment_id'] && (date('Y-m-d',strtotime($cp['expired_date'])) >= date('Y-m-d',strtotime($value['date'] ?? date('Y-m-d'))))){
-                        if($cp['steps'][0]['step'] < $cp['step']){
-                            $value['can_continue'] = true;
-                            $value['record_history'] = [
-                                'start' => $cp['steps'][0]['step'],
-                                'total' => $cp['step'],
-                                'from' => $cp['steps'][0]['step'].'/'.$cp['step'],
-                                'to' => ($cp['steps'][0]['step']+1).'/'.$cp['step'],
-                            ];
-                        }
-                    }
-                }
-
-                $value['total_history'] = count($customerPatient);
-
-                return $value;
-            },$products ?? []);
-
-        }elseif(isset($post['id_order'])){
-            $order = Order::where('id', $post['id_order'])->first();
-            if(!$order){
-                return $this->error('Order not found');
-            }
-
-            $customerPatient = TreatmentPatient::with(['steps' => function($steps){
-                $steps->latest('step');
-            }])
-            ->where('patient_id', $order['patient_id'])
-            ->where('status', '<>', 'Finished')
-            ->get()->toArray();
-
-            $products = array_map(function($value) use($customerPatient){
-
-                foreach($customerPatient ?? [] as $cp){
-                    if($value['id'] == $cp['treatment_id'] && (date('Y-m-d',strtotime($cp['expired_date'])) >= date('Y-m-d',strtotime($value['date'] ?? date('Y-m-d'))))){
-                        if($cp['steps'][0]['step'] < $cp['step']){
-                            $value['can_continue'] = true;
-                            $value['record_history'] = [
-                                'start' => $cp['steps'][0]['step'],
-                                'total' => $cp['step'],
-                                'from' => $cp['steps'][0]['step'].'/'.$cp['step'],
-                                'to' => ($cp['steps'][0]['step']+1).'/'.$cp['step'],
-                            ];
-                        }
-                        $value['can_new'] = false;
-                    }
-                }
-                $value['total_history'] = count($customerPatient);
-
-                return $value;
-            },$products ?? []);
-        }
-
         $list_date_return['data'] = [];
 
         foreach($dates['list'] ?? [] as $date_list){
+            $customerPatient = [];
+            if(isset($post['id_customer'])){
+                $customerPatient = TreatmentPatient::with(['steps' => function($steps){
+                    $steps->latest('step');
+                }])
+                ->where('patient_id', $post['id_customer'])
+                ->where('status', '<>', 'Finished')
+                ->get()->toArray() ?? [];
+            }elseif(isset($post['id_order'])){
+                $order = Order::where('id', $post['id_order'])->first();
+                if(!$order){
+                    return $this->error('Order not found');
+                }
 
+                $customerPatient = TreatmentPatient::with(['steps' => function($steps){
+                    $steps->latest('step');
+                }])
+                ->where('patient_id', $order['patient_id'])
+                ->where('status', '<>', 'Finished')
+                ->get()->toArray()?? [];
+            }
 
             $treatment_list_date = [];
             foreach($products ?? [] as $prod){
@@ -192,6 +148,25 @@ class TreatmentController extends Controller
                         continue;
                     }
                 }
+
+                foreach($customerPatient ?? [] as $cp){
+                    if($prod['id'] == $cp['treatment_id'] && (date('Y-m-d',strtotime($cp['expired_date'])) >= date('Y-m-d',strtotime($date_list)))){
+                        if($cp['steps'][0]['step'] < $cp['step']){
+                            $prod['can_continue'] = true;
+                            $prod['record_history'] = [
+                                'start' => $cp['steps'][0]['step'],
+                                'total' => $cp['step'],
+                                'from' => $cp['steps'][0]['step'].'/'.$cp['step'],
+                                'to' => ($cp['steps'][0]['step']+1).'/'.$cp['step'],
+                                'expired_date' => date('Y-m-d',strtotime($cp['expired_date']))
+                            ];
+                        }
+                        if(isset($post['id_order'])){
+                            $prod['can_new'] = false;
+                        }
+                    }
+                }
+                $prod['total_history'] = count($customerPatient??[]);
 
                 $treatment_list_date[] =[
                     'id' => $prod['id'],
@@ -388,6 +363,7 @@ class TreatmentController extends Controller
                                 'total' => $cp['step'],
                                 'from' => $cp['steps'][0]['step'].'/'.$cp['step'],
                                 'to' => ($cp['steps'][0]['step']+1).'/'.$cp['step'],
+                                'expired_date' => date('Y-m-d',strtotime($cp['expired_date']))
                             ];
                         }
                     }
@@ -421,6 +397,7 @@ class TreatmentController extends Controller
                                 'total' => $cp['step'],
                                 'from' => $cp['steps'][0]['step'].'/'.$cp['step'],
                                 'to' => ($cp['steps'][0]['step']+1).'/'.$cp['step'],
+                                'expired_date' => date('Y-m-d',strtotime($cp['expired_date']))
                             ];
                         }
                         $value['can_new'] = false;

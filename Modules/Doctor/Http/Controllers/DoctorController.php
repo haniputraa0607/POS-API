@@ -1947,8 +1947,52 @@ class DoctorController extends Controller
             $delete_order_prescription = $order_prescription->delete();
             return true;
 
+        }elseif(($type??false) == 'consultation'){
+
+            $order_consultation = OrderConsultation::with(['order'])->whereHas('order', function($order) use($post){
+                $order->where('order_id', $post['id_order']);
+                $order->where('send_to_transaction', 0);
+            })->whereHas('doctor')
+            ->where('id', $post['id'])->first();
+
+            if(!$order_consultation){
+                $delete_errors = 'Order not found';
+                return false;
+            }
+
+            $order = Order::where('id', $order_consultation['order_id'])->update([
+                'order_subtotal'   => $order_consultation['order']['order_subtotal'] - $order_consultation['order_consultation_subtotal'],
+                'order_gross'      => $order_consultation['order']['order_gross'] - $order_consultation['order_consultation_subtotal'],
+                'order_grandtotal' => $order_consultation['order']['order_grandtotal'] - $order_consultation['order_consultation_grandtotal'],
+            ]);
+
+            $consultation = Consultation::where('order_consultation_id', $order_consultation['id'])->first();
+            if($consultation){
+                $patient_grievances = PatientGrievance::where('consultation_id', $consultation['id'])->get();
+                if($patient_grievances){
+                    $patient_grievances->each->delete();
+                }
+
+                $patient_diagnostics = PatientDiagnostic::where('consultation_id', $consultation['id'])->get();
+                if($patient_diagnostics){
+                    $patient_diagnostics->each->delete();
+                }
+
+                $consultation->delete();
+            }
+
+            if(!$order){
+                $delete_errors = 'Order not found';
+                return false;
+            }
+
+            $order_consultation->delete();
+
+            return true;
+
         }else{
-            return $this->error('Type is invalid');
+            $delete_errors = 'Invalid type';
+            return false;
         }
     }
 
