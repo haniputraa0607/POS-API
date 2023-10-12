@@ -51,7 +51,6 @@ class GenerateQueueOrder implements ShouldQueue
                     ->where('type', 'Treatment')
                     ->max('queue') + 1;
 
-
                     if ($queue < 10) {
                         $queue_code = 'T00' . $queue;
                     } elseif ($queue < 100) {
@@ -60,7 +59,10 @@ class GenerateQueueOrder implements ShouldQueue
                         $queue_code = 'T' . $queue;
                     }
 
-                    $update = OrderProduct::where('id', $order_product['id'])->update(['queue' => $queue,'queue_code' => $queue_code]);
+                    $update = OrderProduct::where('id', $order_product['id'])->first();
+                    if(!$update['queue'] && !$update['queue_code']){
+                        $update_queue = $update->update(['queue' => $queue,'queue_code' => $queue_code]);
+                    }
                 }
             }
 
@@ -79,8 +81,10 @@ class GenerateQueueOrder implements ShouldQueue
                     $queue_code = 'C' . $queue;
                 }
 
-
-                $update = OrderConsultation::where('id', $order_consultation['id'])->update(['queue' => $queue,'queue_code' => $queue_code]);
+                $update = OrderConsultation::where('id', $order_consultation['id'])->first();
+                if(!$update['queue'] && !$update['queue_code']){
+                    $update_queue = $update->update(['queue' => $queue,'queue_code' => $queue_code]);
+                }
             }
 
             foreach ($order['order_prescriptions'] ?? [] as $order_prescription) {
@@ -98,7 +102,10 @@ class GenerateQueueOrder implements ShouldQueue
                     $queue_code = 'P' . $queue;
                 }
 
-                $update = OrderPrescription::where('id', $order_prescription['id'])->update(['queue' => $queue,'queue_code' => $queue_code]);
+                $update = OrderPrescription::where('id', $order_prescription['id'])->first();
+                if(!$update['queue'] && !$update['queue_code']){
+                    $update_queue = $update->update(['queue' => $queue,'queue_code' => $queue_code]);
+                }
             }
         }
     }
