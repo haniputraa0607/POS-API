@@ -1710,10 +1710,12 @@ class POSController extends Controller
 
             if(!$is_error){
                 if($add_treat){
-                    return $other_order_products = OrderProduct::where('order_id', $order['id'])
+                    $other_order_products = OrderProduct::where('order_id', $order['id'])
                     ->where(function($where2) use ($add_treat){
-                        foreach($add_treat ?? [] as $tr){
-                            $where2->where('product_id', '<>', $tr['id'])->where('schedule_date', $tr['schedule_date']);
+                        foreach($add_treat ?? [] as $key_tr => $tr){
+                            $where2->whereNot(function($where3) use($tr){
+                                $where3->where('product_id', $tr['id'])->where('schedule_date', $tr['schedule_date']);
+                            });
                         }
                     })
                     ->where('type', 'Treatment')->get()->toArray();
@@ -1735,9 +1737,7 @@ class POSController extends Controller
                         $errors[] = $delete_errors;
                         continue;
                     }
-                    $order = Order::with([
-                        'order_consultations.consultation',
-                    ])->where('id', $post['id_order'])->first();
+                    $order = Order::where('id', $post['id_order'])->first();
                 }
             }
 
@@ -1990,6 +1990,14 @@ class POSController extends Controller
                     $order = Order::where('id', $post['id_order'])->first();
                 }
             }
+
+            if($is_error){
+                DB::rollBack();
+                return $this->error($errors);
+            }else{
+
+            }
+
         }else{
             return $this->error('Customer not found');
         }

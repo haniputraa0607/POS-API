@@ -568,6 +568,7 @@ class DoctorController extends Controller
             foreach($order['order_consultations'] ?? [] as $key => $ord_con){
 
                 $consul = [];
+                $grievances = [];
                 $is_submit = 0;
                 if($ord_con['consultation']){
                     $consul['queue_number']  = $ord_con['queue_code'];
@@ -592,6 +593,17 @@ class DoctorController extends Controller
 
 
                 }
+
+                foreach($ord_con['consultation']['patient_grievance'] ?? [] as $grievance){
+                    if($grievance['from_pos'] == 1){
+                        $grievances[] = [
+                            'id_grievance'   => $grievance['grievance']['id'],
+                            'grievance_name' => $grievance['grievance']['grievance_name'],
+                            'notes'          => $grievance['notes'] ?? null,
+                        ];
+                    }
+                }
+
                 $ord_consul[] = [
                     'order_consultation_id'    => $ord_con['id'],
                     'doctor_id'                => $ord_con['doctor']['id'],
@@ -602,6 +614,7 @@ class DoctorController extends Controller
                     'queue'                    => $ord_con['queue_code'],
                     'is_submit'                => $is_submit,
                     'consultation'             => $consul,
+                    'grievances'               => $grievances,
                     'treatment_recommendation' => $ord_con['consultation']['treatment_recomendation'] ?? null
                 ];
             }
