@@ -25,5 +25,6 @@
     "Partner": true,
     "Prescription": true,
     "Contact": true,
-    "CreateProductFinestTable": true
+    "CreateProductFinestTable": true,
+    "Cashier": true
 }
