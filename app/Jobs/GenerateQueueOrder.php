@@ -60,7 +60,7 @@ class GenerateQueueOrder implements ShouldQueue
                     }
 
                     $update = OrderProduct::where('id', $order_product['id'])->first();
-                    if(!$update['queue'] && !$update['queue_code']){
+                    if (!$update['queue'] && !$update['queue_code']) {
                         $update_queue = $update->update(['queue' => $queue,'queue_code' => $queue_code]);
                     }
                 }
@@ -82,7 +82,7 @@ class GenerateQueueOrder implements ShouldQueue
                 }
 
                 $update = OrderConsultation::where('id', $order_consultation['id'])->first();
-                if(!$update['queue'] && !$update['queue_code']){
+                if (!$update['queue'] && !$update['queue_code']) {
                     $update_queue = $update->update(['queue' => $queue,'queue_code' => $queue_code]);
                 }
             }
@@ -103,7 +103,7 @@ class GenerateQueueOrder implements ShouldQueue
                 }
 
                 $update = OrderPrescription::where('id', $order_prescription['id'])->first();
-                if(!$update['queue'] && !$update['queue_code']){
+                if (!$update['queue'] && !$update['queue_code']) {
                     $update_queue = $update->update(['queue' => $queue,'queue_code' => $queue_code]);
                 }
             }
