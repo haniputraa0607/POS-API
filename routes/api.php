@@ -24,8 +24,9 @@ Route::controller(AccessTokenController::class)->prefix('/login')->group(functio
     Route::post('doctor', 'loginDoctor')->name('login.doctor');
     Route::post('cashier', 'loginCashier')->name('login.cashier');
 });
+Route::get('/logout/cashier', [AccessTokenController::class, 'logoutCashier'])->name('logoutCashier')->middleware(['auth:api']);
 
-Route::get('/logout', [AccessTokenController::class, 'logout'])->name('logout')->middleware('auth:api');;
+Route::get('/logout', [AccessTokenController::class, 'logout'])->name('logout')->middleware('auth:api');
 
 Route::get('test-log', function () {
     Log::channel('db_log')->info("test log debug test", ['message' => 'test logging from url', "run"]);

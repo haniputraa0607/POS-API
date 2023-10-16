@@ -19,7 +19,8 @@ header('Access-Control-Allow-Headers:  Content-Type, X-Auth-Token, Origin, Autho
 Route::middleware(['auth:api','scopes:pos'])->controller(CashierController::class)->prefix('pos')->group(function (){
 
     Route::prefix('cashier')->controller(CashierController::class)->group(function () {
-        Route::post('histories', 'histories');
-
+        Route::get('histories', 'histories');
+        Route::get('list', 'listCashier');
+        Route::post('all-schedule', 'scheduleAll');
     });
 });

@@ -102,7 +102,7 @@ class AccessTokenController extends PassportAccessTokenController
         return $this->ok("success login cms", $data);
     }
 
-    public function loginCashier(LoginCashierRequest $request): mixed
+    public function loginCashier(LoginCashierRequest $request): JsonResponse
     {
         $post = $request->json()->all();
 
@@ -145,8 +145,8 @@ class AccessTokenController extends PassportAccessTokenController
         }
 
 
-        $attendance = EmployeeAttendance::where('user_id', $user['id'])->whereDate('date', date('Y-m-d'))->first();
-        if(!$attendance){
+        $attendance = EmployeeAttendance::where('user_id', $user['id'])->whereDate('date', date('Y-m-d'))->where('type', 'Log in')->first();
+        if(!$attendance || ($attendance && EmployeeAttendance::where('user_id', $user['id'])->whereDate('date', date('Y-m-d'))->where('type', 'Log out')->first())){
             $schedule_date = EmployeeScheduleDate::whereHas('employee_schedule', function($schedule) use($user){
                 $schedule->where('user_id', $user['id'])->where('schedule_month', date('m'))->where('schedule_year', date('Y'));
             })->whereDate('date', date('Y-m-d'))->first();
@@ -155,9 +155,11 @@ class AccessTokenController extends PassportAccessTokenController
                 return $this->error('Device ID not found');
             }
 
-            $attendance = EmployeeAttendance::create([
+            $attendance = EmployeeAttendance::updateOrCreate([
                 'user_id' => $user['id'],
                 'date' => date('Y-m-d'),
+                'type' => "Log in",
+            ],[
                 'employee_schedule_date_id' => $schedule_date['id'] ?? null,
                 'attendance_time' => date('H:i:s'),
                 'outlet_device_id' => $device['id']
@@ -170,6 +172,31 @@ class AccessTokenController extends PassportAccessTokenController
 
         return $this->ok("success login cashier", $data);
     }
+
+    public function logoutCashier(): mixed
+    {
+        $cashier = Auth::user();
+
+        $attendance_in = EmployeeAttendance::where('user_id', $cashier['id'])->whereDate('date', date('Y-m-d'))->where('type', 'Log in')->first();
+        if(!$attendance_in){
+            return $this->error('Plese log in first');
+        }
+
+        $attendance_out = EmployeeAttendance::updateOrCreate([
+            'user_id' => $cashier['id'],
+            'date' => date('Y-m-d'),
+            'type' => 'Log out'
+        ], [
+            'employee_schedule_date_id' => $attendance_in['employee_schedule_date_id'] ?? null,
+            'attendance_time' => date('H:i:s'),
+            'outlet_device_id' => $attendance_in['outlet_device_id']
+        ]);
+
+        $cashier->token()->revoke();
+        return $this->ok("success logout", []);
+
+    }
+
     public function loginDoctor(LoginDoctorRequest $request): JsonResponse
     {
         $post = $request->json()->all();

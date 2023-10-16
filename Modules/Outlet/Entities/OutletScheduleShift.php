@@ -6,6 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\Outlet\Entities\Outlet;
 use Modules\Outlet\Entities\OutletSchedule;
+use Modules\EmployeeSchedule\Entities\EmployeeScheduleDate;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class OutletScheduleShift extends Model
 {
@@ -28,6 +34,11 @@ class OutletScheduleShift extends Model
     public function outlet_schedule(): BelongsTo
     {
         return $this->belongsTo(OutletSchedule::class);
+    }
+
+    public function employee(): HasMany
+    {
+        return $this->hasMany(EmployeeScheduleDate::class, 'outlet_schedule_shift_id', 'id');
     }
 
     protected static function newFactory()

@@ -183,7 +183,8 @@ class TreatmentController extends Controller
                     'date_text' => date('d F Y', strtotime($date_list)),
                     'date' => date('Y-m-d', strtotime($date_list)),
                     'total_history' => $prod['total_history'],
-                    'record_history' => $prod['record_history']
+                    'record_history' => $prod['record_history'],
+                    'date_start' => $prod['date_start'],
                 ];
             }
             $list_date_return['data'][] = [
