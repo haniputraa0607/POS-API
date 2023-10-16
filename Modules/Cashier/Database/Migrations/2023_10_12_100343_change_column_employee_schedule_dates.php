@@ -56,6 +56,6 @@ return new class extends Migration
             $table->dropForeign('employee_schedule_dates_outlet_schedule_shift_id_foreign');
             $table->dropColumn('outlet_schedule_shift_id');
         });
-        
+
     }
 };

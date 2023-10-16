@@ -20,6 +20,7 @@ use Spatie\Permission\Traits\HasRoles;
 use Modules\User\Entities\Admin;
 use Modules\Doctor\Entities\DoctorSchedule;
 use Modules\Doctor\Entities\DoctorShift;
+use Modules\Cashier\Entities\EmployeeAttendance;
 
 class User extends Authenticatable
 {
@@ -102,6 +103,11 @@ class User extends Authenticatable
     public function doctor_shifts(): HasMany
     {
         return $this->hasMany(DoctorShift::class);
+    }
+
+    public function attendance(): HasMany
+    {
+        return $this->hasMany(EmployeeAttendance::class);
     }
 
     public function shifts(): BelongsToMany

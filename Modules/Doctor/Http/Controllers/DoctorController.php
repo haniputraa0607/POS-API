@@ -754,7 +754,12 @@ class DoctorController extends Controller
         }elseif($post['search']['filter'] == 'name'){
             return $this->getDoctorAll($outlet);
         }
-        $dates = MyHelper::getListDate(date('d'),date('m'),date('Y'));
+
+        $year = date('Y',strtotime($date));
+        $month = date('m',strtotime($date));
+        $today = $month > date('m') || $year > date('Y') ? 1 : date('d');
+
+        $dates = MyHelper::getListDate($today,$month,$year);
 
         $get_doctors = [];
         $make_new = false;
