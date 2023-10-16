@@ -1393,7 +1393,7 @@ class POSController extends Controller
                     if(!$only_consul){
                         $generate = GenerateQueueOrder::dispatch($order_sec)->onConnection('generatequeueorder');
                     }
-                    return 1;
+
                     DB::commit();
 
                     $return = [
