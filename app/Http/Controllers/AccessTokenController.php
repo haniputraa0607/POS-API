@@ -16,6 +16,9 @@ use Illuminate\Support\Facades\Auth;
 use Modules\User\Entities\User;
 use Illuminate\Http\Request;
 use App\Http\Models\OauthClient;
+use Modules\EmployeeSchedule\Entities\EmployeeScheduleDate;
+use Modules\Cashier\Entities\EmployeeAttendance;
+use Modules\Outlet\Entities\OutletDevice;
 
 class AccessTokenController extends PassportAccessTokenController
 {
@@ -29,6 +32,12 @@ class AccessTokenController extends PassportAccessTokenController
      * @return \Psr\Http\Message\ResponseInterface
      * @throws \League\OAuth2\Server\Exception\OAuthServerException
      */
+
+    public function __construct()
+    {
+        date_default_timezone_set('Asia/Jakarta');
+    }
+
     public function issueToken(ServerRequestInterface $request)
     {
 
@@ -93,7 +102,7 @@ class AccessTokenController extends PassportAccessTokenController
         return $this->ok("success login cms", $data);
     }
 
-    public function loginCashier(LoginCashierRequest $request): JsonResponse
+    public function loginCashier(LoginCashierRequest $request): mixed
     {
         $post = $request->json()->all();
 
@@ -111,6 +120,54 @@ class AccessTokenController extends PassportAccessTokenController
         Auth::loginUsingId($user['id']);
         $token = auth()->user()->createToken('CashierToken', ['pos'])->accessToken;
         $data = ['access_token' => $token, 'token_type' => 'Bearer'];
+        $device = OutletDevice::whereDate('date', date('Y-m-d'))->where('outlet_id', $user['outlet_id'])->get()->toArray();
+        if($device){
+            $no = count($device) + 1;
+
+            $check = array_search($post['device_id'], array_column($device??[], 'device_id'));
+            if($check !== false){
+                $device = $device[$check];
+            }else{
+                $device = OutletDevice::create([
+                    'outlet_id' => $user['outlet_id'],
+                    'date' => date('Y-m-d'),
+                    'name' => 'Cashier '.$no,
+                    'device_id' => $post['device_id']
+                ]);
+            }
+        }else{
+            $device = OutletDevice::create([
+                'outlet_id' => $user['outlet_id'],
+                'date' => date('Y-m-d'),
+                'name' => 'Cashier 1',
+                'device_id' => $post['device_id']
+            ]);
+        }
+
+
+        $attendance = EmployeeAttendance::where('user_id', $user['id'])->whereDate('date', date('Y-m-d'))->first();
+        if(!$attendance){
+            $schedule_date = EmployeeScheduleDate::whereHas('employee_schedule', function($schedule) use($user){
+                $schedule->where('user_id', $user['id'])->where('schedule_month', date('m'))->where('schedule_year', date('Y'));
+            })->whereDate('date', date('Y-m-d'))->first();
+
+            if(!isset($post['device_id'])){
+                return $this->error('Device ID not found');
+            }
+
+            $attendance = EmployeeAttendance::create([
+                'user_id' => $user['id'],
+                'date' => date('Y-m-d'),
+                'employee_schedule_date_id' => $schedule_date['id'] ?? null,
+                'attendance_time' => date('H:i:s'),
+                'outlet_device_id' => $device['id']
+            ]);
+        }elseif($attendance && $attendance['outlet_device_id'] != $device['id']){
+            $attendance_update = $attendance->update([
+                'outlet_device_id' => $device['id']
+            ]);
+        }
+
         return $this->ok("success login cashier", $data);
     }
     public function loginDoctor(LoginDoctorRequest $request): JsonResponse

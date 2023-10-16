@@ -50,7 +50,11 @@ class TreatmentController extends Controller
             return $this->listAll($outlet);
         }
 
-        $dates = MyHelper::getListDate(date('d'),date('m',strtotime($date)),date('Y',strtotime($date)));
+        $year = date('Y',strtotime($date));
+        $month = date('m',strtotime($date));
+        $today = $month > date('m') || $year > date('Y') ? 1 : date('d');
+
+        $dates = MyHelper::getListDate($today,$month,$year);
 
         $get_treatments = [];
         $make_new = false;
@@ -105,7 +109,8 @@ class TreatmentController extends Controller
                 'can_continue' => false,
                 'can_new' => true,
                 'total_history' => 0,
-                'record_history' => []
+                'record_history' => [],
+                'date_start' => null
             ];
             return $data;
         },$get_treatments ?? []);
@@ -160,6 +165,7 @@ class TreatmentController extends Controller
                                 'to' => ($cp['steps'][0]['step']+1).'/'.$cp['step'],
                                 'expired_date' => date('Y-m-d',strtotime($cp['expired_date']))
                             ];
+                            $prod['date_start'] = date('Y-m-d',strtotime($cp['start_date']));
                         }
                         if(isset($post['id_order'])){
                             $prod['can_new'] = false;
@@ -306,7 +312,8 @@ class TreatmentController extends Controller
             'price' => $price,
             'can_continue' => false,
             'can_new' => true,
-            'record_history' => []
+            'record_history' => [],
+            'date_start' => null
         ];
 
         $list_dates = [];
@@ -333,7 +340,8 @@ class TreatmentController extends Controller
                 'total_history' => 0,
                 'date_text' => date('d F Y', strtotime($date)),
                 'date' => date('Y-m-d', strtotime($date)),
-                'record_history' => []
+                'record_history' => [],
+                'date_start' => null
             ];
             $list_dates[] = $date;
         }
@@ -365,6 +373,8 @@ class TreatmentController extends Controller
                                 'to' => ($cp['steps'][0]['step']+1).'/'.$cp['step'],
                                 'expired_date' => date('Y-m-d',strtotime($cp['expired_date']))
                             ];
+                            $value['date_start'] = date('Y-m-d',strtotime($cp['start_date']));
+
                         }
                     }
                 }
@@ -399,6 +409,7 @@ class TreatmentController extends Controller
                                 'to' => ($cp['steps'][0]['step']+1).'/'.$cp['step'],
                                 'expired_date' => date('Y-m-d',strtotime($cp['expired_date']))
                             ];
+                            $value['date_start'] = date('Y-m-d',strtotime($cp['start_date']));
                         }
                         $value['can_new'] = false;
                     }
