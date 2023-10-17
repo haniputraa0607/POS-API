@@ -13,6 +13,7 @@ use Modules\Order\Entities\OrderConsultation;
 use Modules\Order\Entities\OrderPrescription;
 use Modules\Outlet\Entities\Outlet;
 use Modules\Customer\Entities\Customer;
+use Modules\Transaction\Entities\Transaction;
 
 class Order extends Model
 {
@@ -72,6 +73,11 @@ class Order extends Model
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Order::class, 'parent_id', 'id');
+    }
+
+    public function transaction(): HasOne
+    {
+        return $this->hasOne(Transaction::class);
     }
 
 }

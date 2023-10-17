@@ -41,6 +41,7 @@ class User extends Authenticatable
         'email',
         'phone',
         'idc',
+        'id_number',
         'birthdate',
         'email_verified_at',
         'type',
