@@ -31,14 +31,14 @@ class TransactionController extends Controller
             return $this->error('Outlet not found');
         }
 
-        if(!isset($post['id_customer']) || !isset($post['payment_method']) || !isset($post['payment_gateway'])){
+        if(!isset($post['id_order']) || !isset($post['payment_method']) || !isset($post['payment_gateway'])){
             return $this->error('Request invalid');
         }
 
         $order = Order::with(['order_products' => function($order_products) {
             $order_products->where('type', 'Treatment');
         }])
-        ->where('patient_id', $post['id_customer'])
+        ->where('id', $post['id_order'])
         ->where('outlet_id', $outlet['id'])
         ->where('send_to_transaction', 0)
         ->where(function($where1){

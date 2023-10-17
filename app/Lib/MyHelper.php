@@ -189,6 +189,30 @@ class MyHelper
         ];
     }
 
+    public static function reverseGetListDate($day = null, $month = null, $year = null)
+    {
+        $thisMonth = $month ?? date('n');
+        $thisYear  = $year  ?? date('Y');
+        $thidDay   = $day ?? date('d');
+        $date = $thisYear . '-' . $thisMonth . '-' . '01';
+        $start = $date;
+        $end  = $thisYear . '-' . $thisMonth . '-' . $thidDay;
+        $endDate = $end;
+
+        $listDate = [];
+        while (strtotime($date) <= strtotime($end)) {
+            $listDate[] = date('Y-m-d', strtotime($end));
+
+            $end = date("Y-m-d", strtotime("-1 day", strtotime($end)));
+        }
+
+        return [
+            'start' => $start,
+            'end' => $endDate,
+            'list' => $listDate,
+        ];
+    }
+
     public static function logCron($cronName)
     {
         $log = new LogCron();

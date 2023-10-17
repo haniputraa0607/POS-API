@@ -1397,6 +1397,7 @@ class POSController extends Controller
                     DB::commit();
 
                     $return = [
+                        'id_order' => $order['id'],
                         'consultation' => $value_consul,
                         'list_payment' => $this->availablePayment($order) ?? []
                     ];
@@ -1408,6 +1409,7 @@ class POSController extends Controller
                     DB::commit();
 
                     $return = [
+                        'id_order' => $order['id'],
                         'consultation' => false,
                         'list_payment' => $this->availablePayment($order) ?? []
                     ];
@@ -2203,6 +2205,7 @@ class POSController extends Controller
                     DB::commit();
 
                     $return = [
+                        'id_order' => $order['id'],
                         'consultation' => $value_consul,
                         'list_payment' => $this->availablePayment($order) ?? []
                     ];
@@ -2213,6 +2216,7 @@ class POSController extends Controller
                     DB::commit();
 
                     $return = [
+                        'id_order' => $order['id'],
                         'consultation' => false,
                         'list_payment' => $this->availablePayment($order) ?? []
                     ];
