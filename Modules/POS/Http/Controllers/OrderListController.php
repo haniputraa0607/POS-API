@@ -113,6 +113,12 @@ class OrderListController extends Controller
                     $where2->where('is_submited', 0)->where('is_submited_doctor', 0);
                 });
             })
+            ->where(function($where){
+                $where->where(function($where2){
+                    $where2->whereNotNull('parent_id')->where('is_submited', 1)->where('is_submited_doctor', 1);
+                });
+                $where->orWhereNull('parent_id');
+            })
             ->where('status', 'Pending')
             ->where('send_to_transaction', 0)
             ->where('outlet_id', $outlet['id'])
@@ -697,7 +703,7 @@ class OrderListController extends Controller
         return $this->ok('', []);
     }
 
-    public function deleteOngoign(Request $request):mixed
+    public function deleteOngoing(Request $request):mixed
     {
         $post = $request->json()->all();
         $cashier = $request->user();

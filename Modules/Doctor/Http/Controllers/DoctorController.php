@@ -1965,11 +1965,15 @@ class DoctorController extends Controller
                 return false;
             }
 
-            $order = Order::where('id', $order_consultation['order_id'])->update([
-                'order_subtotal'   => $order_consultation['order']['order_subtotal'] - $order_consultation['order_consultation_subtotal'],
-                'order_gross'      => $order_consultation['order']['order_gross'] - $order_consultation['order_consultation_subtotal'],
-                'order_grandtotal' => $order_consultation['order']['order_grandtotal'] - $order_consultation['order_consultation_grandtotal'],
-            ]);
+            if($order_consultation['order_consultation_subtotal'] == 0 && $order_consultation['order_consultation_grandtotal'] == 0){
+                $order = true;
+            }else{
+                $order = Order::where('id', $order_consultation['order_id'])->update([
+                    'order_subtotal'   => $order_consultation['order']['order_subtotal'] - $order_consultation['order_consultation_subtotal'],
+                    'order_gross'      => $order_consultation['order']['order_gross'] - $order_consultation['order_consultation_subtotal'],
+                    'order_grandtotal' => $order_consultation['order']['order_grandtotal'] - $order_consultation['order_consultation_grandtotal'],
+                ]);
+            }
 
             $consultation = Consultation::where('order_consultation_id', $order_consultation['id'])->first();
             if($consultation){
