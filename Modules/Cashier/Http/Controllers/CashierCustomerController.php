@@ -272,7 +272,7 @@ class CashierCustomerController extends Controller
         $cashier = $request->user();
         $outlet = $cashier->outlet;
 
-        return $products = Product::with([
+        $products = Product::with([
             'outlet_treatment' => function ($outlet_treatment) use ($outlet){
                 $outlet_treatment->where('outlet_id',$outlet['id'])->with(['treatment_room']);
             },
@@ -298,5 +298,11 @@ class CashierCustomerController extends Controller
                 $step->where('status', 'Finished');
             });
         })->treatment()->get()->toArray();
+
+        foreach($products ?? [] as $treatment){
+
+
+
+        }
     }
 }
