@@ -2075,10 +2075,6 @@ class POSController extends Controller
                             }
 
                             $order = Order::where('id', $post['id_order'])->first();
-                        }else{
-                            if(!$only_consul){
-
-                            }
                         }
                     }
 
@@ -3012,7 +3008,7 @@ class POSController extends Controller
             }else{
 
                 $generate = GenerateQueueOrder::dispatch($order)->onConnection('generatequeueorder');
-                if(!$only_consul){
+                if(!$only_consul && $is_consultation){
                     $generate = GenerateQueueOrder::dispatch($order_sec)->onConnection('generatequeueorder');
                 }
                 DB::commit();
@@ -3675,10 +3671,6 @@ class POSController extends Controller
                             }
 
                             $order = Order::where('id', $post['id_order'])->first();
-                        }else{
-                            if(!$only_consul){
-
-                            }
                         }
                     }
 
@@ -3835,6 +3827,9 @@ class POSController extends Controller
             }else{
 
                 $generate = GenerateQueueOrder::dispatch($order)->onConnection('generatequeueorder');
+                if(!$only_consul && $is_consultation){
+                    $generate = GenerateQueueOrder::dispatch($order_sec)->onConnection('generatequeueorder');
+                }
                 DB::commit();
 
                 return $this->ok('Success to save order', []);
