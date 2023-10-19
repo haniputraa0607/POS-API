@@ -32,6 +32,7 @@ Route::middleware(['auth:api','scopes:pos'])->prefix('pos')->group(function (){
         Route::prefix('customer')->controller(CashierCustomerController::class)->group(function () {
             Route::get('draft', 'draft');
             Route::get('treatment', 'treatment');
+            Route::get('consultation', 'consultation');
         });
     });
 });

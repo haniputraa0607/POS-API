@@ -277,14 +277,18 @@ class CashierCustomerController extends Controller
                 $outlet_treatment->where('outlet_id',$outlet['id'])->with(['treatment_room']);
             },
             'orders' => function ($orders) {
-                $orders->whereNotNull('treatment_patient_id')
+                $orders->with([
+                    'order.patient',
+                    'treatment_patient',
+                    'step'
+                ])->whereNotNull('treatment_patient_id')
                 ->whereNotNull('treatment_patient_step_id')
                 ->whereHas('order',function($order){
                     $order->where('send_to_transaction', 1)
                     ->where('status', 'Finished');
                 })->whereHas('step',function($step){
                     $step->where('status', 'Finished');
-                });
+                })->orderBy('schedule_date', 'desc');
             }
         ])->whereHas('outlet_treatment', function($outlet_treatment) use ($outlet){
             $outlet_treatment->where('outlet_id',$outlet['id']);
@@ -299,10 +303,66 @@ class CashierCustomerController extends Controller
             });
         })->treatment()->get()->toArray();
 
+        $data = [];
         foreach($products ?? [] as $treatment){
 
+            foreach($treatment['orders'] ?? [] as $order_treatment){
 
+                $progress = null;
+                if($order_treatment['treatment_patient'] && isset($order_treatment['treatment_patient']['doctor_id']) && isset($order_treatment['step'])){
+                    $progress = $order_treatment['step']['step'].'/'.$order_treatment['treatment_patient']['step'];
+                }
+
+                $list = [
+                    'id_order_treatment' => $order_treatment['id'],
+                    'id_treatment' => $treatment['id'],
+                    'date' => date('Y-m-d', strtotime($order_treatment['schedule_date'])),
+                    'name' => $treatment['product_name'],
+                    'price_total' => $order_treatment['order_product_grandtotal'],
+                    'queue' => $order_treatment['queue_code'],
+                    'patient_name' => $order_treatment['order']['patient']['name'],
+                    'step' => $progress
+                ];
+
+                $check = array_search(date('d F Y', strtotime($list['date'])), array_column($data??[], 'date'));
+                if($check !== false){
+                    $check2 = array_search($list['id_treatment'], array_column($data[$check]['list_treatment']??[], 'id_treatment'));
+                    if($check2 !== false){
+                        $data[$check]['list_treatment'][$check2]['total'] += 1;
+                        array_push($data[$check]['list_treatment'][$check2]['list_order'], $list);
+                    }else{
+                        $data[$check]['list_treatment'][] = [
+                            'id_treatment' => $treatment['id'],
+                            'name' => $treatment['product_name'],
+                            'treatment_room' => $treatment['outlet_treatment'][0]['treatment_room']['name'] ?? null,
+                            'total' => 1,
+                            'list_order' => [
+                                $list
+                            ]
+                        ];
+                    }
+                }else{
+                    $list_treatment[] = [
+                        'id_treatment' => $treatment['id'],
+                        'name' => $treatment['product_name'],
+                        'treatment_room' => $treatment['outlet_treatment'][0]['treatment_room']['name'] ?? null,
+                        'total' => 1,
+                        'list_order' => [
+                            $list
+                        ]
+                    ];
+                    $data[] = [
+                        'date' => date('d F Y', strtotime($list['date'])),
+                        'is_today' => date('Y-m-d', strtotime($list['date'])) == date('Y-m-d') ? 1 : 0,
+                        'list_treatment' => $list_treatment
+                    ];
+                }
+
+            }
 
         }
+
+        return $this->ok('Success to get cashiers', $data);
+
     }
 }
