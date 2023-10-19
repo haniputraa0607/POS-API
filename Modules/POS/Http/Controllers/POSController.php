@@ -2312,7 +2312,7 @@ class POSController extends Controller
     public function ticket(Request $request):mixed
     {
         $request->validate([
-            'id_customer' => 'required',
+            'id_order' => 'required',
         ]);
 
         $cashier = $request->user();
@@ -2323,11 +2323,10 @@ class POSController extends Controller
             return $this->error('Outlet not found');
         }
 
-        if(isset($post['id_customer'])){
+        if(isset($post['id_order'])){
             $order = Order::with(['order_consultations.doctor', 'order_consultations.shift'])
-            ->where('patient_id', $post['id_customer'])
+            ->where('id', $post['id_order'])
             ->where('outlet_id', $outlet['id'])
-            ->where('send_to_transaction', 0)
             ->latest()
             ->first();
 
@@ -2919,7 +2918,7 @@ class POSController extends Controller
                 ->where('schedule_date', date('Y-m-d', strtotime($order_consultation['date'])))
                 ->where('doctor_shift_id', $order_consultation['id_shift'])
                 ->first();
-                if($get_order_consultation){
+                if($check_consultation){
                     $is_error = true;
                     $errors[] = 'Consultation already exist in order';
                     continue;
