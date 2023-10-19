@@ -22,6 +22,7 @@ use Modules\User\Entities\Admin;
 use Modules\Doctor\Entities\DoctorSchedule;
 use Modules\Doctor\Entities\DoctorShift;
 use Modules\Cashier\Entities\EmployeeAttendance;
+use Modules\Order\Entities\OrderConsulatation;
 
 class User extends Authenticatable
 {
@@ -121,6 +122,11 @@ class User extends Authenticatable
     public function shifts(): BelongsToMany
     {
         return $this->belongsToMany(DoctorShift::class, 'user_has_shift', 'user_id', 'doctor_shift_id');
+    }
+
+    public function order_consultation(): HasMany
+    {
+        return $this->hasMany(OrderConsultation::class);
     }
 
     public function scopeDoctor(Builder $query): Builder

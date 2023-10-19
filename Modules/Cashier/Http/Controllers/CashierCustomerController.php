@@ -15,6 +15,7 @@ use Modules\EmployeeSchedule\Entities\EmployeeScheduleDate;
 use Modules\Cashier\Entities\EmployeeAttendance;
 use Modules\Outlet\Entities\OutletSchedule;
 use Modules\Order\Entities\Order;
+use Modules\Order\Entities\OrderConsultation;
 use Illuminate\Support\Facades\DB;
 use Modules\Product\Entities\Product;
 
@@ -358,6 +359,102 @@ class CashierCustomerController extends Controller
                     ];
                 }
 
+            }
+
+        }
+
+        return $this->ok('Success to get cashiers', $data);
+
+    }
+
+    public function consultation(Request $request): mixed
+    {
+
+        $cashier = $request->user();
+        $outlet = $cashier->outlet;
+
+        $order_consultations = OrderConsultation::with([
+            'doctor.doctor_room',
+            'shift',
+            'order.patient',
+            'consultation.patient_diagnostic.diagnostic',
+            'consultation.patient_grievance.grievance',
+        ])->whereHas('order', function($order){
+            $order->where('status', '<>', 'Cancelled');
+        })->orderBy('schedule_date', 'desc')
+        ->get()->toArray();
+
+        $data = [];
+        foreach($order_consultations ?? [] as $order_consultation){
+
+            $grievances = [];
+            $diagnostics = [];
+
+            foreach($order_consultation['patient_grievance'] ?? [] as $patient_grievance){
+                $grievances[] = [
+                    'id_grievance' => $patient_grievance['grievance']['id'],
+                    'grievance_name' => $patient_grievance['grievance']['grievance_name'],
+                ];
+            }
+
+            foreach($order_consultation['patient_diagnostic'] ?? [] as $patient_diagnostic){
+                $diagnostics[] = [
+                    'id_diagnostic' => $patient_diagnostic['diagnostic']['id'],
+                    'diagnostic_name' => $patient_diagnostic['diagnostic']['diagnostic_name'],
+                ];
+            }
+
+            $list = [
+                'id_order_consultation' => $order_consultation['id'],
+                'id_doctor' => $order_consultation['doctor_id'],
+                'title' => 'Consultation',
+                'date' => date('Y-m-d', strtotime($order_consultation['schedule_date'])),
+                'name' => $order_consultation['doctor']['name'],
+                'queue' => $order_consultation['queue_code'],
+                'patient_name' => $order_consultation['order']['patient']['name'],
+                'price_total' => $order_consultation['order_consultation_grandtotal'],
+                'id_shift' => $order_consultation['doctor_shift_id'],
+                'start' => date('H:i', strtotime($order_consultation['shift']['start'])).'-'.date('H:i', strtotime($order_consultation['shift']['end'])),
+                'detail' => [
+                    'grievances' => $grievances,
+                    'diagnostics' => $diagnostics,
+                    'date' => date('Y-m-d', strtotime($order_consultation['schedule_date'])),
+                    'queue' => $order_consultation['queue_code'],
+                ]
+            ];
+
+            $check = array_search(date('d F Y', strtotime($list['date'])), array_column($data??[], 'date'));
+            if($check !== false){
+                $check2 = array_search($list['id_doctor'], array_column($data[$check]['list_consultation']??[], 'id_doctor'));
+                if($check2 !== false){
+                    $data[$check]['list_consultation'][$check2]['total'] += 1;
+                    array_push($data[$check]['list_consultation'][$check2]['list_order'], $list);
+                }else{
+                    $data[$check]['list_consultation'][] = [
+                        'id_doctor' => $order_consultation['doctor_id'],
+                        'name' => $order_consultation['doctor']['name'],
+                        'treatment_room' => $order_consultation['doctor']['doctor_room']['name'] ?? null,
+                        'total' => 1,
+                        'list_order' => [
+                            $list
+                        ]
+                    ];
+                }
+            }else{
+                $list_consultation[] = [
+                    'id_doctor' => $order_consultation['doctor_id'],
+                    'name' => $order_consultation['doctor']['name'],
+                    'treatment_room' => $order_consultation['doctor']['doctor_room']['name'] ?? null,
+                    'total' => 1,
+                    'list_order' => [
+                        $list
+                    ]
+                ];
+                $data[] = [
+                    'date' => date('d F Y', strtotime($list['date'])),
+                    'is_today' => date('Y-m-d', strtotime($list['date'])) == date('Y-m-d') ? 1 : 0,
+                    'list_consultation' => $list_consultation
+                ];
             }
 
         }
