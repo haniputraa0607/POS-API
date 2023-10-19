@@ -39,7 +39,7 @@ Route::middleware(['auth:api','scopes:pos'])->controller(POSController::class)->
     Route::prefix('order')->controller(OrderListController::class)->group(function () {
         Route::post('list', 'list');
         Route::post('detail', 'detail');
-        Route::post('detail/delete', 'deleteOngoign');
+        Route::post('detail/delete', 'deleteOngoing');
 
     });
 });

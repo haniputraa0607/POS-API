@@ -15,6 +15,7 @@ use KodePandai\Indonesia\Models\District;
 use Laravel\Passport\HasApiTokens;
 use Modules\EmployeeSchedule\Entities\EmployeeSchedule;
 use Modules\Outlet\Entities\Outlet;
+use Modules\Outlet\Entities\DoctorRoom;
 use Modules\User\Database\factories\UserFactory;
 use Spatie\Permission\Traits\HasRoles;
 use Modules\User\Entities\Admin;
@@ -53,7 +54,8 @@ class User extends Authenticatable
         'address',
         'gender',
         'level',
-        'image_url'
+        'image_url',
+        'doctor_room_id'
     ];
 
     /**
@@ -79,6 +81,11 @@ class User extends Authenticatable
     public function outlet(): BelongsTo
     {
         return $this->belongsTo(Outlet::class);
+    }
+
+    public function doctor_room(): BelongsTo
+    {
+        return $this->belongsTo(DoctorRoom::class);
     }
 
     public function admin(): HasOne
@@ -125,7 +132,6 @@ class User extends Authenticatable
     {
         return $query->where('type', 'admin');
     }
-
 
     public function scopeCashier(Builder $query): Builder
     {

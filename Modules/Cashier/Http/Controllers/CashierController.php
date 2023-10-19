@@ -37,7 +37,7 @@ class CashierController extends Controller
             $schedule->where('outlet_id', $outlet['id'])
             ->where('schedule_month', date('m'))
             ->where('schedule_year', date('Y'));
-        })->whereHas('attendance')->whereDate('date', '<=',date('Y-m-d'))->get()->toArray();
+        })->whereHas('attendance')->whereDate('date', '<=',date('Y-m-d'))->orderBy('date', 'desc')->get()->toArray();
 
         $data[] = [
             'date' => date('d F Y'),
@@ -446,9 +446,6 @@ class CashierController extends Controller
                     'unit'                  => $ord_pres['prescription']['unit'],
                     'qty'                   => $ord_pres['qty'],
                 ];
-
-                $total_prescription = $total_prescription + 1;
-                $queue_prescription = $ord_pres['queue_code'];
 
             }
 
