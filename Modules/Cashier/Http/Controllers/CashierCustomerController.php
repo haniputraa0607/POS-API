@@ -385,6 +385,7 @@ class CashierCustomerController extends Controller
         ->get()->toArray();
 
         $data = [];
+        $data_today = [];
         foreach($order_consultations ?? [] as $order_consultation){
 
             $grievances = [];
@@ -423,14 +424,43 @@ class CashierCustomerController extends Controller
                 ]
             ];
 
-            $check = array_search(date('d F Y', strtotime($list['date'])), array_column($data??[], 'date'));
-            if($check !== false){
-                $check2 = array_search($list['id_doctor'], array_column($data[$check]['list_consultation']??[], 'id_doctor'));
-                if($check2 !== false){
-                    $data[$check]['list_consultation'][$check2]['total'] += 1;
-                    array_push($data[$check]['list_consultation'][$check2]['list_order'], $list);
+            if(date('Y-m-d', strtotime($list['date'])) == date('Y-m-d')){
+                $shift_consul = date('H:i', strtotime($order_consultation['shift']['start'])).'-'.date('H:i', strtotime($order_consultation['shift']['end']));
+                $check = array_search($shift_consul, array_column($data_today??[], 'shift'));
+                if($check !== false){
+                    $list['treatment_room'] = $order_consultation['doctor']['doctor_room']['name'] ?? null;
+                    array_push($data_today[$check]['list_consultation'], $list);
                 }else{
-                    $data[$check]['list_consultation'][] = [
+                    $list['treatment_room'] = $order_consultation['doctor']['doctor_room']['name'] ?? null;
+                    $data_today[] = [
+                        'shift' => $shift_consul,
+                        'is_today' => 1,
+                        'list_consultation' => [
+                            $list
+                        ]
+                    ];
+                }
+
+            }else{
+                $check = array_search(date('d F Y', strtotime($list['date'])), array_column($data??[], 'date'));
+                if($check !== false){
+                    $check2 = array_search($list['id_doctor'], array_column($data[$check]['list_consultation']??[], 'id_doctor'));
+                    if($check2 !== false){
+                        $data[$check]['list_consultation'][$check2]['total'] += 1;
+                        array_push($data[$check]['list_consultation'][$check2]['list_order'], $list);
+                    }else{
+                        $data[$check]['list_consultation'][] = [
+                            'id_doctor' => $order_consultation['doctor_id'],
+                            'name' => $order_consultation['doctor']['name'],
+                            'treatment_room' => $order_consultation['doctor']['doctor_room']['name'] ?? null,
+                            'total' => 1,
+                            'list_order' => [
+                                $list
+                            ]
+                        ];
+                    }
+                }else{
+                    $list_consultation[] = [
                         'id_doctor' => $order_consultation['doctor_id'],
                         'name' => $order_consultation['doctor']['name'],
                         'treatment_room' => $order_consultation['doctor']['doctor_room']['name'] ?? null,
@@ -439,27 +469,17 @@ class CashierCustomerController extends Controller
                             $list
                         ]
                     ];
+                    $data[] = [
+                        'date' => date('d F Y', strtotime($list['date'])),
+                        'is_today' => 0,
+                        'list_consultation' => $list_consultation
+                    ];
                 }
-            }else{
-                $list_consultation[] = [
-                    'id_doctor' => $order_consultation['doctor_id'],
-                    'name' => $order_consultation['doctor']['name'],
-                    'treatment_room' => $order_consultation['doctor']['doctor_room']['name'] ?? null,
-                    'total' => 1,
-                    'list_order' => [
-                        $list
-                    ]
-                ];
-                $data[] = [
-                    'date' => date('d F Y', strtotime($list['date'])),
-                    'is_today' => date('Y-m-d', strtotime($list['date'])) == date('Y-m-d') ? 1 : 0,
-                    'list_consultation' => $list_consultation
-                ];
             }
 
         }
-
-        return $this->ok('Success to get cashiers', $data);
+        $response =  array_merge($data_today,$data);
+        return $this->ok('Success to get cashiers', $response);
 
     }
 }

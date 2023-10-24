@@ -65,6 +65,7 @@ class CashierController extends Controller
             $value = [
                 'station' => $attendance['device']['name'],
                 'date' => date('Y-m-d', strtotime($schedule['date'])),
+                'id' => $schedule['id'],
                 'name' => $schedule['employee_schedule']['user']['name'],
                 'shift' => $schedule['shift']['shift'],
                 'start' => date('H:i', strtotime($schedule['shift']['shift_time_start'])),

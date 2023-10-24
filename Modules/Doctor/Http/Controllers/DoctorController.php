@@ -452,7 +452,7 @@ class DoctorController extends Controller
         }
 
         if($order_consultation){
-            $order_consultation_after = OrderConsultation::where('doctor_id', $order_consultation['doctor_id'])->where('doctor_shift_id', $order_consultation['doctor_shift_id'])->whereDate('schedule_date', date('Y-m-d', strtotime($order_consultation['schedule_date'])))->where('status', '<>', 'Finished')->update(['status' => 'Pending']);
+            $order_consultation_after = OrderConsultation::where('doctor_id', $order_consultation['doctor_id'])->where('doctor_shift_id', $order_consultation['doctor_shift_id'])->whereDate('schedule_date', date('Y-m-d', strtotime($order_consultation['schedule_date'])))->where('status', '<>', 'Finished')->update(['status' => 'Pending', 'start_time' => date('Y-m-d H:i:s')]);
             return $this->getDataOrder(true, [
                 'order_id' => $order_consultation['order_id'],
                 'outlet_id' => $outlet['id'],
@@ -672,7 +672,7 @@ class DoctorController extends Controller
         }
 
         $order_consultation = OrderConsultation::where('id', $id_order_consultation)->first();
-        $update = $order_consultation->update(['status' => 'On Progress']);
+        $update = $order_consultation->update(['status' => 'On Progress', 'start_time' => date('Y-m-d H:i:s')]);
         if(!$update){
             DB::rollBack();
             return $this->error('Failed to get data order');
@@ -710,9 +710,9 @@ class DoctorController extends Controller
                 }
             }
             if($check_after){
-                $update_after = OrderConsultation::where('id', $queue_after)->update(['status' => 'Ready']);
+                $update_after = OrderConsultation::where('id', $queue_after)->update(['status' => 'Ready', 'start_time' => date('Y-m-d H:i:s')]);
             }else{
-                $update_after = OrderConsultation::where('id', $order_consultation_after[0]['id'])->update(['status' => 'Ready']);
+                $update_after = OrderConsultation::where('id', $order_consultation_after[0]['id'])->update(['status' => 'Ready', 'start_time' => date('Y-m-d H:i:s')]);
             }
             if(!$update_after){
                 DB::rollBack();
@@ -769,6 +769,8 @@ class DoctorController extends Controller
             if(isset($config[$outlet['id']])){
                 if(($date && !$today_month) || (date('Y-m-d H:i', strtotime($config[$outlet['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i'))){
                     $make_new = true;
+                }elseif($month != $config[$outlet['id']]['month'] || $year != $config[$outlet['id']]['year']){
+                    $make_new = true;
                 }
             }else{
                 $make_new = true;
@@ -804,6 +806,8 @@ class DoctorController extends Controller
             $doctors = $doctors->doctor()->get()->toArray();
             $config[$outlet['id']] = [
                 'updated_at' => date('Y-m-d H:i'),
+                'year'       => $year,
+                'month'      => $month,
                 'data'       => $doctors
             ];
             file_put_contents(storage_path('/json/get_doctor.json'), json_encode($config));
