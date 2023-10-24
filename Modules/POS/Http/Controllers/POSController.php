@@ -2201,7 +2201,7 @@ class POSController extends Controller
                             }
 
 
-                        }elseif($order['order_consultations']){
+                        }elseif($order['order_consultations'] && count($order['order_consultations']) > 0){
 
                             $delete = (new DoctorController)->deleteOrderData([
                                 'outlet' => $outlet,

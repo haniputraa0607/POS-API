@@ -64,6 +64,8 @@ class TreatmentController extends Controller
             if(isset($config[$outlet['id']])){
                 if(($date && !$today_month) || (date('Y-m-d H:i', strtotime($config[$outlet['id']]['updated_at']. ' +6 hours')) <= date('Y-m-d H:i'))){
                     $make_new = true;
+                }elseif($month != $config[$outlet['id']]['month'] || $year != $config[$outlet['id']]['year']){
+                    $make_new = true;
                 }
             }else{
                 $make_new = true;
@@ -85,6 +87,8 @@ class TreatmentController extends Controller
 
             $config[$outlet['id']] = [
                 'updated_at' => date('Y-m-d H:i'),
+                'year'       => $year,
+                'month'      => $month,
                 'data'       => $products
             ];
             file_put_contents(storage_path('/json/get_treatment.json'), json_encode($config));
