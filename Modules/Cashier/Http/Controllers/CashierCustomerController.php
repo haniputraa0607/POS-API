@@ -426,15 +426,18 @@ class CashierCustomerController extends Controller
 
             if(date('Y-m-d', strtotime($list['date'])) == date('Y-m-d')){
                 $shift_consul = date('H:i', strtotime($order_consultation['shift']['start'])).'-'.date('H:i', strtotime($order_consultation['shift']['end']));
+                $status_consul = $order_consultation['status'] == 'Finished' ? 'Finished' : 'Pending';
                 $check = array_search($shift_consul, array_column($data_today??[], 'shift'));
-                if($check !== false){
+                if($check !== false && $status_consul == $data_today[$check]['status']){
                     $list['treatment_room'] = $order_consultation['doctor']['doctor_room']['name'] ?? null;
                     array_push($data_today[$check]['list_consultation'], $list);
                 }else{
+                    $list['time'] = $status_consul == 'Finished' ? null : date('i:s', strtotime(date('H:i')) - strtotime($order_consultation['start_time']));
                     $list['treatment_room'] = $order_consultation['doctor']['doctor_room']['name'] ?? null;
                     $data_today[] = [
                         'shift' => $shift_consul,
                         'is_today' => 1,
+                        'status' => $status_consul,
                         'list_consultation' => [
                             $list
                         ]
