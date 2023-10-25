@@ -503,6 +503,7 @@ class CashierController extends Controller
             ];
 
             $card = [
+                'id_order' => $order['id'],
                 'name' => $order['patient']['name'],
                 'time' => date('H:i',strtotime($order['transaction']['transaction_date'])),
                 'order_product' => $card_ord_prod,

@@ -687,7 +687,7 @@ class OrderListController extends Controller
                     'order_consultations' => $ord_consul,
                     'order_products' => $ord_prod,
                     'order_treatments' => $ord_treat,
-                    'order_precriptions'  => $ord_prescriptions,
+                    'order_prescriptions'  => $ord_prescriptions,
                 ],
                 'ticket' => $ticket,
                 'summary' => $summary,
