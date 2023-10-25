@@ -22,7 +22,7 @@ Route::controller(POSController::class)->prefix('pos')->group(function (){
     Route::get('splash', 'splash');
 });
 
-Route::middleware(['auth:api','scopes:pos'])->controller(POSController::class)->prefix('pos')->group(function (){
+Route::middleware(['auth:api','scopes:pos', 'log_activities_pos'])->controller(POSController::class)->prefix('pos')->group(function (){
     Route::get('home', 'home');
     Route::get('list-service', 'listService');
 

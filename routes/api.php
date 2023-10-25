@@ -21,8 +21,8 @@ header('Access-Control-Allow-Methods:  POST, GET, OPTIONS, PUT, DELETE');
 header('Access-Control-Allow-Headers:  Content-Type, X-Auth-Token, Origin, Authorization');
 Route::controller(AccessTokenController::class)->prefix('/login')->group(function () {
     Route::post('cms', 'loginCMS')->name('login.cms');
-    Route::post('doctor', 'loginDoctor')->name('login.doctor');
-    Route::post('cashier', 'loginCashier')->name('login.cashier');
+    Route::middleware(['log_activities_doctor'])->post('doctor', 'loginDoctor')->name('login.doctor');
+    Route::middleware(['log_activities_pos'])->post('cashier', 'loginCashier')->name('login.cashier');
 });
 Route::get('/logout/cashier', [AccessTokenController::class, 'logoutCashier'])->name('logoutCashier')->middleware(['auth:api']);
 
