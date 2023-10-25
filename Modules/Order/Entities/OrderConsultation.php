@@ -30,6 +30,7 @@ class OrderConsultation extends Model
         'order_consultation_grandtotal',
         'status',
         'start_time',
+        'finish_time',
         'queue',
         'queue_code',
     ];

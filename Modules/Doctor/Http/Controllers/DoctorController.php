@@ -452,7 +452,7 @@ class DoctorController extends Controller
         }
 
         if($order_consultation){
-            $order_consultation_after = OrderConsultation::where('doctor_id', $order_consultation['doctor_id'])->where('doctor_shift_id', $order_consultation['doctor_shift_id'])->whereDate('schedule_date', date('Y-m-d', strtotime($order_consultation['schedule_date'])))->where('status', '<>', 'Finished')->update(['status' => 'Pending', 'start_time' => date('Y-m-d H:i:s')]);
+            $order_consultation_after = OrderConsultation::where('doctor_id', $order_consultation['doctor_id'])->where('doctor_shift_id', $order_consultation['doctor_shift_id'])->whereDate('schedule_date', date('Y-m-d', strtotime($order_consultation['schedule_date'])))->where('status', '<>', 'Finished')->update(['status' => 'Pending', 'start_time' => null]);
             return $this->getDataOrder(true, [
                 'order_id' => $order_consultation['order_id'],
                 'outlet_id' => $outlet['id'],
@@ -653,7 +653,7 @@ class DoctorController extends Controller
                 'order_consultations' => $ord_consul,
                 'order_products'      => $ord_prod,
                 'order_treatments'    => $ord_treat,
-                'order_precriptions'  => $ord_prescriptions,
+                'order_prescriptions'  => $ord_prescriptions,
                 'summary'             => [
                     [
                         'label' => 'Subtotal',
@@ -710,9 +710,9 @@ class DoctorController extends Controller
                 }
             }
             if($check_after){
-                $update_after = OrderConsultation::where('id', $queue_after)->update(['status' => 'Ready', 'start_time' => date('Y-m-d H:i:s')]);
+                $update_after = OrderConsultation::where('id', $queue_after)->update(['status' => 'Ready', 'start_time' => null]);
             }else{
-                $update_after = OrderConsultation::where('id', $order_consultation_after[0]['id'])->update(['status' => 'Ready', 'start_time' => date('Y-m-d H:i:s')]);
+                $update_after = OrderConsultation::where('id', $order_consultation_after[0]['id'])->update(['status' => 'Ready', 'start_time' => null]);
             }
             if(!$update_after){
                 DB::rollBack();
@@ -2578,7 +2578,16 @@ class DoctorController extends Controller
                 return $this->error('Failed to submit order');
             }
 
-            $update_consul = OrderConsultation::where('id', $order['order_consultations'][0]['id'])->update(['status' => 'Finished']);
+            $update_consul = OrderConsultation::where('id', $order['order_consultations'][0]['id'])->update(['status' => 'Finished', 'finish_time' => date('Y-m-d H:i:s')]);
+
+            $order_consultation_after = OrderConsultation::where('doctor_id', $order['order_consultations'][0]['doctor_id'])
+            ->where('doctor_shift_id', $order['order_consultations'][0]['doctor_shift_id'])
+            ->whereDate('schedule_date', date('Y-m-d', strtotime($order['order_consultations'][0]['schedule_date'])))
+            ->where(function($whereStatus){
+                $whereStatus->where('status', '<>', 'Finished')
+                ->where('status', '<>', 'On Progress');
+            })->update(['status' => 'Pending', 'start_time' => null]);
+
             $generate = GenerateQueueOrder::dispatch($order)->onConnection('generatequeueorder');
 
             DB::commit();

@@ -382,6 +382,13 @@ class CashierCustomerController extends Controller
         ])->whereHas('order', function($order){
             $order->where('status', '<>', 'Cancelled');
         })->orderBy('schedule_date', 'desc')
+        ->orderBy(function($orderBy){
+            return $orderBy->from('doctor_shifts')
+            ->whereRaw('`doctor_shifts`.id = `order_consultations`.doctor_shift_id')
+            ->select('start');
+        }, 'desc')
+        ->orderByRaw("FIELD(status, \"On Progress\", \"Ready\", \"Pending\", \"Finished\")")
+        ->orderBy('id', 'desc')
         ->get()->toArray();
 
         $data = [];
@@ -405,12 +412,14 @@ class CashierCustomerController extends Controller
                 ];
             }
 
+            $shift_consul = date('H:i', strtotime($order_consultation['shift']['start'])).'-'.date('H:i', strtotime($order_consultation['shift']['end']));
             $list = [
                 'id_order_consultation' => $order_consultation['id'],
                 'id_doctor' => $order_consultation['doctor_id'],
                 'title' => 'Consultation',
                 'date' => date('Y-m-d', strtotime($order_consultation['schedule_date'])),
                 'name' => $order_consultation['doctor']['name'],
+                'status' => $order_consultation['status'],
                 'queue' => $order_consultation['queue_code'],
                 'patient_name' => $order_consultation['order']['patient']['name'],
                 'price_total' => $order_consultation['order_consultation_grandtotal'],
@@ -425,16 +434,22 @@ class CashierCustomerController extends Controller
             ];
 
             if(date('Y-m-d', strtotime($list['date'])) == date('Y-m-d')){
-                $shift_consul = date('H:i', strtotime($order_consultation['shift']['start'])).'-'.date('H:i', strtotime($order_consultation['shift']['end']));
-                $check = array_search($shift_consul, array_column($data_today??[], 'shift'));
+                $status_consul = $order_consultation['status'] == 'Finished' ? 'Finished' : 'Pending';
+                $list['treatment_room'] = $order_consultation['doctor']['doctor_room']['name'] ?? null;
+
+                $bithdayDate = new DateTime($order_consultation['start_time']);
+                $now = new DateTime();
+                $list['time'] = $order_consultation['status'] == 'On Progress' ? date('i:s', strtotime($now->diff($bithdayDate)->h.':'.$now->diff($bithdayDate)->i.':'.$now->diff($bithdayDate)->s)) : ($order_consultation['status'] == 'Finished' ? date('H:i', strtotime($order_consultation['start_time'])).'-'.date('H:i', strtotime($order_consultation['finish_time'])) : null);
+
+                $check = array_search($shift_consul.' '.$status_consul, array_column($data_today??[], 'key'));
                 if($check !== false){
-                    $list['treatment_room'] = $order_consultation['doctor']['doctor_room']['name'] ?? null;
                     array_push($data_today[$check]['list_consultation'], $list);
                 }else{
-                    $list['treatment_room'] = $order_consultation['doctor']['doctor_room']['name'] ?? null;
                     $data_today[] = [
+                        'key' => $shift_consul.' '.$status_consul,
                         'shift' => $shift_consul,
                         'is_today' => 1,
+                        'status' => $status_consul,
                         'list_consultation' => [
                             $list
                         ]
@@ -447,37 +462,89 @@ class CashierCustomerController extends Controller
                     $check2 = array_search($list['id_doctor'], array_column($data[$check]['list_consultation']??[], 'id_doctor'));
                     if($check2 !== false){
                         $data[$check]['list_consultation'][$check2]['total'] += 1;
-                        array_push($data[$check]['list_consultation'][$check2]['list_order'], $list);
+                        $check3 = array_search($shift_consul, array_column($data[$check]['list_consultation'][$check2]['list_shift']??[], 'shift'));
+
+                        if($check3 !== false){
+                            array_push($data[$check]['list_consultation'][$check2]['list_shift'][$check3]['list_order'], [
+                                'id_order_consultation' => $list['id_order_consultation'],
+                                'patient_name' => $list['patient_name'],
+                                'start_end' => date('H:i', strtotime($order_consultation['start_time'])).'-'.date('H:i', strtotime($order_consultation['finish_time']))
+                            ]);
+
+                        }else{
+                            $data[$check]['list_consultation'][$check2]['list_shift'][] = [
+                                'shift' => $shift_consul,
+                                'list_order' => [
+                                    [
+                                        'id_order_consultation' => $list['id_order_consultation'],
+                                        'patient_name' => $list['patient_name'],
+                                        'start_end' => date('H:i', strtotime($order_consultation['start_time'])).'-'.date('H:i', strtotime($order_consultation['finish_time']))
+                                    ]
+                                ]
+                            ];
+                        }
                     }else{
+
+                        $list_shift[] = [
+                            'shift' => $shift_consul,
+                            'list_order' => [
+                                [
+                                    'id_order_consultation' => $list['id_order_consultation'],
+                                    'patient_name' => $list['patient_name'],
+                                    'start_end' => date('H:i', strtotime($order_consultation['start_time'])).'-'.date('H:i', strtotime($order_consultation['finish_time']))
+                                ]
+                            ]
+                        ];
+
                         $data[$check]['list_consultation'][] = [
                             'id_doctor' => $order_consultation['doctor_id'],
                             'name' => $order_consultation['doctor']['name'],
                             'treatment_room' => $order_consultation['doctor']['doctor_room']['name'] ?? null,
                             'total' => 1,
-                            'list_order' => [
-                                $list
+                            'list_shift' => [
+                                $list_shift
                             ]
                         ];
+
                     }
+
                 }else{
-                    $list_consultation[] = [
+                    $list_shift = [
+                        'shift' => $shift_consul,
+                        'list_order' => [
+                            [
+                                'id_order_consultation' => $list['id_order_consultation'],
+                                'patient_name' => $list['patient_name'],
+                                'start_end' => date('H:i', strtotime($order_consultation['start_time'])).'-'.date('H:i', strtotime($order_consultation['finish_time']))
+                            ]
+                        ]
+                    ];
+
+                    $list_consultation = [
                         'id_doctor' => $order_consultation['doctor_id'],
                         'name' => $order_consultation['doctor']['name'],
                         'treatment_room' => $order_consultation['doctor']['doctor_room']['name'] ?? null,
                         'total' => 1,
-                        'list_order' => [
-                            $list
+                        'list_shift' => [
+                            $list_shift
                         ]
                     ];
                     $data[] = [
                         'date' => date('d F Y', strtotime($list['date'])),
                         'is_today' => 0,
-                        'list_consultation' => $list_consultation
+                        'list_consultation' => [
+                            $list_consultation
+                        ]
                     ];
                 }
             }
 
         }
+
+        $data_today = array_map(function($value){
+            unset($value['key']);
+            return $value;
+        }, $data_today ?? []);
         $response =  array_merge($data_today,$data);
         return $this->ok('Success to get cashiers', $response);
 

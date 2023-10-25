@@ -473,7 +473,7 @@ class POSController extends Controller
                 'order_products'      => $ord_prod,
                 'order_treatments'    => $ord_treat,
                 'order_consultations' => $ord_consul,
-                'order_precriptions'  => $ord_prescriptions,
+                'order_prescriptions'  => $ord_prescriptions,
                 'summary'             => [
                     [
                         'label' => 'Subtotal',
