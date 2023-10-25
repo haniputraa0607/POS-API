@@ -51,7 +51,6 @@ class LogActivitiesPosAppMiddleware
             $module = 'Login';
         }
 
-
         if(!empty($request->header('ip-address-view'))){
             $ip = $request->header('ip-address-view');
         }else{
