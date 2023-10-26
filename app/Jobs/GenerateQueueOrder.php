@@ -44,7 +44,7 @@ class GenerateQueueOrder implements ShouldQueue
         if ($order) {
             foreach ($order['order_products'] ?? [] as $order_product) {
                 if ($order_product['type'] == 'Treatment') {
-                    if(!isset($order_product['queue_code']) && empty(($order_product['queue_code']))){
+                    if (!isset($order_product['queue_code']) && empty(($order_product['queue_code']))) {
                         $queue = OrderProduct::whereHas('order', function ($ord) use ($order) {
                             $ord->where('id', '<>', $order['id']);
                             $ord->where('outlet_id', $order['outlet_id']);
@@ -69,7 +69,7 @@ class GenerateQueueOrder implements ShouldQueue
             }
 
             foreach ($order['order_consultations'] ?? [] as $order_consultation) {
-                if(!isset($order_consultation['queue_code']) && empty(($order_consultation['queue_code']))){
+                if (!isset($order_consultation['queue_code']) && empty(($order_consultation['queue_code']))) {
                     $queue = OrderConsultation::whereHas('order', function ($ord) use ($order) {
                         $ord->where('id', '<>', $order['id']);
                         $ord->where('outlet_id', $order['outlet_id']);
@@ -92,7 +92,7 @@ class GenerateQueueOrder implements ShouldQueue
             }
 
             foreach ($order['order_prescriptions'] ?? [] as $order_prescription) {
-                if(!isset($order_prescription['queue_code']) && empty(($order_prescription['queue_code']))){
+                if (!isset($order_prescription['queue_code']) && empty(($order_prescription['queue_code']))) {
                     $queue = OrderPrescription::whereHas('order', function ($ord) use ($order) {
                         $ord->where('id', '<>', $order['id']);
                         $ord->whereDate('order_date', date('Y-m-d'));
