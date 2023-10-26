@@ -219,6 +219,15 @@ class AccessTokenController extends PassportAccessTokenController
         return $this->ok("success login doctor", $data);
     }
 
+    public function logoutDoctor(): mixed
+    {
+        $doctor = Auth::user();
+
+        $doctor->token()->revoke();
+        return $this->ok("success logout", []);
+
+    }
+
     public function logout(): JsonResponse
     {
         Auth::user()->token()->revoke();

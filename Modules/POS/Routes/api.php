@@ -22,21 +22,19 @@ Route::controller(POSController::class)->prefix('pos')->group(function (){
     Route::get('splash', 'splash');
 });
 
-Route::middleware(['auth:api','scopes:pos', 'log_activities_pos'])->controller(POSController::class)->prefix('pos')->group(function (){
+Route::middleware(['auth:api','scopes:pos'])->controller(POSController::class)->prefix('pos')->group(function (){
     Route::get('home', 'home');
     Route::get('list-service', 'listService');
 
-    Route::prefix('order')->controller(POSController::class)->group(function () {
+    Route::middleware(['log_activities_pos'])->prefix('order')->controller(POSController::class)  ->group(function () {
         Route::post('/', 'getOrder');
-        Route::post('add', 'addOrder');
-        Route::post('delete', 'deleteOrder');
         Route::post('submit', 'submitOrder');
         Route::post('save', 'saveOrder');
         Route::post('ticket', 'ticket');
 
     });
 
-    Route::prefix('order')->controller(OrderListController::class)->group(function () {
+    Route::middleware(['log_activities_pos'])->prefix('order')->controller(OrderListController::class)->group(function () {
         Route::post('list', 'list');
         Route::post('detail', 'detail');
         Route::post('detail/delete', 'deleteOngoing');

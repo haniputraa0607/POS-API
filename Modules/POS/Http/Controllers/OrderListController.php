@@ -320,6 +320,10 @@ class OrderListController extends Controller
                     'type' => implode(', ', $types)
                 ];
 
+                if($post['type'] == 'ongoing'){
+                    unset($new_list['ticket']);
+                }
+
                 $check = array_search(date('d F Y', strtotime($date)), array_column($data??[], 'date'));
                 if($check !== false){
                     array_push($data[$check]['list'], $new_list);
@@ -570,7 +574,7 @@ class OrderListController extends Controller
                         'product_name'     => $order_product['product']['product_name'],
                         'schedule_date'    => date('d F Y', strtotime($order_product['schedule_date'])),
                         'time'  => date('H:i', strtotime($outlet_shift['open'])).' - '.date('H:i', strtotime($outlet_shift['close'])),
-                        'queue'              => $order_product['queue_code'],
+                        'queue'              => $order_product['queue_code'] ?? 'TBD',
                     ];
                 }
             }
@@ -589,7 +593,7 @@ class OrderListController extends Controller
                     'price_total'           => $ord_pres['order_prescription_grandtotal'],
                 ];
                 $total_prescription = $total_prescription + 1;
-                $queue_prescription = $ord_pres['queue_code'];
+                $queue_prescription = $ord_pres['queue_code'] ?? 'TBD';
 
             }
             if($total_prescription > 0){
@@ -608,7 +612,7 @@ class OrderListController extends Controller
                 foreach($order['child']['order_consultations'] ?? [] as $order_consultation){
                     $consul = [];
                     if($order_consultation['consultation']){
-                        $consul['queue_number']  = $order_consultation['queue_code'];
+                        $consul['queue_number']  = $order_consultation['queue_code'] ?? 'TBD';
                         $consul['schedule_date'] = date('d F Y', strtotime($order_consultation['schedule_date']));
                         $consul['grievance'] = [];
                         $consul['diagnostic'] = [];
@@ -640,7 +644,7 @@ class OrderListController extends Controller
                         'doctor_name'              => $order_consultation['doctor']['name'],
                         'schedule_date'            => date('d F Y', strtotime($order_consultation['schedule_date'])),
                         'time'                     => date('H:i', strtotime($order_consultation['shift']['start'])).' - '.date('H:i', strtotime($order_consultation['shift']['end'])),
-                        'queue'              => $order_consultation['queue_code'],
+                        'queue'                    => $order_consultation['queue_code'] ?? 'TBD',
                     ];
 
                 }
@@ -649,7 +653,7 @@ class OrderListController extends Controller
 
                     $consul = [];
                     if($order_consultation['consultation']){
-                        $consul['queue_number']  = $order_consultation['queue_code'];
+                        $consul['queue_number']  = $order_consultation['queue_code'] ?? 'TBD';
                         $consul['schedule_date'] = date('d F Y', strtotime($order_consultation['schedule_date']));
                         $consul['grievance'] = [];
                         $consul['diagnostic'] = [];
@@ -672,7 +676,7 @@ class OrderListController extends Controller
                         'schedule_date'            => date('d F Y', strtotime($order_consultation['schedule_date'])),
                         'time'                     => date('H:i', strtotime($order_consultation['shift']['start'])).'-'.date('H:i', strtotime($order_consultation['shift']['end'])),
                         'price_total'              => $order_consultation['order_consultation_grandtotal'],
-                        'queue'                    => $order_consultation['queue_code'],
+                        'queue'                    => $order_consultation['queue_code'] ?? 'TBD',
                         'is_submit'                => $is_submit,
                         'consultation'             => $consul,
                         'treatment_recommendation' => $ord_con['consultation']['treatment_recomendation'] ?? null,

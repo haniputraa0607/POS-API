@@ -22,15 +22,15 @@ Route::controller(DoctorController::class)->prefix('doctor')->group(function (){
 });
 
 Route::middleware(['auth:api','scopes:doctor'])->controller(DoctorController::class)->prefix('doctor')->group(function (){
-    Route::get('home', 'home');
+    Route::middleware(['log_activities_doctor'])->get('home', 'home');
     Route::get('list-service', 'listService');
-    Route::get('next', 'nextQueue');
+    Route::middleware(['log_activities_doctor'])->get('next', 'nextQueue');
 
     Route::prefix('order')->controller(DoctorController::class)->group(function () {
-        Route::post('/', 'getOrder');
+        Route::middleware(['log_activities_doctor'])->post('/', 'getOrder');
         Route::post('add', 'addOrder');
         Route::post('delete', 'deleteOrder');
-        Route::post('submit', 'submitOrder');
+        Route::middleware(['log_activities_doctor'])->post('submit', 'submitOrder');
     });
 
 });

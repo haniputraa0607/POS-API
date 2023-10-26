@@ -49,6 +49,26 @@ class LogActivitiesDoctorAppMiddleware
         $subject = null;
         if(stristr($url, 'login/doctor')){
             $module = 'Login';
+        }elseif(stristr($url, 'logout/doctor')){
+            $module = 'Logout';
+        }elseif(stristr($url, 'doctor/home')){
+            $module = 'Home';
+        }elseif(stristr($url, 'doctor/next')){
+            $module = 'Next Queue';
+        }elseif(stristr($url, 'doctor/prescription')){
+            $module = 'Prescription';
+            if(stristr($url, 'custom/create')){
+                $subject = 'Create';
+            }elseif(stristr($url, 'custom/create')){
+                $subject = 'Submit';
+            }
+        }elseif(stristr($url, 'pos/order')){
+            $module = 'Order';
+            if(stristr($url, 'submit')){
+                $subject = 'Submit';
+            }else{
+                $subject = 'Get';
+            }
         }
 
         if(!empty($request->header('ip-address-view'))){
@@ -59,6 +79,7 @@ class LogActivitiesDoctorAppMiddleware
 
         $userAgent = $request->header('user-agent');
 
+        if($requestnya == '[]') $requestnya = null;
         $data = [
             'module' 	      => ucwords($module),
             'subject' 		  => $subject,

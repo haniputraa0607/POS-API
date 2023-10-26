@@ -19,7 +19,7 @@ Route::middleware('auth:api')->get('/transaction', function (Request $request) {
 
 Route::middleware(['auth:api','scopes:pos'])->prefix('pos')->group(function (){
 
-    Route::prefix('transaction')->controller(TransactionController::class)->group(function () {
+    Route::middleware(['log_activities_pos'])->prefix('transaction')->controller(TransactionController::class)->group(function () {
         Route::post('confirm', 'confirm');
         Route::post('done', 'done');
     });
