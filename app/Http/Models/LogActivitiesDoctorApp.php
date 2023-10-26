@@ -5,13 +5,13 @@ namespace App\Http\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class LogActivitiesPosApp extends Model
+class LogActivitiesDoctorApp extends Model
 {
     use HasFactory;
 
     protected $connection = 'mysql2';
 
-    protected $table = 'log_activities_pos_apps';
+    protected $table = 'log_activities_doctor_apps';
 
     protected $fillable = [
         'module',

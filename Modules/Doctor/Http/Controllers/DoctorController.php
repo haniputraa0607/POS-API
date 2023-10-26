@@ -2588,8 +2588,6 @@ class DoctorController extends Controller
                 ->where('status', '<>', 'On Progress');
             })->update(['status' => 'Pending', 'start_time' => null]);
 
-            $generate = GenerateQueueOrder::dispatch($order)->onConnection('generatequeueorder');
-
             DB::commit();
 
             return $this->ok('Success to submit order', []);

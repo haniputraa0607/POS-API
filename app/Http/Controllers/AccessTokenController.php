@@ -121,21 +121,21 @@ class AccessTokenController extends PassportAccessTokenController
         $token = auth()->user()->createToken('CashierToken', ['pos'])->accessToken;
         $data = ['access_token' => $token, 'token_type' => 'Bearer'];
         $device = OutletDevice::whereDate('date', date('Y-m-d'))->where('outlet_id', $user['outlet_id'])->get()->toArray();
-        if($device){
+        if ($device) {
             $no = count($device) + 1;
 
-            $check = array_search($post['device_id'], array_column($device??[], 'device_id'));
-            if($check !== false){
+            $check = array_search($post['device_id'], array_column($device ?? [], 'device_id'));
+            if ($check !== false) {
                 $device = $device[$check];
-            }else{
+            } else {
                 $device = OutletDevice::create([
                     'outlet_id' => $user['outlet_id'],
                     'date' => date('Y-m-d'),
-                    'name' => 'Cashier '.$no,
+                    'name' => 'Cashier ' . $no,
                     'device_id' => $post['device_id']
                 ]);
             }
-        }else{
+        } else {
             $device = OutletDevice::create([
                 'outlet_id' => $user['outlet_id'],
                 'date' => date('Y-m-d'),
@@ -146,12 +146,12 @@ class AccessTokenController extends PassportAccessTokenController
 
 
         $attendance = EmployeeAttendance::where('user_id', $user['id'])->whereDate('date', date('Y-m-d'))->where('type', 'Log in')->first();
-        if(!$attendance || ($attendance && EmployeeAttendance::where('user_id', $user['id'])->whereDate('date', date('Y-m-d'))->where('type', 'Log out')->first())){
-            $schedule_date = EmployeeScheduleDate::whereHas('employee_schedule', function($schedule) use($user){
+        if (!$attendance || ($attendance && EmployeeAttendance::where('user_id', $user['id'])->whereDate('date', date('Y-m-d'))->where('type', 'Log out')->first())) {
+            $schedule_date = EmployeeScheduleDate::whereHas('employee_schedule', function ($schedule) use ($user) {
                 $schedule->where('user_id', $user['id'])->where('schedule_month', date('m'))->where('schedule_year', date('Y'));
             })->whereDate('date', date('Y-m-d'))->first();
 
-            if(!isset($post['device_id'])){
+            if (!isset($post['device_id'])) {
                 return $this->error('Device ID not found');
             }
 
@@ -159,12 +159,12 @@ class AccessTokenController extends PassportAccessTokenController
                 'user_id' => $user['id'],
                 'date' => date('Y-m-d'),
                 'type' => "Log in",
-            ],[
+            ], [
                 'employee_schedule_date_id' => $schedule_date['id'] ?? null,
                 'attendance_time' => date('H:i:s'),
                 'outlet_device_id' => $device['id']
             ]);
-        }elseif($attendance && $attendance['outlet_device_id'] != $device['id']){
+        } elseif ($attendance && $attendance['outlet_device_id'] != $device['id']) {
             $attendance_update = $attendance->update([
                 'outlet_device_id' => $device['id']
             ]);
@@ -178,7 +178,7 @@ class AccessTokenController extends PassportAccessTokenController
         $cashier = Auth::user();
 
         $attendance_in = EmployeeAttendance::where('user_id', $cashier['id'])->whereDate('date', date('Y-m-d'))->where('type', 'Log in')->first();
-        if(!$attendance_in){
+        if (!$attendance_in) {
             return $this->error('Plese log in first');
         }
 
@@ -194,7 +194,6 @@ class AccessTokenController extends PassportAccessTokenController
 
         $cashier->token()->revoke();
         return $this->ok("success logout", []);
-
     }
 
     public function loginDoctor(LoginDoctorRequest $request): JsonResponse
@@ -217,6 +216,14 @@ class AccessTokenController extends PassportAccessTokenController
         $token = auth()->user()->createToken('DoctorToken', ['doctor'])->accessToken;
         $data = ['access_token' => $token, 'token_type' => 'Bearer'];
         return $this->ok("success login doctor", $data);
+    }
+
+    public function logoutDoctor(): mixed
+    {
+        $doctor = Auth::user();
+
+        $doctor->token()->revoke();
+        return $this->ok("success logout", []);
     }
 
     public function logout(): JsonResponse

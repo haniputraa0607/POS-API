@@ -341,7 +341,7 @@ class POSController extends Controller
                         'schedule_date'    => date('d F Y', strtotime($ord_pro['schedule_date'])),
                         'schedule'         => date('Y-m-d', strtotime($ord_pro['schedule_date'])),
                         'price_total'      => $ord_pro['order_product_grandtotal'],
-                        'queue'            => $ord_pro['queue_code'],
+                        'queue'            => $ord_pro['queue_code'] ?? 'TBD',
                         'progress'         => $progress
                     ];
                 }
@@ -354,7 +354,7 @@ class POSController extends Controller
                     $grievances = [];
 
                     if($ord_con['consultation']){
-                        $consul['queue_number']  = $ord_con['queue_code'];
+                        $consul['queue_number']  = $ord_con['queue_code'] ?? 'TBD';
                         $consul['schedule_date'] = date('d F Y', strtotime($ord_con['schedule_date']));
                         $consul['grievance'] = [];
                         $consul['diagnostic'] = [];
@@ -384,7 +384,7 @@ class POSController extends Controller
                         'schedule_date'         => date('d F Y', strtotime($ord_con['schedule_date'])),
                         'time'                  => date('H:i', strtotime($ord_con['shift']['start'])).'-'.date('H:i', strtotime($ord_con['shift']['end'])),
                         'price_total'           => $ord_con['order_consultation_grandtotal'],
-                        'queue'                 => $ord_con['queue_code'],
+                        'queue'                 => $ord_con['queue_code'] ?? 'TBD',
                         'consultation'          => $consul,
                         'grievances'            => $grievances,
                         'submited_by_doctor'    => $is_submit,
@@ -398,7 +398,7 @@ class POSController extends Controller
                     $grievances = [];
 
                     if($ord_con['consultation']){
-                        $consul['queue_number']  = $ord_con['queue_code'];
+                        $consul['queue_number']  = $ord_con['queue_code'] ?? 'TBD';
                         $consul['schedule_date'] = date('d F Y', strtotime($ord_con['schedule_date']));
                         $consul['grievance'] = [];
                         $consul['diagnostic'] = [];
@@ -429,7 +429,7 @@ class POSController extends Controller
                         'schedule_date'         => date('d F Y', strtotime($ord_con['schedule_date'])),
                         'time'                  => date('H:i', strtotime($ord_con['shift']['start'])).'-'.date('H:i', strtotime($ord_con['shift']['end'])),
                         'price_total'           => $ord_con['order_consultation_grandtotal'],
-                        'queue'                 => $ord_con['queue_code'],
+                        'queue'                 => $ord_con['queue_code'] ?? 'TBD',
                         'consultation'          => $consul,
                         'grievances'            => $grievances,
                         'submited_by_doctor'    => $is_submit,
@@ -3007,10 +3007,6 @@ class POSController extends Controller
                 return $this->error($errors);
             }else{
 
-                $generate = GenerateQueueOrder::dispatch($order)->onConnection('generatequeueorder');
-                if(!$only_consul && $is_consultation){
-                    $generate = GenerateQueueOrder::dispatch($order_sec)->onConnection('generatequeueorder');
-                }
                 DB::commit();
 
                 return $this->ok('Success to save order', []);
@@ -3826,10 +3822,6 @@ class POSController extends Controller
                 return $this->error($errors);
             }else{
 
-                $generate = GenerateQueueOrder::dispatch($order)->onConnection('generatequeueorder');
-                if(!$only_consul && $is_consultation){
-                    $generate = GenerateQueueOrder::dispatch($order_sec)->onConnection('generatequeueorder');
-                }
                 DB::commit();
 
                 return $this->ok('Success to save order', []);

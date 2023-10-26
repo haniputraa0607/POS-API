@@ -120,6 +120,7 @@ class CashierCustomerController extends Controller
                         'schedule_date'    => date('d F Y', strtotime($order_product['schedule_date'])),
                         'schedule'         => date('Y-m-d', strtotime($order_product['schedule_date'])),
                         'price_total'      => $order_product['order_product_grandtotal'],
+                        'queue'            => $order_product['queue_code'] ?? 'TBD',
                         'progress'         => $progress
                     ];
 
@@ -131,31 +132,6 @@ class CashierCustomerController extends Controller
                     ];
 
                 }
-            }
-
-            foreach($order['order_prescriptions'] ?? [] as $key => $ord_pres){
-
-                $ord_prescrip[] = [
-                    'order_prescription_id' => $ord_pres['id'],
-                    'prescription_id'       => $ord_pres['prescription']['id'],
-                    'prescription_name'     => $ord_pres['prescription']['prescription_name'],
-                    'type'                  => $ord_pres['prescription']['category']['category_name'] ?? null,
-                    'unit'                  => $ord_pres['prescription']['unit'],
-                    'qty'                   => $ord_pres['qty'],
-                    'price_total'           => $ord_pres['order_prescription_grandtotal'],
-                ];
-
-                $card_ord_prescrip[] = [
-                    'prescription_id'       => $ord_pres['prescription']['id'],
-                    'prescription_name'     => $ord_pres['prescription']['prescription_name'],
-                    'type'                  => $ord_pres['prescription']['category']['category_name'] ?? null,
-                    'unit'                  => $ord_pres['prescription']['unit'],
-                    'qty'                   => $ord_pres['qty'],
-                ];
-
-                $total_prescription = $total_prescription + 1;
-                $queue_prescription = $ord_pres['queue_code'];
-
             }
 
             if($order['child']['order_consultations']??false){
@@ -181,7 +157,7 @@ class CashierCustomerController extends Controller
                         'schedule_date'            => date('d F Y', strtotime($order_consultation['schedule_date'])),
                         'time'                     => date('H:i', strtotime($order_consultation['shift']['start'])).'-'.date('H:i', strtotime($order_consultation['shift']['end'])),
                         'price_total'              => $order_consultation['order_consultation_grandtotal'],
-                        'queue'                    => $order_consultation['queue_code'],
+                        'queue'                    => $order_consultation['queue_code'] ?? 'TBD',
                         'consultation'             => $consul,
                         'treatment_recommendation' => $ord_con['consultation']['treatment_recomendation'] ?? null,
                     ];
@@ -218,7 +194,7 @@ class CashierCustomerController extends Controller
                         'schedule_date'            => date('d F Y', strtotime($order_consultation['schedule_date'])),
                         'time'                     => date('H:i', strtotime($order_consultation['shift']['start'])).'-'.date('H:i', strtotime($order_consultation['shift']['end'])),
                         'price_total'              => $order_consultation['order_consultation_grandtotal'],
-                        'queue'                    => $order_consultation['queue_code'],
+                        'queue'                    => $order_consultation['queue_code'] ?? 'TBD',
                         'consultation'             => $consul,
                         'treatment_recommendation' => $ord_con['consultation']['treatment_recomendation'] ?? null,
                     ];

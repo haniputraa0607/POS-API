@@ -25,6 +25,12 @@ class Kernel extends ConsoleKernel
          * run every minute
          */
         $schedule->call('Modules\Product\Http\Controllers\TreatmentController@cronCheckTreatment')->dailyAt('00:10');
+
+         /**
+         * To backup and truncate log database
+         */
+
+         $schedule->command('backup:logdb --table=log_activities_pos_apps --table=log_activities_doctor_apps --table=log_crons  --truncate --chunk=10000')->dailyAt('00:15');
     }
 
     /**
