@@ -35,6 +35,9 @@ use Modules\Prescription\Entities\SubstanceStock;
 use Modules\PatientGrievance\Entities\PatientGrievance;
 use Modules\PatientDiagnostic\Entities\PatientDiagnostic;
 use Modules\Consultation\Entities\Consultation;
+use Modules\Doctor\Entities\DoctorSuggestion;
+use Modules\Doctor\Entities\DoctorSuggestionProduct;
+use Modules\Doctor\Entities\DoctorSuggestionPrescription;
 
 class DoctorController extends Controller
 {
@@ -1800,6 +1803,13 @@ class DoctorController extends Controller
                 }
             }
 
+            $check_suggestion_product = DoctorSuggestionProduct::where('order_product_id', $order_product['id'])->first();
+            if($check_suggestion_product){
+                $check_suggestion_product->update([
+                    'order_product_id' => null,
+                    'not_purchase' => 1,
+                ]);
+            }
             $delete_order_product = $order_product->delete();
 
             if($delete_order_product && ($type??false) == 'treatment' && $order_product['treatment_patient_id']){
@@ -1810,22 +1820,13 @@ class DoctorController extends Controller
                     if($delete_step){
                         $treatment_patient = TreatmentPatient::with(['steps'])->where('id', $order_product['treatment_patient_id'])->first();
                         if($treatment_patient){
-                            if(count($treatment_patient['steps']) <= 0){
-                                OrderProduct::where('id', $order_product['id'])->update(['treatment_patient_id' => null]);
-                                $delete_treatment_patient = $treatment_patient->delete();
-                                if(!$delete_treatment_patient){
-                                    $delete_errors = 'Failed to delete treatment patient';
-                                    return false;
-                                }
-                            }else{
-                                $anotherSteps = TreatmentPatientStep::where('treatment_patient_id', $treatment_patient['id'])->where('status', 'Pending')->orderBy('step', 'asc')->get();
-                                $start_from = ($treatment_patient['progress'] ?? 0) + 1;
-                                foreach($anotherSteps ?? [] as $another){
-                                    $another->update([
-                                        'step' => $start_from,
-                                    ]);
-                                    $start_from++;
-                                }
+                            $anotherSteps = TreatmentPatientStep::where('treatment_patient_id', $treatment_patient['id'])->where('status', 'Pending')->orderBy('step', 'asc')->get();
+                            $start_from = ($treatment_patient['progress'] ?? 0) + 1;
+                            foreach($anotherSteps ?? [] as $another){
+                                $another->update([
+                                    'step' => $start_from,
+                                ]);
+                                $start_from++;
                             }
                         }else{
                             $delete_errors = 'Failed to get treatment patient';
@@ -1884,6 +1885,13 @@ class DoctorController extends Controller
 
             }
 
+            $check_suggestion_prescription = DoctorSuggestionPrescription::where('order_prescription_id', $order_prescription['id'])->first();
+            if($check_suggestion_prescription){
+                $check_suggestion_prescription->update([
+                    'order_prescription_id' => null,
+                    'not_purchase' => 1,
+                ]);
+            }
             $delete_order_prescription = $order_prescription->delete();
             return true;
 
@@ -1953,6 +1961,13 @@ class DoctorController extends Controller
                 }
             }
 
+            $check_suggestion_prescription = DoctorSuggestionPrescription::where('order_prescription_id', $order_prescription['id'])->first();
+            if($check_suggestion_prescription){
+                $check_suggestion_prescription->update([
+                    'order_prescription_id' => null,
+                    'not_purchase' => 1,
+                ]);
+            }
             $delete_order_prescription = $order_prescription->delete();
             return true;
 
@@ -2043,6 +2058,13 @@ class DoctorController extends Controller
         }
 
         DB::beginTransaction();
+        $suggestion = DoctorSuggestion::create([
+            'doctor_id' => $doctor['id'],
+            'patient_id' => $order['patient_id'],
+            'order_id'  => $order['id'],
+            'suggestion_date' => date('Y-m-d')
+        ]);
+
         $total_price_check = [];
         if($post['order_consultations']??false){
             $order_consultations = $order['order_consultations'][0];
@@ -2130,6 +2152,9 @@ class DoctorController extends Controller
             $order_product = OrderProduct::where('order_id', $order['id'])->where('product_id', $product['id'])->first();
             if($order_product){
 
+                $suggestion_product = DoctorSuggestionProduct::where('order_product_id', $order_product['id'])->first();
+                $old_suggestion_product = clone $suggestion_product;
+
                 if($post_order_product['qty']>$order_product['qty']){
 
                     $old_order_product = clone $order_product;
@@ -2139,10 +2164,22 @@ class DoctorController extends Controller
                         'order_product_grandtotal' => ($post_order_product['qty']*$order_product['order_product_price']),
                     ]);
 
+                    $suggestion_product->update([
+                        'qty'                      => $post_order_product['qty'],
+                        'order_product_subtotal'   => ($post_order_product['qty']*$suggestion_product['order_product_price']),
+                        'order_product_grandtotal' => ($post_order_product['qty']*$suggestion_product['order_product_price']),
+                    ]);
+
                     $update_order = $order->update([
                         'order_subtotal'   => $order_product['order']['order_subtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_subtotal']),
                         'order_gross'      => $order_product['order']['order_gross'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_subtotal']),
                         'order_grandtotal' => $order_product['order']['order_grandtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_grandtotal']),
+                    ]);
+
+                    $update_suggestion = $suggestion->update([
+                        'order_subtotal'   => $suggestion_product['order']['order_subtotal'] - $old_suggestion_product['order_product_subtotal'] + ($suggestion_product['order_product_subtotal']),
+                        'order_gross'      => $suggestion_product['order']['order_gross'] - $old_suggestion_product['order_product_subtotal'] + ($suggestion_product['order_product_subtotal']),
+                        'order_grandtotal' => $suggestion_product['order']['order_grandtotal'] - $old_suggestion_product['order_product_subtotal'] + ($suggestion_product['order_product_grandtotal']),
                     ]);
 
                 }elseif($post_order_product['qty']<$order_product['qty']){
@@ -2154,10 +2191,22 @@ class DoctorController extends Controller
                         'order_product_grandtotal' => ($post_order_product['qty']*$order_product['order_product_price']),
                     ]);
 
+                    $suggestion_product->update([
+                        'qty'                      => $post_order_product['qty'],
+                        'order_product_subtotal'   => ($post_order_product['qty']*$suggestion_product['order_product_price']),
+                        'order_product_grandtotal' => ($post_order_product['qty']*$suggestion_product['order_product_price']),
+                    ]);
+
                     $update_order = $order->update([
                         'order_subtotal'   => $order_product['order']['order_subtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_subtotal']),
                         'order_gross'      => $order_product['order']['order_gross'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_subtotal']),
                         'order_grandtotal' => $order_product['order']['order_grandtotal'] - $old_order_product['order_product_subtotal'] + ($order_product['order_product_grandtotal']),
+                    ]);
+
+                    $update_suggestion = $suggestion->update([
+                        'order_subtotal'   => $suggestion_product['order']['order_subtotal'] - $old_suggestion_product['order_product_subtotal'] + ($suggestion_product['order_product_subtotal']),
+                        'order_gross'      => $suggestion_product['order']['order_gross'] - $old_suggestion_product['order_product_subtotal'] + ($suggestion_product['order_product_subtotal']),
+                        'order_grandtotal' => $suggestion_product['order']['order_grandtotal'] - $old_suggestion_product['order_product_subtotal'] + ($suggestion_product['order_product_grandtotal']),
                     ]);
 
                 }elseif($post_order_product['qty']==$order_product['qty']){
@@ -2208,6 +2257,17 @@ class DoctorController extends Controller
                     'order_product_grandtotal' => $post_order_product['qty']*$price,
                 ]);
 
+                $store_suggestion_product = DoctorSuggestionProduct::create([
+                    'doctor_suggestion_id'  => $suggestion['id'],
+                    'order_product_id'  => $store_order_product['id'],
+                    'product_id'    => $store_order_product['product_id'],
+                    'type'  => $store_order_product['type'],
+                    'qty'   => $store_order_product['qty'],
+                    'order_product_price'   => $store_order_product['order_product_price'],
+                    'order_product_subtotal'    => $store_order_product['order_product_subtotal'],
+                    'order_product_grandtotal'  => $store_order_product['order_product_grandtotal']
+                ]);
+
                 $price_to_order = ($post_order_product['qty']*$price);
                 if(!$store_order_product){
                     $is_error = true;
@@ -2235,6 +2295,12 @@ class DoctorController extends Controller
                     'order_subtotal'   => $order['order_subtotal'] + $price_to_order,
                     'order_gross'      => $order['order_gross'] + $price_to_order,
                     'order_grandtotal' => $order['order_grandtotal'] + $price_to_order,
+                ]);
+
+                $suggestion->update([
+                    'order_subtotal'   => $suggestion['order_subtotal'] + $price_to_order,
+                    'order_gross'      => $suggestion['order_gross'] + $price_to_order,
+                    'order_grandtotal' => $suggestion['order_grandtotal'] + $price_to_order,
                 ]);
                 $add_prod[] = $product['id'];
                 $total_price_check[] = $price_to_order;
@@ -2372,6 +2438,21 @@ class DoctorController extends Controller
                 'order_product_subtotal'    => $price,
                 'order_product_grandtotal'  => $price,
             ]);
+
+            $create_suggestion_product = DoctorSuggestionProduct::create([
+                'doctor_suggestion_id'  => $suggestion['id'],
+                'order_product_id'  => $create_order_product['id'],
+                'product_id'    => $create_order_product['product_id'],
+                'type'  => $create_order_product['type'],
+                'schedule_date' => $create_order_product['schedule_date'],
+                'step' => $customerPatientStep['step'],
+                'total_step' => $customerPatient['step'],
+                'qty'   => $create_order_product['qty'],
+                'order_product_price'   => $create_order_product['order_product_price'],
+                'order_product_subtotal'    => $create_order_product['order_product_subtotal'],
+                'order_product_grandtotal'  => $create_order_product['order_product_grandtotal']
+            ]);
+
             $price_to_order = $price;
 
             if(!$create_order_product){
@@ -2386,6 +2467,11 @@ class DoctorController extends Controller
                 'order_grandtotal' => $order['order_grandtotal'] + $price_to_order,
             ]);
 
+            $suggestion->update([
+                'order_subtotal'   => $suggestion['order_subtotal'] + $price_to_order,
+                'order_gross'      => $suggestion['order_gross'] + $price_to_order,
+                'order_grandtotal' => $suggestion['order_grandtotal'] + $price_to_order,
+            ]);
             $total_price_check[] = $price_to_order;
 
             $add_treat[] = $treatment['id'];
@@ -2456,6 +2542,15 @@ class DoctorController extends Controller
                     'order_prescription_grandtotal' => $post_order_prescription['qty']*$price,
                 ]);
 
+                $create_suggestion_prescription = DoctorSuggestionPrescription::create([
+                    'doctor_suggestion_id'  => $suggestion['id'],
+                    'order_prescription_id' => $create_order_prescription['id'],
+                    'prescription_id'   => $create_order_prescription['prescription_id'],
+                    'qty'   => $create_order_prescription['qty'],
+                    'order_prescription_price'  => $create_order_prescription['order_prescription_price'],
+                    'order_prescription_subtotal'   => $create_order_prescription['order_prescription_subtotal'],
+                    'order_prescription_grandtotal' => $create_order_prescription['order_prescription_grandtotal'],
+                ]);
                 if(!$create_order_prescription){
                     $is_error = true;
                     $errors[] = 'Failed to order prescription';
@@ -2485,6 +2580,11 @@ class DoctorController extends Controller
                     'order_gross'      => $order['order_gross'] + $price_to_order,
                     'order_grandtotal' => $order['order_grandtotal'] + $price_to_order,
                 ]);
+                $suggestion->update([
+                    'order_subtotal'   => $suggestion['order_subtotal'] + $price_to_order,
+                    'order_gross'      => $suggestion['order_gross'] + $price_to_order,
+                    'order_grandtotal' => $suggestion['order_grandtotal'] + $price_to_order,
+                ]);
                 $total_price_check[] = $price_to_order;
 
             }else{
@@ -2498,6 +2598,15 @@ class DoctorController extends Controller
                     'order_prescription_grandtotal' => $post_order_prescription['qty']*$price,
                 ]);
 
+                $create_suggestion_prescription = DoctorSuggestionPrescription::create([
+                    'doctor_suggestion_id'  => $suggestion['id'],
+                    'order_prescription_id' => $create_order_prescription['id'],
+                    'prescription_id'   => $create_order_prescription['prescription_id'],
+                    'qty'   => $create_order_prescription['qty'],
+                    'order_prescription_price'  => $create_order_prescription['order_prescription_price'],
+                    'order_prescription_subtotal'   => $create_order_prescription['order_prescription_subtotal'],
+                    'order_prescription_grandtotal' => $create_order_prescription['order_prescription_grandtotal'],
+                ]);
                 if(!$create_order_prescription){
                     $is_error = true;
                     $errors[] = 'Failed to order prescription';
@@ -2559,6 +2668,12 @@ class DoctorController extends Controller
                     'order_subtotal'   => $order['order_subtotal'] + $price_to_order,
                     'order_gross'      => $order['order_gross'] + $price_to_order,
                     'order_grandtotal' => $order['order_grandtotal'] + $price_to_order,
+                ]);
+
+                $suggestion->update([
+                    'order_subtotal'   => $suggestion['order_subtotal'] + $price_to_order,
+                    'order_gross'      => $suggestion['order_gross'] + $price_to_order,
+                    'order_grandtotal' => $suggestion['order_grandtotal'] + $price_to_order,
                 ]);
                 $total_price_check[] = $price_to_order;
 
