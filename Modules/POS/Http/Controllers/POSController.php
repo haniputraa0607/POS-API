@@ -1668,9 +1668,7 @@ class POSController extends Controller
 
                 $existcustomerPatientStep = TreatmentPatientStep::where('treatment_patient_id', $customerPatient['id'])->max('step') ?? 0;
                 if(($existcustomerPatientStep+1) > $customerPatient['step']){
-                    $is_error = true;
-                    $errors[] = 'Step cannot exceed those specified';
-                    continue;
+                    $existcustomerPatientStep = $existcustomerPatientStep - 1;
                 }
 
                 $customerPatientStep = TreatmentPatientStep::create([

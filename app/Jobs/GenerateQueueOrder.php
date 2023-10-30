@@ -12,6 +12,9 @@ use Modules\Order\Entities\Order;
 use Modules\Order\Entities\OrderConsultation;
 use Modules\Order\Entities\OrderProduct;
 use Modules\Order\Entities\OrderPrescription;
+use Modules\Doctor\Entities\DoctorSuggestion;
+use Modules\Doctor\Entities\DoctorSuggestionProduct;
+use Modules\Doctor\Entities\DoctorSuggestionPrescription;
 
 class GenerateQueueOrder implements ShouldQueue
 {
@@ -63,6 +66,7 @@ class GenerateQueueOrder implements ShouldQueue
                         $update = OrderProduct::where('id', $order_product['id'])->first();
                         if (!$update['queue'] && !$update['queue_code']) {
                             $update_queue = $update->update(['queue' => $queue,'queue_code' => $queue_code]);
+                            $update_suggestion_treatment = DoctorSuggestionProduct::where('order_product_id', $order_product['id'])->update(['queue_code' => $queue_code]);
                         }
                     }
                 }
@@ -110,6 +114,7 @@ class GenerateQueueOrder implements ShouldQueue
                     $update = OrderPrescription::where('id', $order_prescription['id'])->first();
                     if (!$update['queue'] && !$update['queue_code']) {
                         $update_queue = $update->update(['queue' => $queue,'queue_code' => $queue_code]);
+                        $update_suggestion_prescription = DoctorSuggestionPrescription::where('order_prescription_id', $order_prescription['id'])->update(['queue_code' => $queue_code]);
                     }
                 }
             }
