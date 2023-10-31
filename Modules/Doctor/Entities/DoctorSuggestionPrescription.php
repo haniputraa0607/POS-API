@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Doctor\Entities\DoctorSuggestion;
 use Modules\Order\Entities\OrderPrescription;
-use Modules\Product\Entities\Product;
+use Modules\Prescription\Entities\Prescription;
 
 class DoctorSuggestionPrescription extends Model
 {

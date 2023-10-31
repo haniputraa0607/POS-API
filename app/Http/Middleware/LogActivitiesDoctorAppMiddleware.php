@@ -61,15 +61,22 @@ class LogActivitiesDoctorAppMiddleware
             $module = 'Prescription';
             if (stristr($url, 'custom/create')) {
                 $subject = 'Create';
-            } elseif (stristr($url, 'custom/create')) {
+            } elseif (stristr($url, 'custom/submit')) {
                 $subject = 'Submit';
             }
-        } elseif (stristr($url, 'pos/order')) {
+        } elseif (stristr($url, 'doctor/order')) {
             $module = 'Order';
             if (stristr($url, 'submit')) {
                 $subject = 'Submit';
             } else {
                 $subject = 'Get';
+            }
+        } elseif (stristr($url, 'doctor/suggestion')) {
+            $module = 'Suggestion';
+            if (stristr($url, 'list')) {
+                $subject = 'List';
+            } elseif (stristr($url, 'detail')) {
+                $subject = 'Detail';
             }
         }
 

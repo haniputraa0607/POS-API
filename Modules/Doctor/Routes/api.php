@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Modules\Doctor\Http\Controllers\DoctorController;
+use Modules\Doctor\Http\Controllers\SuggestionHistoriesController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,6 +32,11 @@ Route::middleware(['auth:api','scopes:doctor'])->controller(DoctorController::cl
         Route::post('add', 'addOrder');
         Route::post('delete', 'deleteOrder');
         Route::middleware(['log_activities_doctor'])->post('submit', 'submitOrder');
+    });
+
+    Route::middleware(['log_activities_doctor'])->prefix('suggestion')->controller(SuggestionHistoriesController::class)->group(function () {
+        Route::post('list', 'list');
+        Route::post('detail', 'detail');
     });
 
 });
