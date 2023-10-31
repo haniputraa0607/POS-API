@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Order\Entities\Order;
 use Modules\Customer\Entities\Customer;
 use Modules\User\Entities\User;
+use Modules\Doctor\Entities\DoctorSuggestionProduct;
+use Modules\Doctor\Entities\DoctorSuggestionPrescription;
 
 class DoctorSuggestion extends Model
 {
@@ -45,5 +47,15 @@ class DoctorSuggestion extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class, 'order_id', 'id');
+    }
+
+    public function suggestion_products(): HasMany
+    {
+        return $this->hasMany(DoctorSuggestionProduct::class);
+    }
+
+    public function suggestion_prescriptions(): HasMany
+    {
+        return $this->hasMany(DoctorSuggestionPrescription::class);
     }
 }

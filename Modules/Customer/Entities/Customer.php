@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Customer\Database\factories\CustomerFactory;
 use Modules\Customer\Entities\TreatmentPatient;
+use Modules\Doctor\Entities\DoctorSuggestion;
 
 class Customer extends Model
 {
@@ -45,5 +46,10 @@ class Customer extends Model
     protected static function newFactory()
     {
         return CustomerFactory::new();
+    }
+
+    public function suggestions(): HasMany
+    {
+        return $this->hasMany(DoctorSuggestion::class, 'patient_id', 'id');
     }
 }

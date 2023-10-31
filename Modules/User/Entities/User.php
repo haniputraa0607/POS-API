@@ -23,6 +23,9 @@ use Modules\Doctor\Entities\DoctorSchedule;
 use Modules\Doctor\Entities\DoctorShift;
 use Modules\Cashier\Entities\EmployeeAttendance;
 use Modules\Order\Entities\OrderConsulatation;
+use Modules\Doctor\Entities\DoctorSuggestion;
+use Modules\Doctor\Entities\DoctorSuggestionProduct;
+use Modules\Doctor\Entities\DoctorSuggestionPrescription;
 
 class User extends Authenticatable
 {
