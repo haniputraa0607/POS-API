@@ -237,30 +237,6 @@ class SuggestionHistoriesController extends Controller
             ]
         ];
 
-        $data_purchased = [
-            'item_list' => [
-                'order_consultations' => [],
-                'order_products' => [],
-                'order_treatments' => [],
-                'order_prescriptions' => [],
-            ],
-            'ticket' => [],
-            'summary' => [
-                [
-                    'label' => 'Subtotal',
-                    'value' => $suggestion['order']['order_subtotal']
-                ],
-                [
-                    'label' => 'Tax',
-                    'value' => (float)$suggestion['order']['order_tax']
-                ],
-                [
-                    'label' => 'Payable Ammount',
-                    'value' => $suggestion['order']['order_grandtotal']
-                ],
-            ]
-        ];
-
         $original_same_purchase = true;
         $id_suggstion_products = [];
         $id_suggstion_prescriptions = [];
@@ -342,6 +318,51 @@ class SuggestionHistoriesController extends Controller
 
         }
 
+        if($suggestion['order']['send_to_transaction'] == 1){
+            $data_purchased = [
+                'item_list' => [
+                    'order_consultations' => [],
+                    'order_products' => [],
+                    'order_treatments' => [],
+                    'order_prescriptions' => [],
+                ],
+                'ticket' => [],
+                'summary' => [
+                    [
+                        'label' => 'Subtotal',
+                        'value' => $suggestion['order']['order_subtotal']
+                    ],
+                    [
+                        'label' => 'Tax',
+                        'value' => (float)$suggestion['order']['order_tax']
+                    ],
+                    [
+                        'label' => 'Payable Ammount',
+                        'value' => $suggestion['order']['order_grandtotal']
+                    ],
+                ]
+            ];
+        }else{
+            $data_purchased = [
+                'item_list' => [],
+                'ticket' => [],
+                'summary' => [
+                    [
+                        'label' => 'Subtotal',
+                        'value' => 0
+                    ],
+                    [
+                        'label' => 'Tax',
+                        'value' => 0
+                    ],
+                    [
+                        'label' => 'Payable Ammount',
+                        'value' => 0
+                    ],
+                ]
+            ];
+        }
+
         foreach($suggestion['order']['order_consultations'] ?? [] as $key => $ord_con){
             $consul = [];
             $is_submit = 0;
@@ -387,93 +408,97 @@ class SuggestionHistoriesController extends Controller
             ];
 
             $data_original['item_list']['order_consultations'][] = $order_consultation;
-            $data_purchased['item_list']['order_consultations'][] = $order_consultation;
+            if($suggestion['order']['send_to_transaction'] == 1){
+                $data_purchased['item_list']['order_consultations'][] = $order_consultation;
+            }
         }
 
-        foreach($suggestion['order']['order_products'] ?? [] as $order_product){
+        if($suggestion['order']['send_to_transaction'] == 1){
+            foreach($suggestion['order']['order_products'] ?? [] as $order_product){
 
-            if($order_product['type'] == 'Product'){
-                $data_purchased['item_list']['order_products'][] = [
-                    'order_product_id' => $order_product['id'],
-                    'product_id'       => $order_product['product']['id'],
-                    'product_name'     => $order_product['product']['product_name'],
-                    'qty'              => $order_product['qty'],
-                    'price_total'      => $order_product['order_product_grandtotal'],
-                    'is_purchased'     => 1
-                ];
-            }else{
-                $progress = null;
-                if($order_product['treatment_patient'] && isset($order_product['treatment_patient']['doctor_id']) && isset($order_product['step'])){
-                    $progress = $order_product['step']['step'].'/'.$order_product['treatment_patient']['step'];
+                if($order_product['type'] == 'Product'){
+                    $data_purchased['item_list']['order_products'][] = [
+                        'order_product_id' => $order_product['id'],
+                        'product_id'       => $order_product['product']['id'],
+                        'product_name'     => $order_product['product']['product_name'],
+                        'qty'              => $order_product['qty'],
+                        'price_total'      => $order_product['order_product_grandtotal'],
+                        'is_purchased'     => 1
+                    ];
+                }else{
+                    $progress = null;
+                    if($order_product['treatment_patient'] && isset($order_product['treatment_patient']['doctor_id']) && isset($order_product['step'])){
+                        $progress = $order_product['step']['step'].'/'.$order_product['treatment_patient']['step'];
+                    }
+
+                    $data_purchased['item_list']['order_treatments'][] = [
+                        'order_product_id' => $order_product['id'],
+                        'product_id'       => $order_product['product']['id'],
+                        'product_name'     => $order_product['product']['product_name'],
+                        'schedule_date'    => date('d F Y', strtotime($order_product['schedule_date'])),
+                        'schedule'         => date('Y-m-d', strtotime($order_product['schedule_date'])),
+                        'price_total'      => $order_product['order_product_grandtotal'],
+                        'queue'            => $order_product['queue_code'] ?? null,
+                        'progress'         => $progress,
+                        'is_purchased'     => 1
+                    ];
+
+                    $data_purchased['ticket'][] = [
+                        'type'          => 'treatment',
+                        'type_text'     => 'TREATMENT',
+                        'product_name'  => $order_product['product']['product_name'],
+                        'schedule_date' => date('d F Y', strtotime($order_product['schedule_date'])),
+                        'time'          => date('H:i', strtotime($outlet_shift['open'])).' - '.date('H:i', strtotime($outlet_shift['close'])),
+                        'queue'         => $order_product['queue_code'] ?? 'TBD',
+                        'is_purchased'  => 1
+                    ];
                 }
 
-                $data_purchased['item_list']['order_treatments'][] = [
-                    'order_product_id' => $order_product['id'],
-                    'product_id'       => $order_product['product']['id'],
-                    'product_name'     => $order_product['product']['product_name'],
-                    'schedule_date'    => date('d F Y', strtotime($order_product['schedule_date'])),
-                    'schedule'         => date('Y-m-d', strtotime($order_product['schedule_date'])),
-                    'price_total'      => $order_product['order_product_grandtotal'],
-                    'queue'            => $order_product['queue_code'] ?? null,
-                    'progress'         => $progress,
-                    'is_purchased'     => 1
+                if($original_same_purchase){
+                    $check_exist = array_search($order_product['id'], $id_suggstion_products);
+                    if($check_exist === false){
+                        $original_same_purchase = false;
+                    }
+                }
+            }
+
+            $total_prescription = 0;
+            $queue_prescription = null;
+            foreach($suggestion['order']['order_prescriptions'] ?? [] as $key => $order_prescription){
+
+                $data_purchased['item_list']['order_prescriptions'][] = [
+                    'order_prescription_id' => $order_prescription['id'],
+                    'prescription_id'       => $order_prescription['prescription']['id'],
+                    'prescription_name'     => $order_prescription['prescription']['prescription_name'],
+                    'type'                  => $order_prescription['prescription']['category']['category_name'] ?? null,
+                    'unit'                  => $order_prescription['prescription']['unit'],
+                    'qty'                   => $order_prescription['qty'],
+                    'price_total'           => $order_prescription['order_prescription_grandtotal'],
+                    'is_purchased'          => 1
                 ];
 
+                $total_prescription = $total_prescription + 1;
+                $queue_prescription = $order_prescription['queue_code'];
+
+                if($original_same_purchase){
+                    $check_exist = array_search($order_prescription['id'], $id_suggstion_prescriptions);
+                    if($check_exist === false){
+                        $original_same_purchase = false;
+                    }
+                }
+            }
+
+            if($total_prescription > 0){
                 $data_purchased['ticket'][] = [
-                    'type'          => 'treatment',
-                    'type_text'     => 'TREATMENT',
-                    'product_name'  => $order_product['product']['product_name'],
-                    'schedule_date' => date('d F Y', strtotime($order_product['schedule_date'])),
-                    'time'          => date('H:i', strtotime($outlet_shift['open'])).' - '.date('H:i', strtotime($outlet_shift['close'])),
-                    'queue'         => $order_product['queue_code'] ?? 'TBD',
-                    'is_purchased'  => 1
+                    'type' => 'prescription',
+                    'type_text' => 'PRESCRIPTION',
+                    'schedule_date' => date('d F Y', strtotime($suggestion['suggestion_date'])),
+                    'qty' => $total_prescription.' item prescription',
+                    'customer' => $suggestion['patient']['name'],
+                    'queue' => $queue_prescription ?? 'TBD'
                 ];
+
             }
-
-            if($original_same_purchase){
-                $check_exist = array_search($order_product['id'], $id_suggstion_products);
-                if($check_exist === false){
-                    $original_same_purchase = false;
-                }
-            }
-        }
-
-        $total_prescription = 0;
-        $queue_prescription = null;
-        foreach($suggestion['order']['order_prescriptions'] ?? [] as $key => $order_prescription){
-
-            $data_purchased['item_list']['order_prescriptions'][] = [
-                'order_prescription_id' => $order_prescription['id'],
-                'prescription_id'       => $order_prescription['prescription']['id'],
-                'prescription_name'     => $order_prescription['prescription']['prescription_name'],
-                'type'                  => $order_prescription['prescription']['category']['category_name'] ?? null,
-                'unit'                  => $order_prescription['prescription']['unit'],
-                'qty'                   => $order_prescription['qty'],
-                'price_total'           => $order_prescription['order_prescription_grandtotal'],
-                'is_purchased'          => 1
-            ];
-
-            $total_prescription = $total_prescription + 1;
-            $queue_prescription = $order_prescription['queue_code'];
-
-            if($original_same_purchase){
-                $check_exist = array_search($order_prescription['id'], $id_suggstion_prescriptions);
-                if($check_exist === false){
-                    $original_same_purchase = false;
-                }
-            }
-        }
-
-        if($total_prescription > 0){
-            $data_purchased['ticket'][] = [
-                'type' => 'prescription',
-                'type_text' => 'PRESCRIPTION',
-                'schedule_date' => date('d F Y', strtotime($suggestion['suggestion_date'])),
-                'qty' => $total_prescription.' item prescription',
-                'customer' => $suggestion['patient']['name'],
-                'queue' => $queue_prescription ?? 'TBD'
-            ];
-
         }
 
         $data = [
