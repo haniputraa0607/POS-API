@@ -143,40 +143,9 @@ class CashierController extends Controller
         $result = [];
         foreach($cashiers ?? [] as $val){
 
-            $header = [
-                'name' => $val['name'],
-                'shift' => '-',
-                'station' => '-',
-            ];
-            $list = [];
-            foreach($dates['list'] ?? [] as $date)
-            {
-                $list_val = [
-                    'date' => $date,
-                    'date_text' => date('Y-m-d') == date('Y-m-d', strtotime($date)) ? date('d F Y', strtotime($date)).' (Today)' : date('d F Y', strtotime($date)),
-                    'shift' => 'Day Off'
-                ];
-                if(isset($val['employee_schedules'][0])){
-                    $check = array_search(date('Y-m-d', strtotime($date)), array_column($val['employee_schedules'][0]['employee_schedule_dates']??[], 'date'));
-                    if($check !== false){
-                        $val_date = $val['employee_schedules'][0]['employee_schedule_dates'][$check];
-                        $list_val['shift'] = $val_date['shift']['shift'];
-                        if(date('Y-m-d') == date('Y-m-d', strtotime($val_date['date']))){
-                            $header['shift'] = $val_date['shift']['shift'];
-                            if(isset($val_date['attendance']) && count($val_date['attendance']) > 0){
-                                $header['station'] = $val_date['attendance'][0]['device']['name'];
-                            }
-                        }
-                    }
-                }
-                $list[] = $list_val;
-
-            }
             $result[] = [
                 'id' => $val['id'],
                 'name' => $val['name'],
-                'header' => $header,
-                'list' => $list,
             ];
         }
 
@@ -205,6 +174,8 @@ class CashierController extends Controller
 
         $dates = MyHelper::getListDate(1,$month,$year);
         $data = [];
+        $all_cashiers = [];
+
         foreach($dates['list']  ?? [] as $date){
 
             $sche = OutletSchedule::with(['outlet_shifts.employee' => function($employee_sch) use($date){
@@ -216,6 +187,7 @@ class CashierController extends Controller
                     'id' => $sche['id'],
                     'outlet_id' => $sche['outlet_id'],
                     'shifts' => array_map(function($outlet_shift){
+                        $return_outlet_shift['id_shift'] = $outlet_shift['id'];
                         $return_outlet_shift['shift_name'] = $outlet_shift['shift'];
                         $return_outlet_shift['start'] = date('H:i', strtotime($outlet_shift['shift_time_start']));
                         $return_outlet_shift['end'] = date('H:i', strtotime($outlet_shift['shift_time_end']));
@@ -229,6 +201,18 @@ class CashierController extends Controller
                     }, $sche['outlet_shifts']->toArray() ?? [])
                 ];
             }
+
+            foreach($result['shifts'] ?? [] as $for_shift){
+                foreach($for_shift['cashiers'] ?? [] as $for_cashier){
+                    $check = array_search($for_cashier['id'], array_column($all_cashiers??[], 'id'));
+                    if($check !== false){
+                        continue;
+                    }else{
+                        $all_cashiers[] = $for_cashier;
+                    }
+                }
+            }
+
             $data[] = [
                 'date' => $date,
                 'date_text' => date('d F Y', strtotime($date)),
@@ -236,7 +220,77 @@ class CashierController extends Controller
             ];
         }
 
-        return $this->ok('Success to get all schedule', $data);
+        if($month == date('m') && $year == date('Y')){
+            $dates = MyHelper::reverseGetListDate(date('d'),$month,$year);
+        }elseif(($month > date('m') && $year == date('Y')) || $year > date('Y')){
+            $dates['list'] = [];
+        }elseif(($month < date('m') && $year == date('Y')) || $year < date('Y')){
+            $dates = MyHelper::reverseGetListDate(null,$month,$year);
+        }
+        $result_all_cashier = [];
+        foreach($all_cashiers ?? [] as $val_cashier){
+
+            $val_cashier['employee_schedule_dates'] = EmployeeScheduleDate::with(['shift','attendance.device'])
+            ->whereHas('employee_schedule', function($schedule) use($outlet, $month, $year, $val_cashier){
+                $schedule->where('outlet_id', $outlet['id'])
+                ->where('user_id', $val_cashier['id'])
+                ->where('schedule_month', $month)
+                ->where('schedule_year', $year);
+            })->whereDate('date', '<=',date('Y-m-d'))->orderBy('date', 'desc')->get()->toArray();
+
+            $val_cashier['today'] = EmployeeScheduleDate::with(['shift','attendance.device'])
+            ->whereHas('employee_schedule', function($schedule) use($outlet, $month, $year, $val_cashier){
+                $schedule->where('outlet_id', $outlet['id'])
+                ->where('user_id', $val_cashier['id'])
+                ->where('schedule_month', date('m'))
+                ->where('schedule_year', date('Y'));
+            })->whereDate('date', '=',date('Y-m-d'))->first();
+            $header = [
+                'name' => $val_cashier['name'],
+                'shift' => '-',
+                'station' => '-',
+            ];
+
+            if(isset($val_cashier['today'])){
+                $header['shift'] = $val_cashier['today']['shift']['shift'];
+                if(isset($val_cashier['today']['attendance']) && count($val_cashier['today']['attendance']) > 0){
+                    $header['station'] = $val_cashier['today']['attendance'][0]['device']['name'];
+                }
+            }
+
+            $list_cashier_sch = [];
+            foreach($dates['list'] ?? [] as $date)
+            {
+                $list_val = [
+                    'date' => $date,
+                    'date_text' => date('Y-m-d') == date('Y-m-d', strtotime($date)) ? date('d F Y', strtotime($date)).' (Today)' : date('d F Y', strtotime($date)),
+                    'shift' => 'Day Off'
+                ];
+
+                $check = array_search(date('Y-m-d', strtotime($date)), array_column($val_cashier['employee_schedule_dates']??[], 'date'));
+                if($check !== false){
+                    $val_date = $val_cashier['employee_schedule_dates'][$check];
+                    $list_val['shift'] = $val_date['shift']['shift'];
+                }
+
+                $list_cashier_sch[] = $list_val;
+
+            }
+
+            $result_all_cashier[] = [
+                'id' => $val_cashier['id'],
+                'name' => $val_cashier['name'],
+                'header' => $header,
+                'list' => $list_cashier_sch,
+            ];
+        }
+
+        $response = [
+            'list_schedules' => $data,
+            'list_cashier' => $result_all_cashier,
+        ];
+
+        return $this->ok('Success to get all schedule', $response);
     }
 
     public function mySchedule(Request $request): mixed
@@ -280,6 +334,7 @@ class CashierController extends Controller
                     [
                         'label' => 'Day Off',
                         'value' => '-',
+                        'id_shift' => null
                     ],
                     [
                         'label' => 'Entry',
@@ -313,6 +368,7 @@ class CashierController extends Controller
                     [
                         'label' => $value_shift,
                         'value' => $time_shift,
+                        'id_shift' => $val_date['shift']['id']
                     ],
                     [
                         'label' => 'Entry',

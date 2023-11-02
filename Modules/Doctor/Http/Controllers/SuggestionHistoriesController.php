@@ -261,6 +261,9 @@ class SuggestionHistoriesController extends Controller
             ]
         ];
 
+        $original_same_purchase = true;
+        $id_suggstion_products = [];
+        $id_suggstion_prescriptions = [];
         foreach($suggestion['suggestion_products'] ?? [] as $suggestion_product){
 
             if($suggestion_product['type'] == 'Product'){
@@ -295,6 +298,11 @@ class SuggestionHistoriesController extends Controller
                     'is_purchased'  => $suggestion_product['not_purchase']  == 0 ? 1 : 0
                 ];
             }
+            if($suggestion_product['not_purchase']  == 1){
+                $original_same_purchase = false;
+            }else{
+                $id_suggstion_products[] = $suggestion_product['order_product_id'];
+            }
         }
 
         $total_suggestion_prescription = 0;
@@ -315,7 +323,11 @@ class SuggestionHistoriesController extends Controller
             if($suggestion_prescription['not_purchase'] == 0){
                 $total_suggestion_prescription = $total_suggestion_prescription + 1;
                 $queue_suggestion_prescription = $suggestion_prescription['queue_code'];
+                $id_suggstion_products[] = $suggestion_product['order_product_id'];
+            }else{
+                $original_same_purchase = false;
             }
+
         }
 
         if($total_suggestion_prescription > 0){
@@ -417,6 +429,13 @@ class SuggestionHistoriesController extends Controller
                     'is_purchased'  => 1
                 ];
             }
+
+            if($original_same_purchase){
+                $check_exist = array_search($order_product['id'], $id_suggstion_products);
+                if($check_exist === false){
+                    $original_same_purchase = false;
+                }
+            }
         }
 
         $total_prescription = 0;
@@ -436,6 +455,13 @@ class SuggestionHistoriesController extends Controller
 
             $total_prescription = $total_prescription + 1;
             $queue_prescription = $order_prescription['queue_code'];
+
+            if($original_same_purchase){
+                $check_exist = array_search($order_prescription['id'], $id_suggstion_prescriptions);
+                if($check_exist === false){
+                    $original_same_purchase = false;
+                }
+            }
         }
 
         if($total_prescription > 0){
@@ -462,6 +488,7 @@ class SuggestionHistoriesController extends Controller
                 'name_doctor' => $doctor['name'],
             ],
             'original' => $data_original,
+            'status' => $original_same_purchase,
             'purchased' => $data_purchased,
         ];
 
