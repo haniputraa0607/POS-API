@@ -193,7 +193,7 @@ class MyHelper
     {
         $thisMonth = $month ?? date('n');
         $thisYear  = $year  ?? date('Y');
-        $thidDay   = $day ?? date('d');
+        $thidDay   = $day ?? date('t', strtotime($thisYear.'-'.$thisMonth.'-01'));
         $date = $thisYear . '-' . $thisMonth . '-' . '01';
         $start = $date;
         $end  = $thisYear . '-' . $thisMonth . '-' . $thidDay;
