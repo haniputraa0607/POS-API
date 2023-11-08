@@ -30,6 +30,7 @@ class LandingPageController extends Controller
         $sort_by = empty($post['sort_by']) ? 1 : $post['sort_by'];
         $productsQuery = Product::with(['global_price', 'product_category'])
             ->whereIn('type', ['Product', 'Package'])
+            ->where('is_active', 1)
             ->when($category, function ($query) use ($category) {
                 if ($category != 'all') {
                     return $query->where('product_category_id', $category);
@@ -74,6 +75,7 @@ class LandingPageController extends Controller
         $paginate = empty($post['pagination_total_row']) ? 8 : $post['pagination_total_row'];
         $products = Product::with(['global_price', 'product_category'])
         ->where('type', 'Treatment')
+        ->where('is_active', 1)
         ->when($sortBy, function ($query, $sortBy) {
             return $query->orderBy('product_name', $sortBy);
         })->paginate($paginate, ['*'], 'page', $post['page']);
@@ -169,7 +171,7 @@ class LandingPageController extends Controller
     public function product_category(Request $request):JsonResponse
     {
         $post = $request->json()->all();
-        $productCategories = ProductCategory::select('id','product_category_name')->get()->toArray();
+        $productCategories = ProductCategory::select('id','product_category_name')->where('is_active', 1)->get()->toArray();
         if(!$productCategories){
             return $this->error('Something Error');
         }

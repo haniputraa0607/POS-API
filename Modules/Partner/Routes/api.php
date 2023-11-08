@@ -19,8 +19,8 @@ Route::middleware('auth:api')->get('/partner', function (Request $request) {
 });
 
 
-Route::middleware('client')->prefix('webhook')->group(function(){
-    // Route::prefix('webhook')->group(function(){
+// Route::middleware('client')->prefix('webhook')->group(function(){
+Route::prefix('webhook')->group(function(){
     Route::prefix('partner')->controller(PartnerController::class)->group(function (){
         Route::post('bulk_create', 'webHookCreateBulk');
         Route::post('create', 'webHookCreate');
