@@ -192,8 +192,14 @@ class SuggestionHistoriesController extends Controller
         $suggestion = DoctorSuggestion::with([
             'patient',
             'suggestion_products.product',
+            'suggestion_products.doctor',
+            'suggestion_products.nurse',
+            'suggestion_products.beautician',
             'suggestion_prescriptions.prescription',
             'order.order_products.product',
+            'order.order_products.doctor',
+            'order.order_products.nurse',
+            'order.order_products.beautician',
             'order.order_products.treatment_patient',
             'order.order_products.step',
             'order.order_prescriptions.prescription.category',
@@ -261,6 +267,9 @@ class SuggestionHistoriesController extends Controller
                     'price_total'           => $suggestion_product['order_product_grandtotal'],
                     'queue'                 => $suggestion_product['not_purchase']  == 0 ? ($suggestion_product['queue_code'] ?? null) : null,
                     'progress'              => $suggestion_product['step'].'/'.$suggestion_product['total_step'],
+                    'doctor_name'           => $suggestion_product['doctor']['name'] ?? null,
+                    'nurse_name'            => $suggestion_product['nurse']['name'] ?? null,
+                    'beautician_name'       => $suggestion_product['beautician']['name'] ?? null,
                     'is_purchased'          => $suggestion_product['not_purchase']  == 0 ? 1 : 0
                 ];
 
@@ -440,6 +449,9 @@ class SuggestionHistoriesController extends Controller
                         'price_total'      => $order_product['order_product_grandtotal'],
                         'queue'            => $order_product['queue_code'] ?? null,
                         'progress'         => $progress,
+                        'doctor_name'      => $order_product['doctor']['name'] ?? null,
+                        'nurse_name'       => $order_product['nurse']['name'] ?? null,
+                        'beautician_name'  => $order_product['beautician']['name'] ?? null,
                         'is_purchased'     => 1
                     ];
 

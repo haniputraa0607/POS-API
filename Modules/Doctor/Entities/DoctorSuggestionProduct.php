@@ -11,6 +11,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Doctor\Entities\DoctorSuggestion;
 use Modules\Order\Entities\OrderProduct;
 use Modules\Product\Entities\Product;
+use Modules\User\Entities\User;
+use Modules\Doctor\Entities\Nurse;
+use Modules\Doctor\Entities\Beautician;
 
 class DoctorSuggestionProduct extends Model
 {
@@ -26,6 +29,9 @@ class DoctorSuggestionProduct extends Model
         'step',
         'total_step',
         'qty',
+        'doctor_id',
+        'nurse_id',
+        'beautician_id',
         'order_product_price',
         'order_product_subtotal',
         'order_product_discount',
@@ -48,6 +54,21 @@ class DoctorSuggestionProduct extends Model
     public function order_product(): BelongsTo
     {
         return $this->belongsTo(OrderProduct::class, 'order_product_id', 'id');
+    }
+
+    public function doctor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'doctor_id', 'id');
+    }
+
+    public function nurse(): BelongsTo
+    {
+        return $this->belongsTo(Nurse::class, 'nurse_id', 'id');
+    }
+
+    public function beautician(): BelongsTo
+    {
+        return $this->belongsTo(Beautician::class, 'beautician_id', 'id');
     }
 
 }

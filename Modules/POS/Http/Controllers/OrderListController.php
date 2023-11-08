@@ -488,6 +488,9 @@ class OrderListController extends Controller
             $order = Order::with([
                 'patient',
                 'order_products.product',
+                'order_products.doctor',
+                'order_products.nurse',
+                'order_products.beautician',
                 'order_prescriptions.prescription.category',
                 'order_consultations.consultation.patient_diagnostic.diagnostic',
                 'order_consultations.consultation.patient_grievance.grievance',

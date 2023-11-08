@@ -251,6 +251,9 @@ class POSController extends Controller
             'order_products.product.outlet_stock' => function($outlet_stock) use($id_outlet){
                 $outlet_stock->where('product_outlet_stocks.outlet_id',$id_outlet);
             },
+            'order_products.doctor',
+            'order_products.nurse',
+            'order_products.beautician',
             'order_prescriptions.prescription.category',
             'order_consultations.consultation.patient_diagnostic.diagnostic',
             'order_consultations.consultation.patient_grievance.grievance',
@@ -342,7 +345,10 @@ class POSController extends Controller
                         'schedule'         => date('Y-m-d', strtotime($ord_pro['schedule_date'])),
                         'price_total'      => $ord_pro['order_product_grandtotal'],
                         'queue'            => $ord_pro['queue_code'] ?? 'TBD',
-                        'progress'         => $progress
+                        'progress'         => $progress,
+                        'doctor_name'      => $ord_pro['doctor']['name'] ?? null,
+                        'nurse_name'       => $ord_pro['nurse']['name'] ?? null,
+                        'beautician_name'  => $ord_pro['beautician']['name'] ?? null,
                     ];
                 }
             }
@@ -1222,6 +1228,9 @@ class POSController extends Controller
                         'treatment_patient_id'      => $customerPatient['id'] ?? null,
                         'treatment_patient_step_id' => $customerPatientStep['id'] ?? null,
                         'qty'                       => 1,
+                        'doctor_id'                 => $order_treatment['id_doctor'],
+                        'nurse_id'                  => $order_treatment['id_nurse'],
+                        'beautician_id'             => $order_treatment['id_beautician'],
                         'order_product_price'       => $price,
                         'order_product_subtotal'    => $price,
                         'order_product_grandtotal'  => $price,
@@ -1691,6 +1700,9 @@ class POSController extends Controller
                     'treatment_patient_id'      => $customerPatient['id'] ?? null,
                     'treatment_patient_step_id' => $customerPatientStep['id'] ?? null,
                     'qty'                       => 1,
+                    'doctor_id'                 => $post_order_treatment['id_doctor'],
+                    'nurse_id'                  => $post_order_treatment['id_nurse'],
+                    'beautician_id'             => $post_order_treatment['id_beautician'],
                     'order_product_price'       => $price,
                     'order_product_subtotal'    => $price,
                     'order_product_grandtotal'  => $price,
@@ -2030,9 +2042,6 @@ class POSController extends Controller
 
                     if($order_sec){
                         $get_order_consultation = OrderConsultation::where('order_id', $order_sec['id'])
-                        ->whereNot(function($where2) use($order_consultation){
-                            $where2->where('doctor_id', $order_consultation['id'])->where('doctor_shift_id', $order_consultation['id_shift'])->whereDate('schedule_date', date('Y-m-d', strtotime($order_consultation['date'])));
-                        })
                         ->first();
                         if($get_order_consultation){
                             $delete = (new DoctorController)->deleteOrderData([
@@ -2051,8 +2060,6 @@ class POSController extends Controller
 
                             Order::where('id', $order_sec['id'])->delete();
                             $order = Order::where('id', $post['id_order'])->first();
-                        }else{
-                            continue;
                         }
                     }elseif($order['order_consultations']){
                         $get_order_consultation = OrderConsultation::where('order_id', $order['id'])
@@ -2858,6 +2865,9 @@ class POSController extends Controller
                         'treatment_patient_id'      => $customerPatient['id'] ?? null,
                         'treatment_patient_step_id' => $customerPatientStep['id'] ?? null,
                         'qty'                       => 1,
+                        'doctor_id'                 => $order_treatment['id_doctor'],
+                        'nurse_id'                  => $order_treatment['id_nurse'],
+                        'beautician_id'             => $order_treatment['id_beautician'],
                         'order_product_price'       => $price,
                         'order_product_subtotal'    => $price,
                         'order_product_grandtotal'  => $price,
@@ -3283,6 +3293,9 @@ class POSController extends Controller
                     'treatment_patient_id'      => $customerPatient['id'] ?? null,
                     'treatment_patient_step_id' => $customerPatientStep['id'] ?? null,
                     'qty'                       => 1,
+                    'doctor_id'                 => $post_order_treatment['id_doctor'],
+                    'nurse_id'                  => $post_order_treatment['id_nurse'],
+                    'beautician_id'             => $post_order_treatment['id_beautician'],
                     'order_product_price'       => $price,
                     'order_product_subtotal'    => $price,
                     'order_product_grandtotal'  => $price,
