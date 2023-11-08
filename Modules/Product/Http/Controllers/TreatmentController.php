@@ -13,6 +13,9 @@ use Modules\Customer\Entities\TreatmentPatient;
 use Modules\Order\Entities\Order;
 use App\Lib\MyHelper;
 use Illuminate\Support\Facades\DB;
+use Modules\User\Entities\User;
+use Modules\Doctor\Entities\Nurse;
+use Modules\Doctor\Entities\Beautician;
 
 class TreatmentController extends Controller
 {
@@ -178,9 +181,39 @@ class TreatmentController extends Controller
                 }
                 $prod['total_history'] = count($customerPatient??[]);
 
+                $avail_doctor = User::whereHas('doctor_schedules', function($doctor_schedules) use($date_list){
+                    $doctor_schedules->where('schedule_month', date('m', strtotime($date_list)))
+                    ->where('schedule_year', date('Y', strtotime($date_list)))
+                    ->whereHas('schedule_dates', function($schedule_dates) use($date_list){
+                        $schedule_dates->whereDate('date', date('Y-m-d', strtotime($date_list)));
+                    });
+                })->where('outlet_id', $outlet['id'])
+                ->doctor()->select('id', 'name')->get()->toArray();
+
+                $avail_nurse = Nurse::whereHas('nurse_schedules', function($nurse_schedules) use($date_list){
+                    $nurse_schedules->where('schedule_month', date('m', strtotime($date_list)))
+                    ->where('schedule_year', date('Y', strtotime($date_list)))
+                    ->whereHas('schedule_dates', function($schedule_dates) use($date_list){
+                        $schedule_dates->whereDate('date', date('Y-m-d', strtotime($date_list)));
+                    });
+                })->where('outlet_id', $outlet['id'])
+                ->select('id', 'name')->get()->toArray();
+
+                $avail_beautician = Beautician::whereHas('beautician_schedules', function($beautician_schedules) use($date_list){
+                    $beautician_schedules->where('schedule_month', date('m', strtotime($date_list)))
+                    ->where('schedule_year', date('Y', strtotime($date_list)))
+                    ->whereHas('schedule_dates', function($schedule_dates) use($date_list){
+                        $schedule_dates->whereDate('date', date('Y-m-d', strtotime($date_list)));
+                    });
+                })->where('outlet_id', $outlet['id'])
+                ->select('id', 'name')->get()->toArray();
+
                 $treatment_list_date[] =[
                     'id' => $prod['id'],
                     'treatment_name' => $prod['treatment_name'],
+                    'list_doctors' => $avail_doctor ?? [],
+                    'list_nurses' => $avail_nurse ?? [],
+                    'list_beauticians' => $avail_beautician ?? [],
                     'price' => $prod['price'],
                     'can_continue' => $prod['can_continue'],
                     'can_new' => $prod['can_new'],
