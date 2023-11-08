@@ -568,6 +568,9 @@ class OrderListController extends Controller
                         'schedule_date'    => date('d F Y', strtotime($order_product['schedule_date'])),
                         'schedule'         => date('Y-m-d', strtotime($order_product['schedule_date'])),
                         'price_total'      => $order_product['order_product_grandtotal'],
+                        'doctor_name'      => $order_product['doctor']['name'] ?? null,
+                        'nurse_name'       => $order_product['nurse']['name'] ?? null,
+                        'beautician_name'  => $order_product['beautician']['name'] ?? null,
                         'progress'         => $progress
                     ];
 
