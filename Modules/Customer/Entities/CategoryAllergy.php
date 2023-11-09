@@ -19,7 +19,7 @@ class CategoryAllergy extends Model
 
     public function allergies(): HasMany
     {
-        return $this->hasMany(Allergy::class);
+        return $this->hasMany(Allergy::class, 'category_id', 'id');
     }
 
 }

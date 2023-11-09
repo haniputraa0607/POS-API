@@ -13,7 +13,7 @@ class CustomerAllergy extends Model
 {
     use HasFactory;
 
-    protected $table = 'allergies';
+    protected $table = 'customer_allergies';
     protected $fillable = [
         'allergy_id',
         'customer_id',
