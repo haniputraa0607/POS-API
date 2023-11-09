@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Customer\Database\factories\CustomerFactory;
 use Modules\Customer\Entities\TreatmentPatient;
 use Modules\Doctor\Entities\DoctorSuggestion;
+use Modules\Customer\Entities\CustomerAllergy;
 
 class Customer extends Model
 {
@@ -20,6 +21,7 @@ class Customer extends Model
         'name',
         'gender',
         'birth_date',
+        'birth_place',
         'phone',
         'email',
         'count_transaction',
@@ -52,5 +54,10 @@ class Customer extends Model
     public function suggestions(): HasMany
     {
         return $this->hasMany(DoctorSuggestion::class, 'patient_id', 'id');
+    }
+
+    public function customer_allergies(): HasMany
+    {
+        return $this->hasMany(CustomerAllergy::class);
     }
 }
