@@ -25,7 +25,8 @@ class Customer extends Model
         'count_transaction',
         'last_transaction_id',
         'last_order_id',
-        'is_active'
+        'is_active',
+        'is_allergy'
     ];
 
     public function consulations(): HasMany

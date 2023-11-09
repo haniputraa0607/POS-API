@@ -505,7 +505,7 @@ class TreatmentController extends Controller
         foreach($histories ?? [] as $key => $history){
 
             $steps = [];
-            foreach($history['steps'] as $key2 => $step){
+            foreach($history['steps'] ?? [] as $key2 => $step){
                 $steps[] = [
                     'index' => $step['step'] == 1 ? '1st Treatment' : ($step['step'] == 2 ? '2nd Treatment' : ($step['step'] == 3 ? '3rd Treatment' : ($step['step'] >= 4 ? $step['step'].'th Treatment' : ''))),
                     'date' => date('y-m-d, H:i',strtotime($step['date'])).' WIB',
@@ -521,7 +521,7 @@ class TreatmentController extends Controller
             if(date('Y-m-d', strtotime($history['expired_date'])) < date('Y-m-d')){
                 $continue = false;
             }
-            if($history['steps'][0]['step'] >= $history['step']){
+            if(count($history['steps']) > 0 && $history['steps'][0]['step'] >= $history['step']){
                 $continue = false;
             }
 
@@ -534,7 +534,7 @@ class TreatmentController extends Controller
                 'expired_treatment' => date('Y-m-d', strtotime($history['expired_date'])),
                 'expired_treatment_text' => date('d F Y', strtotime($history['expired_date'])),
                 'suggestion' => $history['suggestion'],
-                'progress' => $history['status'] == 'Finished' ? 'Finished' : $history['steps'][0]['step'].'/'. $history['step'].' Continue Treatment',
+                'progress' => $history['status'] == 'Finished' ? 'Finished' : ($history['steps'][0]['step'] ?? 0).'/'. $history['step'].' Continue Treatment',
                 'can_continue' => $continue,
                 'step' => $steps,
             ];
