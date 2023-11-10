@@ -70,7 +70,7 @@ class OutletController extends Controller
                 if ($currentHour >= $openingHour && $currentHour < $closingHour) {
                     $status_schedule = 'Open';
                 } else {
-                    $status_schedule = 'Closes';
+                    $status_schedule = 'Close';
                 }
                 $openingHour = date("h:i A", strtotime($openingHour));
                 $closingHour = date("h:i A", strtotime($closingHour));
@@ -104,7 +104,7 @@ class OutletController extends Controller
                 if ($currentHour >= $openingHour && $currentHour < $closingHour) {
                     $status_schedule = 'Open';
                 } else {
-                    $status_schedule = 'Closes';
+                    $status_schedule = 'Close';
                 }
                 $openingHour = date("h:i A", strtotime($openingHour));
                 $closingHour = date("h:i A", strtotime($closingHour));
