@@ -44,31 +44,77 @@ class OutletController extends Controller
         return $this->ok("success get data all outlet activities", config('outlet_activities'));
     }
 
-    public function clinic(Request $request){
-
+    public function clinic(Request $request)
+    {
         $post = $request->json()->all();
         $paginate = empty($post['pagination_total_row']) ? 8 : $post['pagination_total_row'];
-        $outlets = Outlet::where(function ($query) use ($post) {
+        $date_now = date('l');
+        
+        $outlets = Outlet::with(['outlet_schedule' => function ($query) use ($date_now) {
+            $query->where('day', $date_now)->orderBy('open', 'asc'); // Urutkan jadwal berdasarkan waktu buka
+        }])->where(function ($query) use ($post) {
             $activities = ['consultation', 'treatment'];
             foreach ($activities as $activity) {
                 $query->orWhereJsonContains('activities', $activity);
             }
         })->paginate($paginate, ['*'], 'page', $post['page']);
+        $outlet_data = [];
         foreach ($outlets as $outlet) {
             $outlet->coordinates = json_decode($outlet->coordinates);
             $outlet->activities = json_decode($outlet->activities);
             $outlet->images = url(json_decode($outlet->images));
+            if ($outlet->outlet_schedule->isNotEmpty()) {
+                $currentHour = date('H:i:s');
+                $openingHour = $outlet->outlet_schedule[0]->open;
+                $closingHour = $outlet->outlet_schedule[0]->close;
+                if ($currentHour >= $openingHour && $currentHour < $closingHour) {
+                    $status_schedule = 'Open';
+                } else {
+                    $status_schedule = 'Closes';
+                }
+                $openingHour = date("h:i A", strtotime($openingHour));
+                $closingHour = date("h:i A", strtotime($closingHour));
+                $outlet_schedule = [
+                    'status' => $status_schedule,
+                    'open_time' => $openingHour,
+                    'close_time' => $closingHour,
+                ];
+            } else {
+                $outlet_schedule = [];
+            }
+            $outlet->schedule_now = $outlet_schedule;
+            // unset($outlet->outlet_schedule);
         }
         return $this->ok('success', $outlets);
     }
 
+
     public function clinic_detail($id):JsonResponse
     {
-        $outlets = Outlet::find($id)->get();
+        $outlets = Outlet::with('outlet_schedule')->where('id', $id)->get();
         foreach ($outlets as $outlet) {
             $outlet->coordinates = json_decode($outlet->coordinates);
             $outlet->activities = json_decode($outlet->activities);
             $outlet->images = url(json_decode($outlet->images));
+            $outlet_schedule = [];
+            if ($outlet->outlet_schedule->isNotEmpty()) {
+                $currentHour = date('H:i:s');
+                $openingHour = $outlet->outlet_schedule[0]->open;
+                $closingHour = $outlet->outlet_schedule[0]->close;
+                if ($currentHour >= $openingHour && $currentHour < $closingHour) {
+                    $status_schedule = 'Open';
+                } else {
+                    $status_schedule = 'Closes';
+                }
+                $openingHour = date("h:i A", strtotime($openingHour));
+                $closingHour = date("h:i A", strtotime($closingHour));
+                $outlet_schedule = [
+                    'status' => $status_schedule,
+                    'open_time' => $openingHour,
+                    'close_time' => $closingHour,
+                ];
+            }
+            $outlet->schedule_now = $outlet_schedule;
         }
 
         return $this->ok('success', $outlet);
