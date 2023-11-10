@@ -34,6 +34,9 @@ class CashierCustomerController extends Controller
         $orders = Order::with([
             'patient',
             'order_products.product',
+            'order_products.doctor',
+            'order_products.nurse',
+            'order_products.beautician',
             'order_prescriptions.prescription.category',
             'order_consultations.consultation.patient_diagnostic.diagnostic',
             'order_consultations.consultation.patient_grievance.grievance',
@@ -121,7 +124,10 @@ class CashierCustomerController extends Controller
                         'schedule'         => date('Y-m-d', strtotime($order_product['schedule_date'])),
                         'price_total'      => $order_product['order_product_grandtotal'],
                         'queue'            => $order_product['queue_code'] ?? 'TBD',
-                        'progress'         => $progress
+                        'progress'         => $progress,
+                        'doctor_name'      => $order_product['doctor']['name'] ?? null,
+                        'nurse_name'       => $order_product['nurse']['name'] ?? null,
+                        'beautician_name'  => $order_product['beautician']['name'] ?? null,
                     ];
 
                     $card_ord_treat[] = [
@@ -257,7 +263,10 @@ class CashierCustomerController extends Controller
                 $orders->with([
                     'order.patient',
                     'treatment_patient',
-                    'step'
+                    'step',
+                    'doctor',
+                    'nurse',
+                    'beautician',
                 ])->whereNotNull('treatment_patient_id')
                 ->whereNotNull('treatment_patient_step_id')
                 ->whereHas('order',function($order){
@@ -290,6 +299,10 @@ class CashierCustomerController extends Controller
                     $progress = $order_treatment['step']['step'].'/'.$order_treatment['treatment_patient']['step'];
                 }
 
+                $bithdayDate = new DateTime($order_treatment['order']['patient']['birth_date']);
+                $now = new DateTime();
+                $interval = $now->diff($bithdayDate)->y;
+
                 $list = [
                     'id_order_treatment' => $order_treatment['id'],
                     'id_treatment' => $treatment['id'],
@@ -298,7 +311,13 @@ class CashierCustomerController extends Controller
                     'price_total' => $order_treatment['order_product_grandtotal'],
                     'queue' => $order_treatment['queue_code'],
                     'patient_name' => $order_treatment['order']['patient']['name'],
-                    'step' => $progress
+                    'gender'  => $order_treatment['order']['patient']['gender'],
+                    'phone' => substr_replace($order_treatment['order']['patient']['phone'], str_repeat('x', (strlen($order_treatment['order']['patient']['phone']) - 7)), 4, (strlen($order_treatment['order']['patient']['phone']) - 7)),
+                    'age'   => $interval.' years',
+                    'step' => $progress,
+                    'doctor_name'      => $order_treatment['doctor']['name'] ?? null,
+                    'nurse_name'       => $order_treatment['nurse']['name'] ?? null,
+                    'beautician_name'  => $order_treatment['beautician']['name'] ?? null,
                 ];
 
                 $check = array_search(date('d F Y', strtotime($list['date'])), array_column($data??[], 'date'));
@@ -356,7 +375,15 @@ class CashierCustomerController extends Controller
             'consultation.patient_diagnostic.diagnostic',
             'consultation.patient_grievance.grievance',
         ])->whereHas('order', function($order){
-            $order->where('status', '<>', 'Cancelled');
+            $order->where(function($whereOrder){
+                $whereOrder->where(function($whereOrder1){
+                    $whereOrder1->whereNull('parent_id')
+                    ->where('status', '<>', 'Cancelled');
+                })
+                ->orWhereHas('parent', function($parent) {
+                    $parent->where('status', 'Finished');
+                });
+            });
         })->orderBy('schedule_date', 'desc')
         ->orderBy(function($orderBy){
             return $orderBy->from('doctor_shifts')

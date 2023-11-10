@@ -23,7 +23,11 @@ Route::middleware(['auth:api','scopes:pos'])->controller(CustomerController::cla
     Route::post('detail', 'showByPhone')->name('customer.show.byPhone');
     Route::post('register', 'store')->name('customer.store');
     Route::post('edit', 'update')->name('customer.update');
+    Route::get('allergy', 'allergy');
+
     Route::get('', 'index')->name('customer.list');
     Route::get('{id}', 'show')->name('customer.show');
     Route::delete($customer, 'destroy')->name('customer.delete');
+
+
 });

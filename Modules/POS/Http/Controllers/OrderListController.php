@@ -488,6 +488,9 @@ class OrderListController extends Controller
             $order = Order::with([
                 'patient',
                 'order_products.product',
+                'order_products.doctor',
+                'order_products.nurse',
+                'order_products.beautician',
                 'order_prescriptions.prescription.category',
                 'order_consultations.consultation.patient_diagnostic.diagnostic',
                 'order_consultations.consultation.patient_grievance.grievance',
@@ -565,6 +568,9 @@ class OrderListController extends Controller
                         'schedule_date'    => date('d F Y', strtotime($order_product['schedule_date'])),
                         'schedule'         => date('Y-m-d', strtotime($order_product['schedule_date'])),
                         'price_total'      => $order_product['order_product_grandtotal'],
+                        'doctor_name'      => $order_product['doctor']['name'] ?? null,
+                        'nurse_name'       => $order_product['nurse']['name'] ?? null,
+                        'beautician_name'  => $order_product['beautician']['name'] ?? null,
                         'progress'         => $progress
                     ];
 

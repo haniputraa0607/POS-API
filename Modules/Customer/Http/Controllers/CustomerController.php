@@ -10,6 +10,9 @@ use Illuminate\Http\JsonResponse;
 use Modules\Customer\Entities\Customer;
 use Modules\Customer\Http\Requests\Create;
 use Modules\Customer\Http\Requests\Update;
+use Modules\Customer\Entities\CategoryAllergy;
+use Modules\Customer\Entities\CustomerAllergy;
+use Illuminate\Support\Facades\DB;
 
 class CustomerController extends Controller
 {
@@ -20,9 +23,26 @@ class CustomerController extends Controller
         return $this->ok('success', $data);
     }
 
-    public function store(Create $request): JsonResponse
+    public function store(Create $request): mixed
     {
-        $customer = Customer::create($request->all());
+        $post = $request->json()->all();
+        $customer = Customer::create($post);
+
+        $customer_allergies = [];
+        foreach($post['allergies'] ?? [] as $allergy){
+            $customer_allergies[] = [
+                'allergy_id' => $allergy['id'],
+                'customer_id' => $customer['id'],
+                'notes' => $allergy['notes'] ?? null,
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ];
+        }
+
+        if($post['is_allergy'] == 1){
+            $insert_customer_allergies = CustomerAllergy::insert($customer_allergies);
+        }
+
         $customer['birth_date_text'] = date('d F Y', strtotime($customer['birth_date']));
         $customer['birth_date_cencored'] = preg_replace("/[^ ]/", "x", $customer['birth_date_text']);
 
@@ -33,6 +53,17 @@ class CustomerController extends Controller
         $customer['age']  = $interval.' years';
         $customer['email_cencored'] = substr_replace($customer['email'], str_repeat('x', (strlen($customer['email']) - 6)), 3, (strlen($customer['email']) - 6));
         $customer['phone_cencored'] = substr_replace($customer['phone'], str_repeat('x', (strlen($customer['phone']) - 7)), 4, (strlen($customer['phone']) - 7));
+
+        $customer['allergies'] = [];
+        $customer_allergies = CustomerAllergy::with(['allergy.category'])->where('customer_id', $customer['id'])->get()->toArray();
+        foreach($customer_allergies ?? [] as $customer_allergy){
+            $customer['allergies'][] = [
+                'id' => $customer_allergy['id'],
+                'category_allergy_name' => $customer_allergy['allergy']['category']['category_name'],
+                'allergy_name' => $customer_allergy['allergy']['name'],
+                'notes' => $customer_allergy['notes'],
+            ];
+        }
 
         return $this->ok('success', $customer);
     }
@@ -116,5 +147,19 @@ class CustomerController extends Controller
     {
         $customer->delete();
         return $this->ok('success', $customer);
+    }
+
+    public function allergy(Request $request): mixed
+    {
+        $cashier = $request->user();
+        $outlet = $cashier->outlet;
+
+        $category_allergies = CategoryAllergy::with(['allergies' => function($allergies){
+            $allergies->select('id', 'category_id', 'name');
+        }])->select('id', 'category_name')
+        ->get()->toArray();
+
+        return $this->ok('success', $category_allergies);
+
     }
 }

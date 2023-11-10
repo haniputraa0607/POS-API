@@ -5,27 +5,28 @@ namespace Modules\Doctor\Entities;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Modules\Doctor\Database\factories\DoctorScheduleFactory;
 use Modules\Outlet\Entities\Outlet;
-use Modules\Doctor\Entities\DoctorScheduleDate;
-use Modules\User\Entities\User;
+use Modules\Doctor\Entities\Beautician;
+use Modules\Doctor\Entities\BeauticianScheduleDate;
 
-class DoctorSchedule extends Model
+class BeauticianSchedule extends Model
 {
     use HasFactory;
 
-    protected $table = 'doctor_schedules';
+    protected $table = 'beautician_schedules';
+
     protected $fillable = [
-        'user_id',
+        'beautician_id',
         'outlet_id',
         'schedule_month',
         'schedule_year',
     ];
 
-    public function user(): BelongsTo
+    public function beautician(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Beautician::class);
     }
     public function outlet(): BelongsTo
     {
@@ -33,11 +34,6 @@ class DoctorSchedule extends Model
     }
     public function schedule_dates(): HasMany
     {
-        return $this->hasMany(DoctorScheduleDate::class);
-    }
-
-    protected static function newFactory()
-    {
-        return DoctorScheduleFactory::new();
+        return $this->hasMany(BeauticianScheduleDate::class);
     }
 }
