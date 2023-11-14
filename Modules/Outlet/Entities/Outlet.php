@@ -19,6 +19,7 @@ class Outlet extends Model
 
     protected $table = 'outlets';
     protected $fillable = [
+        'equal_id',
         'name',
         'id_partner',
         'partner_equal_id',
@@ -36,7 +37,8 @@ class Outlet extends Model
         'postal_code',
         'coordinates',
         'activities',
-        'images'
+        'images',
+        'verified_at'
     ];
 
     protected static function newFactory()

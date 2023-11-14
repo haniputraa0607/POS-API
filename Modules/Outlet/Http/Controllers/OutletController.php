@@ -8,7 +8,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\Outlet\Entities\Outlet;
 use Modules\Outlet\Entities\BannerClinic;
+use Modules\Outlet\Http\Requests\EqualIdOutletRequest;
 use Modules\Outlet\Http\Requests\OutletRequest;
+use Modules\Outlet\Http\Requests\VerifiedOutletRequest;
 
 class OutletController extends Controller
 {
@@ -127,6 +129,34 @@ class OutletController extends Controller
             $banner->image = url($banner->image);
         }
         return $this->ok("success", $banners);
+    }
+
+    public function getVerifiedOutlet($equal_id)
+    {
+        $outlet = Outlet::where('equal_id', $equal_id)->firstOrFail();
+        return $this->ok('success', $outlet);
+    }
+
+    public function setVerifiedOutlet(VerifiedOutletRequest $request)
+    {
+        $outlet = Outlet::where('equal_id', $request->equal_id)->firstOrFail();
+        $outlet->update([
+            "verified_at" => $request->verified_at
+        ]);
+        return $this->ok('success', $outlet);
+    }
+
+    public function allOutlet(){
+        $outlet = Outlet::all();
+        return $this->ok("success", $outlet);
+    }
+
+    public function setEqualIdOutlet(EqualIdOutletRequest $request){
+        $outlet = Outlet::where('id', $request->id)->firstOrFail();
+        $outlet->update([
+            'equal_id' => $request->equal_id
+        ]);
+        return $this->ok("success", $outlet);
     }
 
 }

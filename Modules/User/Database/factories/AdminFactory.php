@@ -22,8 +22,9 @@ class AdminFactory extends Factory
      */
     public function definition()
     {
+        $adminUser = User::inRandomOrder()->admin()->first();
         return [
-            'id' => User::inRandomOrder()->admin()->first()->id,
+            'id' => $adminUser->id,
             'name' => 'Admin '.$this->faker->name(),
         ];
     }
