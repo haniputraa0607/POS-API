@@ -12,6 +12,8 @@ use App\Http\Models\Feature;
 use Modules\User\Entities\Admin;
 use App\Lib\MyHelper;
 use Illuminate\Support\Facades\DB;
+use Modules\User\Http\Requests\SetIDUserRequest;
+use Modules\User\Http\Requests\SetVerifiedRequest;
 
 class UserController extends Controller
 {
@@ -97,6 +99,30 @@ class UserController extends Controller
         }
         DB::commit();
         return $this->ok('success', $upload);
+    }
 
+    public function allUser(){
+        $user = User::whereNot('type', 'admin')->get();
+        return $this->ok("success", $user);
+    }
+
+    public function setEqualIdUser(SetIDUserRequest $request)
+    {
+        $user = User::where("id", $request->id)->firstOrFail();
+        $user->update(["equal_id" => $request->equal_id]);
+        return $this->ok("success", $user);
+    }
+
+    public function getVerifiedUser($equal_id)
+    {
+        $user = User::where("equal_id", $equal_id)->firstOrFail();
+        return $this->ok("success", $user);
+    }
+
+    public function setVerifiedUser(SetVerifiedRequest $request)
+    {
+        $user = User::where('equal_id', $request->equal_id)->firstOrFail();
+        $user->update(["equal_verified_at" => $request->verified_at]);
+        return $this->ok("success", $user);
     }
 }

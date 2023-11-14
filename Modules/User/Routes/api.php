@@ -43,3 +43,13 @@ Route::middleware(['auth:api','scopes:be'])->controller(UserController::class)->
     Route::post('user/upload-image', 'uploadImage');
 
 });
+
+Route::prefix('webhook')->group(function(){
+    Route::prefix('user')->group(function(){
+        Route::get('all', [UserController::class, 'allUser']);
+        Route::post('set_id', [UserController::class, 'setEqualIdUser']);
+        Route::get('verified/{equal_id}', [UserController::class, 'getVerifiedUser']);
+        Route::post('verified', [UserController::class, 'setVerifiedUser']);
+    });
+});
+

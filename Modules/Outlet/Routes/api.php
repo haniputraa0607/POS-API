@@ -34,3 +34,12 @@ Route::prefix('landing-page')->group(function(){
     Route::get('clinic/banner', [OutletController::class, 'banner_clinic']);
     Route::get('clinic/{id}', [OutletController::class, 'clinic_detail']);
 });
+
+Route::middleware('auth:api')->prefix('webhook')->group(function(){
+    Route::prefix('outlet')->group(function(){
+        Route::get('all', [OutletController::class, 'allOutlet']);
+        Route::post('set_id', [OutletController::class, 'setEqualIdOutlet']);
+        Route::get('verified/{equal_id}', [OutletController::class, 'getVerifiedOutlet']);
+        Route::post('verified', [OutletController::class, 'setVerifiedOutlet']);
+    });
+});

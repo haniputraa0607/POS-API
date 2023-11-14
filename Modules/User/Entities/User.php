@@ -57,7 +57,8 @@ class User extends Authenticatable
         'gender',
         'level',
         'image_url',
-        'doctor_room_id'
+        'doctor_room_id',
+        'equal_verified_at',
     ];
 
     /**
