@@ -1,13 +1,15 @@
 <?php
 
-namespace App\Http\Models;
+namespace Modules\Setting\Entities;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Setting extends Model
 {
     use HasFactory;
+
+    protected $table = 'settings';
 
     protected $fillable = [
         'equal_id',
@@ -15,4 +17,5 @@ class Setting extends Model
         'value',
         'value_text'
     ];
+
 }
