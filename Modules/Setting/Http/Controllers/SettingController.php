@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Http\Models\Setting;
 use App\Lib\MyHelper;
 use Illuminate\Support\Facades\DB;
+use Modules\Setting\Http\Requests\TaxRequest;
 
 class SettingController extends Controller
 {
@@ -51,6 +52,40 @@ class SettingController extends Controller
         }
         DB::commit();
         return $this->ok('success', []);
+    }
 
+    public function createTax(TaxRequest $request)
+    {
+        $tax = Setting::where('key', 'tax')->firt();
+        if($tax){
+            $this->updateTax($request);
+        } else {
+            $setting = Setting::create([
+                'key' => 'tax',
+                'value' => $request->percentage/100,
+                'value_text' => json_encode($request->all())
+            ]);
+        }
+        return $this->ok("success", $setting);
+    }
+
+    public function updateTax(TaxRequest $request)
+    {
+        $setting = Setting::where('key', 'tax');
+        $data_update = [
+            'value' => $request->percentage/100,
+            'value_text' => json_encode($request->all())
+        ];
+        $setting->update($data_update);
+        return $this->ok("success", $data_update);
+    }
+
+    public function deleteEqual(Request $request)
+    {
+        $setting = Setting::where('key', 'tax')->update([
+            'value' => 0,
+            'value_taxt' => ''
+        ]);
+        return $this->ok("success", $setting);
     }
 }
