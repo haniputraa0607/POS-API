@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Customer\Database\factories\CustomerFactory;
 use Modules\Customer\Entities\TreatmentPatient;
 use Modules\Doctor\Entities\DoctorSuggestion;
+use Modules\Order\Entities\Order;
 use Modules\Customer\Entities\CustomerAllergy;
 
 class Customer extends Model
@@ -59,5 +60,10 @@ class Customer extends Model
     public function customer_allergies(): HasMany
     {
         return $this->hasMany(CustomerAllergy::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'patient_id', 'id');
     }
 }
