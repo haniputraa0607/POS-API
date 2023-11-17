@@ -39,6 +39,14 @@ Route::middleware(['auth:api','scopes:doctor'])->controller(DoctorController::cl
         Route::post('detail', 'detail');
     });
 
+    Route::prefix('medical-record')->controller(MedicalRecordController::class)->group(function () {
+        Route::post('patient-data', 'patientData');
+        Route::post('update-patient-data', 'updatePatientData');
+        Route::get('allergy', 'Allergy');
+        Route::post('patient-allergy', 'patientAllergy');
+        Route::post('update-patient-allergy', 'updatePatientAllergy');
+    });
+
 });
 
 Route::middleware(['auth:api','scopes:pos'])->controller(DoctorController::class)->prefix('pos/consultation')->group(function(){

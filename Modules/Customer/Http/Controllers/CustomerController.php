@@ -55,15 +55,18 @@ class CustomerController extends Controller
         $customer['phone_cencored'] = substr_replace($customer['phone'], str_repeat('x', (strlen($customer['phone']) - 7)), 4, (strlen($customer['phone']) - 7));
 
         $customer['allergies'] = [];
+        $data_allergies = [];
         $customer_allergies = CustomerAllergy::with(['allergy.category'])->where('customer_id', $customer['id'])->get()->toArray();
         foreach($customer_allergies ?? [] as $customer_allergy){
-            $customer['allergies'][] = [
+            $data_allergies[] = [
                 'id' => $customer_allergy['id'],
                 'category_allergy_name' => $customer_allergy['allergy']['category']['category_name'],
                 'allergy_name' => $customer_allergy['allergy']['name'],
                 'notes' => $customer_allergy['notes'],
             ];
         }
+
+        $customer['allergies'] = $data_allergies;
 
         return $this->ok('success', $customer);
     }
@@ -119,16 +122,52 @@ class CustomerController extends Controller
 
         $get_customer = $config[(string)$request->phone]['data'] ?? [];
 
+        $get_customer['allergies'] = [];
+        if($get_customer['is_allergy'] == 1){
+            $customer_allergies = CustomerAllergy::with(['allergy.category'])->where('customer_id', $get_customer['id'])->get()->toArray();
+            foreach($customer_allergies ?? [] as $customer_allergy){
+                $get_customer['allergies'][] = [
+                    'id' => $customer_allergy['id'],
+                    'category_allergy_name' => $customer_allergy['allergy']['category']['category_name'],
+                    'allergy_name' => $customer_allergy['allergy']['name'],
+                    'notes' => $customer_allergy['notes'],
+                ];
+            }
+
+        }
+
         return $this->ok('success', $get_customer);
     }
 
     public function update(Update $request): JsonResponse
     {
+        $post = $request->json()->all();
+
         $customer = Customer::where('id', $request->id)->first();
         if(!$customer){
             return $this->error('Customer not found');
         }
-        $customer->update($request->all());
+        $customer->update($post);
+
+        if($post['is_allergy'] == 1){
+
+            foreach($post['allergies'] ?? [] as $allergy){
+                $customer_allergies[] = [
+                    'allergy_id' => $allergy['id'],
+                    'customer_id' => $customer['id'],
+                    'notes' => $allergy['notes'] ?? null,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ];
+            }
+
+            $delete_customer_allergies = CustomerAllergy::where('customer_id', $customer['id'])->delete();
+            if($delete_customer_allergies){
+                $insert_customer_allergies = CustomerAllergy::insert($customer_allergies);
+            }
+
+        }
+
         $customer['birth_date_text'] = date('d F Y', strtotime($customer['birth_date']));
         $customer['birth_date_cencored'] = preg_replace("/[^ ]/", "x", $customer['birth_date_text']);
 
@@ -139,6 +178,22 @@ class CustomerController extends Controller
         $customer['age']  = $interval.' years';
         $customer['email_cencored'] = substr_replace($customer['email'], str_repeat('x', (strlen($customer['email']) - 6)), 3, (strlen($customer['email']) - 6));
         $customer['phone_cencored'] = substr_replace($customer['phone'], str_repeat('x', (strlen($customer['phone']) - 7)), 4, (strlen($customer['phone']) - 7));
+
+        $customer['allergies'] = [];
+        $data_allergies = [];
+        if($customer['is_allergy'] == 1){
+            $customer_allergies = CustomerAllergy::with(['allergy.category'])->where('customer_id', $customer['id'])->get()->toArray();
+            foreach($customer_allergies ?? [] as $customer_allergy){
+                $data_allergies[] = [
+                    'id' => $customer_allergy['id'],
+                    'category_allergy_name' => $customer_allergy['allergy']['category']['category_name'],
+                    'allergy_name' => $customer_allergy['allergy']['name'],
+                    'notes' => $customer_allergy['notes'],
+                ];
+            }
+            $customer['allergies'] = $data_allergies;
+
+        }
 
         return $this->ok('success', $customer);
     }
