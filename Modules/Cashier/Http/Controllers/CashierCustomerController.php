@@ -274,7 +274,7 @@ class CashierCustomerController extends Controller
                     ->where('status', 'Finished');
                 })->whereHas('step',function($step){
                     $step->where('status', 'Finished');
-                })->orderBy('schedule_date', 'desc');
+                })->orderBy('schedule_date', 'desc')->orderBy('created_at', 'desc');
             }
         ])->whereHas('outlet_treatment', function($outlet_treatment) use ($outlet){
             $outlet_treatment->where('outlet_id',$outlet['id']);
@@ -307,6 +307,7 @@ class CashierCustomerController extends Controller
                     'id_order_treatment' => $order_treatment['id'],
                     'id_treatment' => $treatment['id'],
                     'date' => date('Y-m-d', strtotime($order_treatment['schedule_date'])),
+                    'date_text' => date('d F Y', strtotime($order_treatment['schedule_date'])),
                     'name' => $treatment['product_name'],
                     'price_total' => $order_treatment['order_product_grandtotal'],
                     'queue' => $order_treatment['queue_code'],
