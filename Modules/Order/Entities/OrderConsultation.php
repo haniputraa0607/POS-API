@@ -31,6 +31,7 @@ class OrderConsultation extends Model
         'status',
         'start_time',
         'finish_time',
+        'medical_recod_finished',
         'queue',
         'queue_code',
     ];
