@@ -15,6 +15,7 @@ use Modules\Consultation\Entities\Consultation;
 use Modules\Customer\Entities\CategoryAllergy;
 use Modules\Customer\Entities\CustomerAllergy;
 use Modules\Doctor\Entities\LifeStyleRecord;
+use Modules\Doctor\Entities\SkinProblemRecord;
 use Modules\Doctor\Entities\TreatmentRecord;
 use Modules\Doctor\Entities\TreatmentRecordType;
 use Modules\Grievance\Entities\Grievance;
@@ -483,7 +484,7 @@ class MedicalRecordController extends Controller
                 $order->where('patient_id', $customer->id)->where('id', $post['id_order']);
             });
         })->first();
-
+        $now = now();
         if($post['grievance']){
             $grievance_insert = [];
             foreach($post['grievance'] as $grievance){
@@ -493,6 +494,8 @@ class MedicalRecordController extends Controller
                     'grievance_id' => $grievance_data['id'],
                     'from_pos' => '0',
                     'notes' => $grievance['notes'],
+                    "created_at" => $now,
+                    "updated_at" => $now
                 ];
             }
             $delete_patient_grievance = PatientGrievance::where('consultation_id', $consultation->id)->delete();
@@ -500,7 +503,7 @@ class MedicalRecordController extends Controller
                 $insert_patient_grievance = PatientGrievance::insert($grievance_insert);
             }
         }
-
+        
         if($post['treatment_or_therapy']){
             $treatment_record = [];
             foreach($post['treatment_or_therapy'] as $key){
@@ -510,6 +513,8 @@ class MedicalRecordController extends Controller
                     'product_category_id' => $key['product_category_id'],
                     'product_id' => $key['product_id'],
                     'notes' => $key['notes'],
+                    "created_at" => $now,
+                    "updated_at" => $now
                 ];
             }
             $delete_treatment_record = TreatmentRecord::where('order_id', $post['id_order'])->delete();
@@ -617,5 +622,108 @@ class MedicalRecordController extends Controller
             $updateLifeStyle = LifeStyleRecord::where('id', $lifeStyle->id)->update($payload);
         }
         return $this->ok("success", $payload);
+    }
+
+    public function getSkinProblem(Request $request)
+    {
+        $request->validate([
+            'id_order' => 'required',
+        ]);
+        $doctor = $request->user();
+        $outlet = $doctor->outlet;
+        $post = $request->json()->all();
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+        $customer = Customer::whereHas('orders', function($order) use($post){
+            $order->where('id', $post['id_order']);
+        })->first();
+        if(!$customer){
+            return $this->error('Customer not found');
+        }
+        $skinProblem = SkinProblemRecord::where('order_id', $post['id_order'])->get();
+        $historySkin = SkinProblemRecord::where('patient_id', $customer->id)->get();
+        $now_arr = [];
+        foreach($skinProblem as $key){
+            $now_arr[] = [
+                'name' => $key->name,
+                'time_period' => $key->time_period,
+                'tried_solution' => $key->tried_solution,
+                'solution' => $key->solution
+            ];
+        }
+        
+        $date_history = [];
+        foreach($historySkin as $key){
+            $date_arr = explode(' ', $key['created_at']);
+            if(!in_array($date_arr[0], $date_history)){
+                $date_history[] = $date_arr[0];
+            }
+        }
+        $history_arr = [];
+        foreach($date_history as $date){
+            $history_res = [];
+            foreach($historySkin as $history){
+                $date_arr = explode(' ', $history->created_at);
+                if($date_arr[0] == $date){
+                    $history_res[] = [
+                        'name' => $history->name,
+                        'time_period' => $history->time_period,
+                        'tried_solution' => $history->tried_solution,
+                        'solution' => $history->solution
+                    ];
+                }
+            }
+            $history_arr[] = [
+                'date' => $date,
+                'history' => $history_res
+            ];
+        }
+        
+        return $this->ok("success", [
+            "now" => $now_arr,
+            "history" => $history_arr
+        ]);
+    }
+
+    public function updateSkinProblem(Request $request)
+    {
+        $request->validate([
+            'id_order' => 'required',
+        ]);
+        $doctor = $request->user();
+        $outlet = $doctor->outlet;
+        $post = $request->json()->all();
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+        $customer = Customer::whereHas('orders', function($order) use($post){
+            $order->where('id', $post['id_order']);
+        })->first();
+        if(!$customer){
+            return $this->error('Customer not found');
+        }
+        $skin_problem_arr = [];
+        $now = now();
+        foreach($post['skin_problems'] as $key){
+            $skin_problem_arr[] = [
+                "order_id" => $post['id_order'],
+                "patient_id" => $customer->id,
+                "name" => $key['name'],
+                "time_period" => $key['time_period'],
+                "tried_solution" => $key['tried_solution'],
+                "solution" => $key['solution'],
+                "created_at" => $now,
+                "updated_at" => $now
+            ];
+        }
+
+        if($post['skin_problems']){
+            $delete_skin_problem = SkinProblemRecord::where('order_id', $post['id_order'])->delete();
+            if($delete_skin_problem){
+                $insert_skin_problem = SkinProblemRecord::insert($skin_problem_arr);
+            }
+        }
+        return $this->ok("success", $skin_problem_arr);
     }
 }
