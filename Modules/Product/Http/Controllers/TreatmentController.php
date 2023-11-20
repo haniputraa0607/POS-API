@@ -163,13 +163,13 @@ class TreatmentController extends Controller
 
                 foreach($customerPatient ?? [] as $cp){
                     if($prod['id'] == $cp['treatment_id'] && (date('Y-m-d',strtotime($cp['expired_date'])) >= date('Y-m-d',strtotime($date_list)))){
-                        if($cp['steps'][0]['step'] < $cp['step']){
+                        if($cp['progress'] < $cp['step']){
                             $prod['can_continue'] = true;
                             $prod['record_history'] = [
-                                'start' => $cp['steps'][0]['step'],
+                                'start' => $cp['progress'],
                                 'total' => $cp['step'],
-                                'from' => $cp['steps'][0]['step'].'/'.$cp['step'],
-                                'to' => ($cp['steps'][0]['step']+1).'/'.$cp['step'],
+                                'from' => $cp['progress'].'/'.$cp['step'],
+                                'to' => ($cp['progress']+1).'/'.$cp['step'],
                                 'expired_date' => date('Y-m-d',strtotime($cp['expired_date']))
                             ];
                             $prod['date_start'] = date('Y-m-d',strtotime($cp['start_date']));
@@ -402,13 +402,13 @@ class TreatmentController extends Controller
 
                 foreach($customerPatient ?? [] as $cp){
                     if($value['id'] == $cp['treatment_id'] && (date('Y-m-d',strtotime($cp['expired_date'])) >= date('Y-m-d',strtotime($value['date'])))){
-                        if($cp['steps'][0]['step'] < $cp['step']){
+                        if($cp['progress'] < $cp['step']){
                             $value['can_continue'] = true;
                             $value['record_history'] = [
-                                'start' => $cp['steps'][0]['step'],
+                                'start' => $cp['progress'],
                                 'total' => $cp['step'],
-                                'from' => $cp['steps'][0]['step'].'/'.$cp['step'],
-                                'to' => ($cp['steps'][0]['step']+1).'/'.$cp['step'],
+                                'from' => $cp['progress'].'/'.$cp['step'],
+                                'to' => ($cp['progress']+1).'/'.$cp['step'],
                                 'expired_date' => date('Y-m-d',strtotime($cp['expired_date']))
                             ];
                             $value['date_start'] = date('Y-m-d',strtotime($cp['start_date']));
@@ -438,13 +438,13 @@ class TreatmentController extends Controller
 
                 foreach($customerPatient ?? [] as $cp){
                     if($value['id'] == $cp['treatment_id'] && (date('Y-m-d',strtotime($cp['expired_date'])) >= date('Y-m-d',strtotime($value['date'])))){
-                        if($cp['steps'][0]['step'] < $cp['step']){
+                        if($cp['progress'] < $cp['step']){
                             $value['can_continue'] = true;
                             $value['record_history'] = [
-                                'start' => $cp['steps'][0]['step'],
+                                'start' => $cp['progress'],
                                 'total' => $cp['step'],
-                                'from' => $cp['steps'][0]['step'].'/'.$cp['step'],
-                                'to' => ($cp['steps'][0]['step']+1).'/'.$cp['step'],
+                                'from' => $cp['progress'].'/'.$cp['step'],
+                                'to' => ($cp['progress']+1).'/'.$cp['step'],
                                 'expired_date' => date('Y-m-d',strtotime($cp['expired_date']))
                             ];
                             $value['date_start'] = date('Y-m-d',strtotime($cp['start_date']));
@@ -521,7 +521,7 @@ class TreatmentController extends Controller
             if(date('Y-m-d', strtotime($history['expired_date'])) < date('Y-m-d')){
                 $continue = false;
             }
-            if(count($history['steps']) > 0 && $history['steps'][0]['step'] >= $history['step']){
+            if(count($history['steps']) > 0 && $history['progress'] >= $history['step']){
                 $continue = false;
             }
 
@@ -534,7 +534,7 @@ class TreatmentController extends Controller
                 'expired_treatment' => date('Y-m-d', strtotime($history['expired_date'])),
                 'expired_treatment_text' => date('d F Y', strtotime($history['expired_date'])),
                 'suggestion' => $history['suggestion'],
-                'progress' => $history['status'] == 'Finished' ? 'Finished' : ($history['steps'][0]['step'] ?? 0).'/'. $history['step'].' Continue Treatment',
+                'progress' => $history['status'] == 'Finished' ? 'Finished' : ($history['progress'] ?? 0).'/'. $history['step'].' Continue Treatment',
                 'can_continue' => $continue,
                 'step' => $steps,
             ];
