@@ -90,29 +90,38 @@ class GrievanceController extends Controller
     {
         $return = [];
         $make_new = false;
-        $check_json = file_exists(storage_path() . "/json/grievances.json");
-        if($check_json){
-            $config = json_decode(file_get_contents(storage_path() . "/json/grievances.json"), true);
-            if(date('Y-m-d H:i', strtotime($config['updated_at']. ' +6 hours')) <= date('Y-m-d H:i')){
+        $file_path = storage_path('json/grievances.json');
+
+        if (!is_dir(dirname($file_path))) {
+            mkdir(dirname($file_path), 0755, true);
+        }
+
+        if (file_exists($file_path)) {
+            $config = json_decode(file_get_contents($file_path), true);
+            $file_updated_time = strtotime($config['updated_at'] . ' +6 hours');
+
+            if ($file_updated_time <= strtotime(date('Y-m-d H:i'))) {
                 $make_new = true;
             }
-        }else{
+        } else {
             $make_new = true;
         }
 
-        if($make_new){
+        if ($make_new) {
             $grievance = Grievance::select('id', 'grievance_name')->orderBy('grievance_name', 'asc')->get()->toArray();
-            if($grievance){
+            if ($grievance) {
                 $config = [
                     'updated_at' => date('Y-m-d H:i'),
-                    'data'       => $grievance
+                    'data' => $grievance
                 ];
-                file_put_contents(storage_path('/json/grievances.json'), json_encode($config));
-
+                if (is_writable(dirname($file_path))) {
+                    file_put_contents($file_path, json_encode($config));
+                } else {
+                    return $this->error("Tidak dapat menulis ke file JSON. Periksa izin direktori.");
+                }
             }
         }
         $return = $config['data'] ?? [];
-
         return $this->ok("success", $return);
     }
 

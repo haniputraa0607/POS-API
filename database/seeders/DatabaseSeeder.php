@@ -17,6 +17,7 @@ use Database\Seeders\SettingTableSeeder;
 use Modules\Article\Database\Seeders\ArticleDatabaseSeeder;
 use Modules\Banner\Database\Seeders\BannerDatabaseSeeder;
 use Modules\Contact\Database\Seeders\ContactDatabaseSeeder;
+use Modules\Doctor\Database\Seeders\DoctorDatabaseSeeder;
 use Modules\Partner\Database\Seeders\PartnerDatabaseSeeder;
 use Modules\Product\Database\Seeders\ProductDatabaseSeeder;
 use Modules\Setting\Database\Seeders\SettingDatabaseSeeder;
@@ -41,7 +42,8 @@ class DatabaseSeeder extends Seeder
             BannerDatabaseSeeder::class,
             ArticleDatabaseSeeder::class,
             ContactDatabaseSeeder::class,
-            SettingDatabaseSeeder::class
+            SettingDatabaseSeeder::class,
+            DoctorDatabaseSeeder::class
         ]);
 
     }
