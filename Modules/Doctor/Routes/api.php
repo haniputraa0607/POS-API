@@ -52,9 +52,9 @@ Route::middleware(['auth:api','scopes:doctor'])->controller(DoctorController::cl
             Route::get('product', 'product');
             Route::post('medical-history', 'medicalHistory');
             Route::post('update-medical-history', 'updateMedicalHistory');
-        });
-        Route::prefix('life-style')->group(function(){
-            Route::get('/', 'getLifeStyle');
+            
+            Route::post('life-style', 'getLifeStyle');
+            Route::post('update-life-style', 'updateLifeStyle');
         });
     });
 
