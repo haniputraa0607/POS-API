@@ -55,6 +55,9 @@ Route::middleware(['auth:api','scopes:doctor'])->controller(DoctorController::cl
             
             Route::post('life-style', 'getLifeStyle');
             Route::post('update-life-style', 'updateLifeStyle');
+
+            Route::post('skin-problem', 'getSkinProblem');
+            Route::post('update-skin-problem', 'updateSkinProblem');
         });
     });
 
