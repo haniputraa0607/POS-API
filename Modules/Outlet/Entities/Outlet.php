@@ -38,7 +38,8 @@ class Outlet extends Model
         'coordinates',
         'activities',
         'images',
-        'verified_at'
+        'verified_at',
+        'deleted_at'
     ];
 
     protected static function newFactory()

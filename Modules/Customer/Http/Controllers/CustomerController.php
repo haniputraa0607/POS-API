@@ -60,6 +60,7 @@ class CustomerController extends Controller
         foreach($customer_allergies ?? [] as $customer_allergy){
             $data_allergies[] = [
                 'id' => $customer_allergy['id'],
+                'allergy_id' => $customer_allergy['allergy_id'],
                 'category_allergy_name' => $customer_allergy['allergy']['category']['category_name'],
                 'allergy_name' => $customer_allergy['allergy']['name'],
                 'notes' => $customer_allergy['notes'],
@@ -123,17 +124,20 @@ class CustomerController extends Controller
         $get_customer = $config[(string)$request->phone]['data'] ?? [];
 
         $get_customer['allergies'] = [];
+        $data_allergies = [];
         if($get_customer['is_allergy'] == 1){
             $customer_allergies = CustomerAllergy::with(['allergy.category'])->where('customer_id', $get_customer['id'])->get()->toArray();
             foreach($customer_allergies ?? [] as $customer_allergy){
-                $get_customer['allergies'][] = [
+                $data_allergies[] = [
                     'id' => $customer_allergy['id'],
+                    'allergy_id' => $customer_allergy['allergy_id'],
                     'category_allergy_name' => $customer_allergy['allergy']['category']['category_name'],
                     'allergy_name' => $customer_allergy['allergy']['name'],
                     'notes' => $customer_allergy['notes'],
                 ];
             }
 
+            $get_customer['allergies'] = $data_allergies;
         }
 
         return $this->ok('success', $get_customer);
@@ -186,6 +190,7 @@ class CustomerController extends Controller
             foreach($customer_allergies ?? [] as $customer_allergy){
                 $data_allergies[] = [
                     'id' => $customer_allergy['id'],
+                    'allergy_id' => $customer_allergy['allergy_id'],
                     'category_allergy_name' => $customer_allergy['allergy']['category']['category_name'],
                     'allergy_name' => $customer_allergy['allergy']['name'],
                     'notes' => $customer_allergy['notes'],

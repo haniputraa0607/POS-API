@@ -26,6 +26,7 @@ Route::middleware(['auth:api','scopes:doctor'])->controller(DoctorController::cl
     Route::middleware(['log_activities_doctor'])->get('home', 'home');
     Route::get('list-service', 'listService');
     Route::middleware(['log_activities_doctor'])->get('next', 'nextQueue');
+    Route::post('patient-list', 'patientList');
 
     Route::prefix('order')->controller(DoctorController::class)->group(function () {
         Route::middleware(['log_activities_doctor'])->post('/', 'getOrder');
