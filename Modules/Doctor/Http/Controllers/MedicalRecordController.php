@@ -14,6 +14,7 @@ use DateTime;
 use Modules\Consultation\Entities\Consultation;
 use Modules\Customer\Entities\CategoryAllergy;
 use Modules\Customer\Entities\CustomerAllergy;
+use Modules\Doctor\Entities\LifeStyleRecord;
 use Modules\Doctor\Entities\TreatmentRecord;
 use Modules\Doctor\Entities\TreatmentRecordType;
 use Modules\Grievance\Entities\Grievance;
@@ -518,5 +519,103 @@ class MedicalRecordController extends Controller
         }
 
         return $this->ok("success", $post);
+    }
+
+    public function getLifeStyle(Request $request)
+    {
+        $request->validate([
+            'id_order' => 'required',
+        ]);
+        $doctor = $request->user();
+        $outlet = $doctor->outlet;
+        $post = $request->json()->all();
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+        $customer = Customer::whereHas('orders', function($order) use($post){
+            $order->where('id', $post['id_order']);
+        })->first();
+        if(!$customer){
+            return $this->error('Customer not found');
+        }
+        $result = [];
+        $life_style_record = LifeStyleRecord::where('order_id', $post['id_order'])->first();
+        if($life_style_record){
+            $value_data = json_decode($life_style_record->value);
+            $result = (object) [
+                "job_occupation" => $value_data->job_occupation,
+                "regular_habit" => (object) $value_data->regular_habit,
+                "smoking" => $value_data->smoking,
+                "alcohol_consumption" => $value_data->alcohol_consumption,
+                "sleep_patterns" => (object) $value_data->sleep_patterns,
+            ];
+        } else {
+            $result = config('life_style');
+        }
+        $history_arr_res = LifeStyleRecord::where('patient_id', $customer->id)->get();
+        $date_history = [];
+        foreach($history_arr_res as $key){
+            $date_arr = explode(' ', $key['created_at']);
+            if(!in_array($date_arr[0], $date_history)){
+                $date_history[] = $date_arr[0];
+            }
+        }
+        $history_arr = [];
+        foreach($date_history as $date){
+            $history_res = [];
+            foreach($history_arr_res as $history){
+                $date_arr = explode(' ', $history->created_at);
+                if($date_arr[0] == $date){
+                    $value_data = json_decode($history->value);
+                    $history_res[] = (object) [
+                        "job_occupation" => $value_data->job_occupation,
+                        "regular_habit" => (object) $value_data->regular_habit,
+                        "smoking" => $value_data->smoking,
+                        "alcohol_consumption" => $value_data->alcohol_consumption,
+                        "sleep_patterns" => (object) $value_data->sleep_patterns,
+                    ];
+                }
+            }
+            $history_arr[] = [
+                'date' => $date,
+                'history' => $history_res
+            ];
+        }
+        return $this->ok("success", [
+            "now" => $result,
+            "history" => $history_arr
+         ]);
+    }
+
+    public function updateLifeStyle(Request $request)
+    {
+        $request->validate([
+            'id_order' => 'required',
+        ]);
+        $doctor = $request->user();
+        $outlet = $doctor->outlet;
+        $post = $request->json()->all();
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+        $customer = Customer::whereHas('orders', function($order) use($post){
+            $order->where('id', $post['id_order']);
+        })->first();
+        if(!$customer){
+            return $this->error('Customer not found');
+        }
+        unset($post['id_order']);
+        $payload = [
+            "patient_id" => $customer->id,
+            "order_id" => $request->id_order,
+            "value" => json_encode($post)
+        ];
+        $lifeStyle = LifeStyleRecord::where('order_id', $request->id_order)->first();
+        if(empty($lifeStyle)){
+            $updateLifeStyle = LifeStyleRecord::create($payload);
+        } else {
+            $updateLifeStyle = LifeStyleRecord::where('id', $lifeStyle->id)->update($payload);
+        }
+        return $this->ok("success", $payload);
     }
 }
