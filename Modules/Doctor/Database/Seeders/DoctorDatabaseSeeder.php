@@ -4,6 +4,7 @@ namespace Modules\Doctor\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Doctor\Entities\TreatmentRecordType;
 
 class DoctorDatabaseSeeder extends Seeder
 {
@@ -14,8 +15,16 @@ class DoctorDatabaseSeeder extends Seeder
      */
     public function run()
     {
-        Model::unguard();
-
+        $name = [
+            'by Daviena',
+            'Outsite Product',
+            'Treatment & Therapy'
+        ];
+        foreach($name as $key){
+            TreatmentRecordType::create([
+                'name' => $key
+            ]);
+        }
         // $this->call("OthersTableSeeder");
     }
 }

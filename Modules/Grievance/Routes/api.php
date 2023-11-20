@@ -37,6 +37,16 @@ Route::middleware(['auth:api','scopes:doctor'])->prefix('doctor')->group(functio
     });
 });
 
+
+Route::middleware(['auth:api','scopes:doctor'])->prefix('doctor')->group(function (){
+    Route::prefix('medical-record')->controller(GrievanceController::class)->group(function () {
+        Route::prefix('medical-history')->group(function(){
+            Route::get('grievance', 'show');
+        });
+    });
+});
+
+
 Route::middleware(['auth:api','scopes:pos'])->prefix('pos')->group(function (){
     Route::prefix('consultation')->group(function () {
         Route::prefix('grievance')->controller(GrievanceController::class)->group(function () {

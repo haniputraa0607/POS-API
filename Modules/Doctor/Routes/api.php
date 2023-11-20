@@ -45,6 +45,16 @@ Route::middleware(['auth:api','scopes:doctor'])->controller(DoctorController::cl
         Route::get('allergy', 'Allergy');
         Route::post('patient-allergy', 'patientAllergy');
         Route::post('update-patient-allergy', 'updatePatientAllergy');
+        Route::prefix('medical-resume')->group(function(){
+            Route::get('treatment-record-type', 'treatmentRecordType');
+            Route::get('product-category', 'productCategory');
+            Route::get('product', 'product');
+            Route::post('medical-history', 'medicalHistory');
+            Route::post('update-medical-history', 'updateMedicalHistory');
+        });
+        Route::prefix('life-style')->group(function(){
+            Route::get('/', 'getLifeStyle');
+        });
     });
 
 });
