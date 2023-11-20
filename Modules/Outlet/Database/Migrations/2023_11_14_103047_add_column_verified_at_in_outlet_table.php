@@ -18,13 +18,11 @@ return new class extends Migration
                 $table->dateTime('verified_at')->nullable();
             });
 
-            if (Schema::hasColumn('outlets', 'equal_id')) {
-                $table->dropColumn('equal_id');
+            if (!Schema::hasColumn('outlets', 'equal_id')) {
+                $table->after('id', function (Blueprint $table) {
+                    $table->string('equal_id')->unique()->nullable();
+                });
             }
-
-            $table->after('id', function (Blueprint $table) {
-                $table->string('equal_id')->unique()->nullable();
-            });
         });
     }
 
