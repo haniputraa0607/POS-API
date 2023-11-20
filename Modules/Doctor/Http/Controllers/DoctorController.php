@@ -2063,9 +2063,6 @@ class DoctorController extends Controller
 
     public function patientList(Request $request):mixed
     {
-        $request->validate([
-            'id_order' => 'required'    ,
-        ]);
 
         $doctor = $request->user();
         $outlet = $doctor->outlet;
@@ -2127,7 +2124,7 @@ class DoctorController extends Controller
                 ]
             ];
 
-            if($order_consultation['order_id'] == $post['id_order']){
+            if(isset($post['id_order']) && $order_consultation['order_id'] == $post['id_order']){
 
                 $startTime = new DateTime($order_consultation['start_time']);
                 $now = new DateTime();
