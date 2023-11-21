@@ -14,9 +14,11 @@ return new class extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->after('email_verified_at', function (Blueprint $table) {
-                $table->dateTime('equal_verified_at')->nullable();
-            });
+            if (!Schema::hasColumn('users', 'equal_verified_at')) {
+                $table->after('email_verified_at', function (Blueprint $table) {
+                    $table->dateTime('equal_verified_at')->nullable();
+                });
+            }
 
         });
     }

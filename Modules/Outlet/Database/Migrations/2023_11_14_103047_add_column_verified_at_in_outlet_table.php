@@ -17,9 +17,12 @@ return new class extends Migration
             $table->after('partner_equal_id', function (Blueprint $table) {
                 $table->dateTime('verified_at')->nullable();
             });
-            $table->after('id', function (Blueprint $table) {
-                $table->string('equal_id')->unique()->nullable();
-            });
+
+            if (!Schema::hasColumn('outlets', 'equal_id')) {
+                $table->after('id', function (Blueprint $table) {
+                    $table->string('equal_id')->unique()->nullable();
+                });
+            }
         });
     }
 
