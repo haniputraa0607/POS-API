@@ -33,10 +33,6 @@ class AccessTokenController extends PassportAccessTokenController
      * @throws \League\OAuth2\Server\Exception\OAuthServerException
      */
 
-    public function __construct()
-    {
-        date_default_timezone_set('Asia/Jakarta');
-    }
 
     public function issueToken(ServerRequestInterface $request)
     {
