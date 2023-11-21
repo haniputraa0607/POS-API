@@ -14,6 +14,8 @@ use DateTime;
 use Modules\Consultation\Entities\Consultation;
 use Modules\Customer\Entities\CategoryAllergy;
 use Modules\Customer\Entities\CustomerAllergy;
+use Modules\Doctor\Entities\CurrentSkinCareDetailRecord;
+use Modules\Doctor\Entities\CurrentSkinCareRecord;
 use Modules\Doctor\Entities\LifeStyleRecord;
 use Modules\Doctor\Entities\SkinProblemRecord;
 use Modules\Doctor\Entities\TreatmentRecord;
@@ -911,7 +913,7 @@ class MedicalRecordController extends Controller
             "visible_pores_percentage" => $post['visible_pores_percentage'],
             "visible_pores_description" => $post['visible_pores_description'],
             "wrinkles_description" => $post['wrinkles_description'],
-            "skin_texture" => $post['skin_texture']
+            "skin_texture" => $post['skin_texture'],
         ];
         if($skin_type_now){
             SkinTypeRecord::where("id", $skin_type_now['id'])->update($payload);
@@ -919,5 +921,135 @@ class MedicalRecordController extends Controller
             SkinTypeRecord::create($payload);
         }
         return $this->ok("success", $payload);
+    }
+
+    public function getCurrentSkinCare(Request $request)
+    {
+        $request->validate([
+            'id_order' => 'required',
+        ]);
+        $doctor = $request->user();
+        $outlet = $doctor->outlet;
+        $post = $request->json()->all();
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+        $customer = Customer::whereHas('orders', function($order) use($post){
+            $order->where('id', $post['id_order']);
+        })->first();
+        
+        if(!$customer){
+            return $this->error('Customer not found');
+        }
+        $currentSkinCare = CurrentSkinCareRecord::with('current_skin_care_detail_record')->where('order_id', $post['id_order'])->first();
+        $detail_now = [];
+        if(!empty($currentSkinCare->current_skin_care_detail_record)){
+            foreach($currentSkinCare->current_skin_care_detail_record as $key){
+                $detail_now[] = [
+                    "type" => $key->type,
+                    "product_name" => $key->product_name,
+                    "description" => $key->description
+                ];
+            }
+        }
+        $data_now = [
+            "toner" => $currentSkinCare->toner ?? '',
+            "moisturizer" => $currentSkinCare->moisturizer ?? '',
+            "sun_screen" => $currentSkinCare->sun_screen ?? '',
+            "detail" => $detail_now
+        ];
+
+        $historyCurrentSkinCare = CurrentSkinCareRecord::with('current_skin_care_detail_record')->where('patient_id', $customer->id)->whereNot('order_id', $post['id_order'])->get();
+        $date_history = [];
+        foreach($historyCurrentSkinCare as $key){
+            $date_arr = explode(" ", $key['created_at']);
+            if(!in_array($date_arr[0], $date_history)){
+                $date_history[] = $date_arr[0];
+            }
+        }
+        $history_arr = [];
+        foreach($date_history as $date){
+            $history_res = [];
+            foreach($historyCurrentSkinCare as $history){
+                $date_arr = explode(' ', $history->created_at);
+                if($date_arr[0] == $date){
+                    $detail_now = [];
+                    if(!empty($history->current_skin_care_detail_record)){
+                        foreach($history->current_skin_care_detail_record as $key){
+                            $detail_now[] = [
+                                "type" => $key->type,
+                                "product_name" => $key->product_name,
+                                "description" => $key->description
+                            ];
+                        }
+                    }
+                    $history_res[] = [
+                        "toner" => $history->toner ?? '',
+                        "moisturizer" => $history->moisturizer ?? '',
+                        "sun_screen" => $history->sun_screen ?? '',
+                        "detail" => $detail_now
+                    ];
+                }
+            }
+            $history_arr[] = [
+                'date' => $date,
+                'history' => $history_res
+            ];
+        }
+
+        return $this->ok("success", [
+            "now" => $data_now,
+            "history" => $history_arr
+        ]);
+    }
+
+    public function updateCurrentSkinCare(Request $request)
+    {
+        $request->validate([
+            'id_order' => 'required',
+        ]);
+        $doctor = $request->user();
+        $outlet = $doctor->outlet;
+        $post = $request->json()->all();
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+        $customer = Customer::whereHas('orders', function($order) use($post){
+            $order->where('id', $post['id_order']);
+        })->first();
+        if(!$customer){
+            return $this->error('Customer not found');
+        }
+        $currentSkinCare = CurrentSkinCareRecord::where('order_id', $post['id_order'])->first();
+        $payload = [
+            "patient_id" => $customer->id,
+            "order_id" => $post['id_order'],
+            "toner" => $post["toner"],
+            "moisturizer" => $post['moisturizer'],
+            "sun_screen" => $post['sun_screen']
+        ];
+        if($currentSkinCare){
+            CurrentSkinCareRecord::where('id', $currentSkinCare->id)->update($payload);
+            $currentSkinCareId = $currentSkinCare->id;
+        } else {
+            $current_insert = CurrentSkinCareRecord::create($payload);
+            $currentSkinCareId = $current_insert->id;
+        }
+        if($post['detail']){
+            $delete_detail = CurrentSkinCareDetailRecord::where('current_skin_care_id', $currentSkinCareId)->delete();
+            $data_detail_insert = [];
+            foreach($post['detail'] as $key){
+                $data_detail_insert[] = [
+                    "current_skin_care_id" => $currentSkinCareId,
+                    "type" => $key["type"],
+                    "product_name" => $key["product_name"],
+                    "description" => $key["description"]
+                ];
+            }
+            if($data_detail_insert){
+                CurrentSkinCareDetailRecord::insert($data_detail_insert);
+            }
+        }
+        return $this->ok("success", $post);
     }
 }
