@@ -61,6 +61,9 @@ Route::middleware(['auth:api','scopes:doctor'])->controller(DoctorController::cl
 
             Route::post('skin-type', 'getSkinType');
             Route::post('update-skin-type', 'updateSkinType');
+
+            Route::post('current-skin-care', 'getCurrentSkinCare');
+            Route::post('update-current-skin-care', 'updateCurrentSkinCare');
         });
     });
 
