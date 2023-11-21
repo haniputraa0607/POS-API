@@ -24,6 +24,7 @@ use Modules\Order\Entities\OrderProduct;
 use Modules\PatientGrievance\Entities\PatientGrievance;
 use Modules\Product\Entities\Product;
 use Modules\Product\Entities\ProductCategory;
+use Modules\Doctor\Entities\SkinTypeRecord;
 
 class MedicalRecordController extends Controller
 {
@@ -725,5 +726,198 @@ class MedicalRecordController extends Controller
             }
         }
         return $this->ok("success", $skin_problem_arr);
+    }
+
+    public function getSkinType(Request $request)
+    {
+        $request->validate([
+            'id_order' => 'required',
+        ]);
+        $doctor = $request->user();
+        $outlet = $doctor->outlet;
+        $post = $request->json()->all();
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+        $customer = Customer::whereHas('orders', function($order) use($post){
+            $order->where('id', $post['id_order']);
+        })->first();
+        if(!$customer){
+            return $this->error('Customer not found');
+        }
+        
+        $skin_type_now = SkinTypeRecord::where('order_id', $post['id_order'])->first();
+
+        $skin_type_conf = config("skin_type");
+        $skin_tone_conf = config("skin_tone");
+        $visible_pores_conf = config("visible_pores");
+        $skin_texture_conf = config("skin_texture");
+        $skin_type_arr = [];
+        foreach($skin_type_conf as $key){
+            $checked = false;
+            if($key == ($skin_type_now->skin_type ?? '')){
+                $checked = true;
+            }
+            $skin_type_arr[] = [
+                "name" => $key,
+                "checked" => $checked
+            ];
+        }
+        $skin_tone_arr = [];
+        foreach($skin_tone_conf as $key){
+            $checked = false;
+            if($key['name'] == ($skin_type_now->skin_tone ?? '')){
+                $checked = true;
+            }
+            $skin_tone_arr[] = [
+                "name" => $key['name'],
+                "color" => $key['color'],
+                "checked" => $checked
+            ];
+        }
+        $visible_pores_arr = [];
+        foreach($visible_pores_conf as $key){
+            $checked = false;
+            if($key == ($skin_type_now->visible_pores_percentage ?? '')){
+                $checked = true;
+            }
+            $visible_pores_arr[] = [
+                "name" => $key,
+                "checked" => $checked
+            ];
+        }
+        $skin_texture_arr = [];
+        foreach($skin_texture_conf as $key){
+            $checked = false;
+            if($key == ($skin_type_now->skin_texture ?? '')){
+                $checked = true;
+            }
+            $skin_texture_arr[] = [
+                "name" => $key,
+                "checked" => $checked
+            ];
+        }
+        $data_now = [
+            "skin_type" =>  $skin_type_arr,
+            "skin_tone" => $skin_tone_arr,
+            "visible_pores_percentage" => $visible_pores_arr,
+            "visible_pores_description" => $skin_type_now->visible_pores_description ?? '',
+            "wrinkles_description" => $skin_type_now->wrinkles_description ?? '',
+            "skin_texture" => $skin_texture_arr
+        ];
+        $history = SkinTypeRecord::where('patient_id', $customer->id)->whereNot('order_id', $post['id_order'])->get();
+        $date_history = [];
+        foreach($history as $key){
+            $date_arr = explode(" ", $key->created_at);
+            if(!in_array($date_arr[0], $date_history)){
+                $date_history[] = $date_arr[0];
+            }
+        }
+        $history_ss = [];
+        foreach($date_history as $date){
+            $history_res = [];
+            foreach($history as $history_data){
+                $date_arr = explode(" ", $history_data->created_at);
+                if($date == $date_arr[0]){
+                    $skin_type_history_arr = [];
+                    foreach($skin_type_conf as $key){
+                        $checked = false;
+                        if($key == ($history_data->skin_type ?? '')){
+                            $checked = true;
+                        }
+                        $skin_type_history_arr[] = [
+                            "name" => $key,
+                            "checked" => $checked
+                        ];
+                    }
+                    $skin_tone_history_arr = [];
+                    foreach($skin_tone_conf as $key){
+                        $checked = false;
+                        if($key['name'] == ($history_data->skin_tone ?? '')){
+                            $checked = true;
+                        }
+                        $skin_tone_history_arr[] = [
+                            "name" => $key['name'],
+                            "color" => $key['color'],
+                            "checked" => $checked
+                        ];
+                    }
+                    $visible_pores_history_arr = [];
+                    foreach($visible_pores_conf as $key){
+                        $checked = false;
+                        if($key == ($history_data->visible_pores_percentage ?? '')){
+                            $checked = true;
+                        }
+                        $visible_pores_history_arr[] = [
+                            "name" => $key,
+                            "checked" => $checked
+                        ];
+                    }
+                    $skin_texture_history_arr = [];
+                    foreach($skin_texture_conf as $key){
+                        $checked = false;
+                        if($key == ($history_data->skin_texture ?? '')){
+                            $checked = true;
+                        }
+                        $skin_texture_arr[] = [
+                            "name" => $key,
+                            "checked" => $checked
+                        ];
+                    }
+                    $history_res[] = [
+                        "skin_type" =>  $skin_type_history_arr,
+                        "skin_tone" => $skin_tone_history_arr,
+                        "visible_pores_percentage" => $visible_pores_history_arr,
+                        "visible_pores_description" => $history_data->visible_pores_description ?? '',
+                        "wrinkles_description" => $history_data->wrinkles_description ?? '',
+                        "skin_texture" => $skin_texture_history_arr
+                    ];
+                }
+            }
+            $history_ss[] = [
+                "date" => $date,
+                "data" => $history_res
+            ];
+        }
+        return $this->ok("success", [
+            "now" => $data_now,
+            "history" => $history_ss
+        ]);
+    }
+
+    public function updateSkinType(Request $request)
+    {
+        $request->validate([
+            'id_order' => 'required',
+        ]);
+        $doctor = $request->user();
+        $outlet = $doctor->outlet;
+        $post = $request->json()->all();
+        if(!$outlet){
+            return $this->error('Outlet not found');
+        }
+        $customer = Customer::whereHas('orders', function($order) use($post){
+            $order->where('id', $post['id_order']);
+        })->first();
+        if(!$customer){
+            return $this->error('Customer not found');
+        }
+        
+        $skin_type_now = SkinTypeRecord::where('order_id', $post['id_order'])->first();
+        $payload = [
+            "order_id" => $post['id_order'],
+            "skin_type" => $post['skin_type'],
+            "skin_tone" => $post['skin_tone'],
+            "visible_pores_percentage" => $post['visible_pores_percentage'],
+            "visible_pores_description" => $post['visible_pores_description'],
+            "wrinkles_description" => $post['wrinkles_description'],
+            "skin_texture" => $post['skin_texture']
+        ];
+        if($skin_type_now){
+            SkinTypeRecord::where("id", $skin_type_now['id'])->update($payload);
+        } else {  
+            SkinTypeRecord::create($payload);
+        }
+        return $this->ok("success", $payload);
     }
 }
